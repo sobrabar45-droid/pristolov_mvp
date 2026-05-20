@@ -13,6 +13,7 @@ from app.models.game_host_round_question import GameHostRoundQuestion
 from app.models.round_question_template import RoundQuestionTemplate
 from app.models.round_template import RoundTemplate
 from app.services.host_round_service import (
+    force_close_current_question_by_host as _force_close_current_question_by_host,
     open_next_question_for_host_round as _open_next_question_for_host_round,
 )
 
@@ -902,6 +903,15 @@ def mark_court_result_logic(db: Session, room_code: str, *, side: str, result: s
     if not isinstance(current_pair, dict):
         return {"ok": False, "message": "Сейчас нет активной пары"}
 
+    if not bool(current_pair.get("question_active")):
+        if str(current_pair.get("question_status") or "").strip().lower() == "reveal":
+            return {
+                "ok": False,
+                "already_applied": True,
+                "message": "Результат по текущему вопросу суда уже применён",
+            }
+        return {"ok": False, "message": "Сейчас нет активного вопроса суда"}
+
     normalized_side = str(side or "").strip().lower()
     normalized_result = str(result or "").strip().lower()
     if normalized_side not in {"a", "b"}:
@@ -910,6 +920,30 @@ def mark_court_result_logic(db: Session, room_code: str, *, side: str, result: s
         return {"ok": False, "message": "Результат должен быть 'correct' или 'wrong'"}
     if current_pair.get("status") in PAIR_FINISHED_STATUSES:
         return {"ok": False, "message": "Текущая пара уже завершена"}
+
+    host_round = _get_court_question_host_round(
+        db,
+        game=game,
+        host_round_id=current_pair.get("question_host_round_id"),
+    )
+    if host_round is None:
+        return {"ok": False, "message": "Сейчас нет активного вопроса суда"}
+
+    active_runtime_question = (
+        db.query(GameHostRoundQuestion)
+        .filter(
+            GameHostRoundQuestion.host_round_id == host_round.id,
+            GameHostRoundQuestion.status == "active",
+        )
+        .order_by(GameHostRoundQuestion.sequence_no.desc(), GameHostRoundQuestion.id.desc())
+        .first()
+    )
+    if active_runtime_question is None or active_runtime_question.answers_open is False:
+        return {
+            "ok": False,
+            "already_applied": True,
+            "message": "Результат по текущему вопросу суда уже применён",
+        }
 
     loser_side = "b" if (normalized_side == "a" and normalized_result == "correct") else "a" if (normalized_side == "b" and normalized_result == "correct") else normalized_side
     loser_house_id = current_pair.get("house_b_id") if loser_side == "b" else current_pair.get("house_a_id")
@@ -925,6 +959,10 @@ def mark_court_result_logic(db: Session, room_code: str, *, side: str, result: s
     current_pair["questions_used"] = int(current_pair.get("questions_used") or 0) + 1
     current_pair["question_active"] = False
     current_pair["question_status"] = "reveal"
+    close_result = _force_close_current_question_by_host(db, host_round)
+    if not close_result.get("ok"):
+        db.rollback()
+        return close_result
 
     _append_history(
         payload,
