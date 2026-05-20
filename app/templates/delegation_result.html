@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Делегация признана</title>
+</head>
+<body>
+    <h1>Делегация признана</h1>
+
+    <p><strong>Игра:</strong> {{ game.title }}</p>
+    <p><strong>Глава делегации:</strong> {{ leader.nickname }}</p>
+
+    {% set color_names = {
+        "emerald": "изумрудный",
+        "crimson": "алый",
+        "red": "алый",
+        "scarlet": "алый",
+        "ruby": "рубиновый",
+        "azure": "лазурный",
+        "blue": "синий",
+        "navy": "тёмно-синий",
+        "violet": "фиолетовый",
+        "purple": "фиолетовый",
+        "gold": "золотой",
+        "silver": "серебряный",
+        "gray": "серый",
+        "grey": "серый",
+        "black": "чёрный",
+        "white": "белый",
+        "ivory": "слоновая кость",
+        "green": "зелёный",
+        "yellow": "жёлтый",
+        "orange": "оранжевый",
+        "brown": "коричневый",
+        "bronze": "бронзовый",
+        "copper": "медный",
+        "stone": "каменный"
+    } %}
+
+    {% set entry_mode_names = {
+        "quiz": "вдумчивый выбор пути",
+        "random": "воля судьбы"
+    } %}
+
+    {% set color_label = color_names.get(house.color, house.color) %}
+    {% set entry_mode_label = entry_mode_names.get(house.entry_mode, house.entry_mode) %}
+
+    <h2>Решение</h2>
+
+    {% if house.entry_mode == "random" %}
+        <p><strong>Судьба признала за вашей делегацией {{ house.name }}.</strong></p>
+        <p>Этот Дом был определён не ритуалом ответов, а волей случая. Значит, ваш путь в игре начнётся с большей событийности и права принять неожиданную роль в раскладе сил.</p>
+    {% else %}
+        <p><strong>Вашей делегации соответствует {{ house.name }}.</strong></p>
+
+        {% if best_match_overall and best_match_overall["key"] != house.house_key %}
+            <p>Из доступных Домов именно этот путь сейчас оказался наиболее близок характеру вашей делегации.</p>
+        {% else %}
+            <p>Именно этот путь наиболее близок складу вашей делегации.</p>
+        {% endif %}
+    {% endif %}
+
+    <p><strong>Девиз:</strong> {{ house.motto }}</p>
+    <p><strong>Цвет Дома:</strong> {{ color_label }}</p>
+    <p><strong>Заявленный размер делегации:</strong> {{ house.team_size_declared }}</p>
+    <p><strong>Режим входа:</strong> {{ entry_mode_label }}</p>
+
+    <h2>Верительная грамота</h2>
+    <p>Передайте этот код тем, кто будет входить в ваш Дом.</p>
+    <p><strong>{{ house.invite_code }}</strong></p>
+
+    <h2>Стартовые параметры</h2>
+    <ul>
+        <li>Золото: {{ house.resource_gold }}</li>
+        <li>Влияние: {{ house.resource_influence }}</li>
+        <li>Камень: {{ house.resource_stone }}</li>
+        <li>Дерево: {{ house.resource_wood }}</li>
+        <li>Железо: {{ house.resource_iron }}</li>
+        <li>Свитки: {{ house.resource_scroll }}</li>
+        <li>Ключи: {{ house.resource_key }}</li>
+        <li>Огонь: {{ house.resource_fire }}</li>
+        <li>Печать судьбы: {{ house.fate_bias }}</li>
+    </ul>
+
+    {% if house.entry_mode == "quiz" %}
+        <p><strong>Преимущество старта:</strong> ваша делегация вошла в игру через ритуал определения и начала путь с дополнительным золотом.</p>
+    {% elif house.entry_mode == "random" %}
+        <p><strong>Преимущество старта:</strong> ваша делегация вверила выбор судьбе и получила повышенную вероятность событийного поворота.</p>
+    {% endif %}
+
+    <h2>Следующий шаг</h2>
+    <p>Теперь глава Дома может открыть экран Дома, посмотреть состав делегации, назначить роли и дальше вести Дом через Lord Dashboard.</p>
+
+    <p><a href="/house/{{ house.invite_code }}">Открыть экран Дома</a></p>
+    <p><a href="/delegation/join">Передать грамоту участникам</a></p>
+    <p><a href="/delegation/start">Создать новую делегацию</a></p>
+</body>
+</html>

@@ -1,0 +1,20 @@
+events:
+  - event_code: event_001
+    title: "Сигнал тревоги"
+    event_type: alert
+    act_min: 2
+    act_max: 4
+    target_roles: ["lord_lady", "whisper_master"]
+    trigger:
+      kind: "assignment_fail_count"
+      threshold: 2
+    payload:
+      text: "По залу пошёл чужой шёпот. Дом должен решить, гасить ли след или сыграть на нём."
+    options:
+      - code: suppress
+        text: "Погасить слух"
+        cost:
+          influence: 1
+      - code: exploit
+        text: "Использовать слух против соперника"
+        risk_tag: "backfire"

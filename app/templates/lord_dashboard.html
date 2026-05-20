@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lord Dashboard — приСтолов</title>
+    <style>
+        :root {
+            --bg: #0f1115;
+            --panel: #1a1d24;
+            --panel-2: #222733;
+            --panel-3: #171b22;
+            --text: #f4f7fb;
+            --muted: #a9b2c3;
+            --line: rgba(255,255,255,0.08);
+            --gold: #d4a94f;
+            --green: #4ea56b;
+            --red: #b45353;
+            --blue: #4c8bf5;
+            --amber: #d59f3a;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: radial-gradient(circle at top, rgba(212,169,79,0.08), transparent 32%), var(--bg);
+            color: var(--text);
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        }
+
+        .page {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 14px;
+            display: grid;
+            gap: 14px;
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            padding: 16px;
+        }
+
+        .hero {
+            display: grid;
+            gap: 12px;
+        }
+
+        .eyebrow {
+            color: var(--gold);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .title {
+            font-size: 30px;
+            font-weight: 900;
+            line-height: 1.04;
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.45;
+        }
+
+        .hero-grid,
+        .stats-grid,
+        .opportunity-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .hero-grid,
+        .stats-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .opportunity-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .tile,
+        .stat,
+        .opportunity,
+        .player-card,
+        .role-card {
+            background: var(--panel-2);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 14px;
+        }
+
+        .stat-label,
+        .tile-label {
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+
+        .stat-value,
+        .tile-value {
+            font-size: 24px;
+            font-weight: 900;
+        }
+
+        .tile-value.small {
+            font-size: 18px;
+            line-height: 1.25;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .chip.gold { color: var(--gold); }
+        .chip.green { color: #b9f3cb; }
+        .chip.red { color: #ffc2c2; }
+        .chip.blue { color: #cfe0ff; }
+        .chip.amber { color: #ffe1a9; }
+
+        .status-banner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 16px;
+            background: linear-gradient(180deg, rgba(76,139,245,0.12), rgba(76,139,245,0.04));
+            border: 1px solid rgba(76,139,245,0.22);
+        }
+
+        .status-copy {
+            display: grid;
+            gap: 4px;
+        }
+
+        .status-title {
+            font-size: 18px;
+            font-weight: 800;
+        }
+
+        .status-note {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .btn,
+        .btn-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            text-align: center;
+            text-decoration: none;
+            color: white;
+            background: var(--blue);
+            border: none;
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .btn.alt,
+        .btn-link.alt { background: #374151; }
+        .btn.green,
+        .btn-link.green { background: var(--green); }
+        .btn.red,
+        .btn-link.red { background: var(--red); }
+
+        .action-row,
+        .actions {
+            display: grid;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .players-list,
+        .roles-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .row-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .name {
+            font-size: 17px;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        .sub {
+            margin-top: 6px;
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        .error-box {
+            background: rgba(180, 83, 83, 0.12);
+            border: 1px solid rgba(180, 83, 83, 0.35);
+            color: #ffd2d2;
+            border-radius: 14px;
+            padding: 12px;
+            font-size: 14px;
+        }
+
+        .info-list {
+            display: grid;
+            gap: 8px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        code.inline-code {
+            display: inline-block;
+            background: var(--panel-3);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 8px 10px;
+            color: var(--text);
+            word-break: break-all;
+        }
+
+        .invite-grid {
+            display: grid;
+            grid-template-columns: 1fr 240px;
+            gap: 14px;
+            align-items: start;
+        }
+
+        .qr-card {
+            background: var(--panel-2);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 12px;
+            display: grid;
+            gap: 10px;
+            justify-items: center;
+        }
+
+        .qr-frame {
+            width: 220px;
+            height: 220px;
+            border-radius: 18px;
+            background: #fff;
+            border: 1px solid rgba(255,255,255,0.08);
+            display: grid;
+            place-items: center;
+            overflow: hidden;
+        }
+
+        .qr-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .qr-note {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.35;
+            text-align: center;
+        }
+
+        @media (max-width: 680px) {
+            .title { font-size: 26px; }
+            .hero-grid,
+            .stats-grid,
+            .opportunity-grid { grid-template-columns: 1fr; }
+            .status-banner { align-items: stretch; flex-direction: column; }
+            .invite-grid { grid-template-columns: 1fr; }
+            .qr-card { justify-items: stretch; }
+            .qr-frame { margin: 0 auto; }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+
+    {% if error %}
+        <div class="error-box">{{ error }}</div>
+    {% endif %}
+
+    {% if house %}
+    <section class="card hero">
+        <div class="eyebrow">Lord Dashboard</div>
+        <div class="title">{{ house.name }}</div>
+        <div class="muted">
+            Экран Дома для главы делегации. Здесь видны состав, ресурсы, текущий этап и быстрые live-сигналы.
+        </div>
+
+        <div class="chips">
+            <span class="chip gold">Лорд / Леди</span>
+            <span class="chip">Игра: {{ game.room_code if game else "—" }}</span>
+            <span class="chip blue">Грамота: {{ house.invite_code }}</span>
+            <span class="chip {{ 'green' if house_ready else 'amber' }}" id="houseReadyChip">{{ 'Дом готов' if house_ready else 'Дом готовится' }}</span>
+        </div>
+
+        <div class="status-banner">
+            <div class="status-copy">
+                <div class="status-title" id="houseReadyTitle">{{ 'Дом готов' if house_ready else 'Дом готовится' }}</div>
+                <div class="status-note" id="houseReadyNote">{{ 'Состав собран. Можно ждать следующий live-сигнал ведущего.' if house_ready else 'Пока можно добрать людей, раздать роли и сверить план Дома.' }}</div>
+            </div>
+            <button type="button" class="btn {{ 'alt' if house_ready else 'green' }}" id="houseReadyButton" onclick="toggleHouseReady()">
+                {{ 'Вернуть в подготовку' if house_ready else 'Дом готов' }}
+            </button>
+        </div>
+
+        <div class="hero-grid">
+            <div class="tile">
+                <div class="tile-label">Глава Дома</div>
+                <div class="tile-value small">{{ leader.nickname if leader else "—" }}</div>
+            </div>
+            <div class="tile">
+                <div class="tile-label">Текущий этап</div>
+                <div class="tile-value small">{{ current_stage_title }}</div>
+                <div class="sub">{{ current_stage_subtitle }}</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="section-title">Ресурсы и состав</div>
+        <div class="stats-grid">
+            <div class="stat">
+                <div class="stat-label">Золото</div>
+                <div class="stat-value">{{ house.resource_gold }}</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Влияние</div>
+                <div class="stat-value">{{ house.resource_influence }}</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Участников в Доме</div>
+                <div class="stat-value">{{ occupied_slots }}/{{ house.team_size_declared }}</div>
+                <div class="sub">Свободно мест: {{ remaining_slots }}</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Активная фаза</div>
+                <div class="stat-value small">{{ active_phase_label or "Нет активной фазы" }}</div>
+                {% if active_host_round %}
+                <div class="sub">Раунд: {{ active_host_round.title }}</div>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="section-title">Что Дом может делать сейчас</div>
+        <div class="opportunity-grid">
+            <div class="opportunity">
+                <div class="tile-label">Дипломатия</div>
+                <div class="name">{{ "Окно открыто" if can_use_diplomacy else "Пока неактивно" }}</div>
+                <div class="sub">Когда откроется фаза дипломатии, Дипломат и Лорд координируют сделки и союзы.</div>
+            </div>
+            <div class="opportunity">
+                <div class="tile-label">Экспедиция</div>
+                <div class="name">{{ "Можно готовить" if can_use_expedition else "Ждёт своего этапа" }}</div>
+                <div class="sub">Экспедиции оживают на карте и в свободной игре. Это один из главных CORE-циклов Дома.</div>
+            </div>
+            <div class="opportunity">
+                <div class="tile-label">Дуэль</div>
+                <div class="name">{{ "Этап дуэлей активен" if can_use_duel else "Неактивно" }}</div>
+                <div class="sub">Когда начинается дуэльный этап, Лорд должен быстро понимать, кто представляет Дом.</div>
+            </div>
+            <div class="opportunity">
+                <div class="tile-label">Союз</div>
+                <div class="name">{{ "Можно договариваться" if can_use_alliance else "Следите за дипломатией" }}</div>
+                <div class="sub">Даже если действие ещё placeholder, Лорд уже видит, что политические окна существуют.</div>
+            </div>
+        </div>
+        <div class="action-row">
+            {% if leader_player_url %}
+            <a class="btn-link alt" href="{{ leader_player_url }}">Открыть экран Лорда как игрока</a>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="section-title">Быстрый дозов игроков</div>
+        <div class="invite-grid">
+            <div class="info-list">
+                <div>Если кто-то подошёл позже, не возвращайтесь в setup. Дайте игроку ссылку входа или покажите QR-код Дома.</div>
+                <div>Ссылка входа:</div>
+                <code class="inline-code">{{ join_url_absolute or join_url or "/delegation/join" }}</code>
+                <div>Код игры: <strong>{{ game.room_code if game else "LIVE01" }}</strong></div>
+                <div>Грамота Дома: <strong>{{ house.invite_code }}</strong></div>
+                <div class="muted">QR ведёт сразу на экран входа с уже подставленными <strong>game_code</strong> и <strong>invite_code</strong>.</div>
+                <div class="action-row">
+                    <a class="btn-link" href="{{ join_url or '/delegation/join' }}">Открыть ссылку входа</a>
+                </div>
+            </div>
+            <div class="qr-card">
+                <div class="qr-frame">
+                    {% if join_url_qr_src %}
+                    <img src="{{ join_url_qr_src }}" alt="QR входа в Дом">
+                    {% else %}
+                    <div class="muted" style="padding:16px;text-align:center;">QR появится, когда экран открыт по реальному адресу игры</div>
+                    {% endif %}
+                </div>
+                <div class="qr-note">Сканируйте камерой телефона и входите в Дом без ручного ввода грамоты.</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="section-title">Ключевые роли</div>
+        <div class="roles-list">
+            {% for item in house_roles_status %}
+                <div class="role-card">
+                    <div class="row-top">
+                        <div class="name">{{ item.name }}</div>
+                        {% if item.is_seeded %}
+                            {% if item.assigned_player %}
+                                <span class="chip green">назначено</span>
+                            {% else %}
+                                <span class="chip gold">вакантно</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="chip red">не загружено</span>
+                        {% endif %}
+                    </div>
+                    {% if item.assigned_player %}
+                        <div class="sub">Игрок: {{ item.assigned_player.nickname }}</div>
+                    {% else %}
+                        <div class="sub">Пока никто не назначен</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="section-title">Состав Дома</div>
+        <div class="players-list">
+            {% for player in players %}
+                <div class="player-card">
+                    <div class="row-top">
+                        <div class="name">{{ player.nickname }}</div>
+                        {% if leader and player.id == leader.id %}
+                            <span class="chip gold">глава Дома</span>
+                        {% elif current_role_by_player_id[player.id] %}
+                            <span class="chip blue">{{ current_role_by_player_id[player.id].name }}</span>
+                        {% else %}
+                            <span class="chip">без роли</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="chips" style="margin-top:8px;">
+                        <span class="chip">player_id: {{ player.id }}</span>
+                        {% if player.player_token %}
+                            <span class="chip green">вход подтверждён</span>
+                        {% else %}
+                            <span class="chip red">без токена</span>
+                        {% endif %}
+                    </div>
+
+                    {% if leader and player.id != leader.id %}
+                        <div class="actions">
+                            {% if current_role_by_player_id[player.id] %}
+                                <a class="btn-link red"
+                                   href="/house/{{ house.invite_code }}/clear-role/{{ player.id }}">
+                                    Снять роль
+                                </a>
+                            {% endif %}
+
+                            {% set links = available_role_links_by_player_id[player.id] %}
+                            {% if links %}
+                                {% for role_link in links %}
+                                    <a class="btn-link alt"
+                                       href="/house/{{ house.invite_code }}/assign-role/{{ player.id }}/{{ role_link.role_code }}">
+                                        Назначить: {{ role_link.role_name }}
+                                    </a>
+                                {% endfor %}
+                            {% else %}
+                                <div class="sub">Свободных ролей для назначения сейчас нет</div>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <div class="sub">Лорд остаётся управляющим экраном Дома.</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <div class="action-row">
+        <a class="btn-link" href="/house/{{ house.invite_code }}">Обновить экран Дома</a>
+    </div>
+    {% endif %}
+
+</div>
+
+<script>
+const readyEndpoint = "/house/{{ house.invite_code if house else '' }}/ready";
+let houseReadyState = {{ "true" if house_ready else "false" }};
+
+function applyHouseReadyState(isReady) {
+    const chip = document.getElementById("houseReadyChip");
+    const title = document.getElementById("houseReadyTitle");
+    const note = document.getElementById("houseReadyNote");
+    const button = document.getElementById("houseReadyButton");
+
+    if (!chip || !title || !note || !button) return;
+
+    if (isReady) {
+        chip.textContent = "Дом готов";
+        chip.classList.remove("amber");
+        chip.classList.add("green");
+        title.textContent = "Дом готов";
+        note.textContent = "Состав собран. Можно ждать следующий live-сигнал ведущего.";
+        button.textContent = "Вернуть в подготовку";
+        button.classList.remove("green");
+        button.classList.add("alt");
+        return;
+    }
+
+    chip.textContent = "Дом готовится";
+    chip.classList.remove("green");
+    chip.classList.add("amber");
+    title.textContent = "Дом готовится";
+    note.textContent = "Пока можно добрать людей, раздать роли и сверить план Дома.";
+    button.textContent = "Дом готов";
+    button.classList.remove("alt");
+    button.classList.add("green");
+}
+
+async function toggleHouseReady() {
+    const button = document.getElementById("houseReadyButton");
+    const nextValue = !houseReadyState;
+
+    if (button) {
+        button.disabled = true;
+        button.textContent = "Сохраняем...";
+    }
+
+    try {
+        const response = await fetch(readyEndpoint, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ is_ready: nextValue })
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data?.ok) {
+            throw new Error(data?.message || "Не удалось сохранить готовность Дома");
+        }
+
+        houseReadyState = Boolean(data.is_ready);
+        applyHouseReadyState(houseReadyState);
+    } catch (error) {
+        applyHouseReadyState(houseReadyState);
+        alert(error?.message || "Не удалось сохранить готовность Дома");
+    } finally {
+        if (button) {
+            button.disabled = false;
+        }
+    }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    applyHouseReadyState(Boolean(houseReadyState));
+});
+</script>
+</body>
+</html>

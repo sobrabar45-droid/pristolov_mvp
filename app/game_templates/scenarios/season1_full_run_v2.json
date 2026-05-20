@@ -1,0 +1,367 @@
+{
+  "scenario": {
+    "code": "season1_full_run_v2",
+    "name": "Сезон 1 — канонический прогон",
+    "description": "Сценарий, разделённый по этапам игры (stage-based).",
+    "version": 2,
+    "status": "active",
+    "template_id": 6,
+    "metadata": {
+      "mode": "stage_based",
+      "room_code": "IRON01"
+    }
+  },
+  "rounds": [
+    {
+      "round_code": "stage_intro",
+      "title": "Открытие вечера",
+      "order_no": 10,
+      "act_number": 10,
+      "round_type": "intro",
+      "round_kind": "intro",
+      "check_mode": "auto",
+      "questions_total": 1,
+      "time_limit_sec": null,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "scoring_mode": null,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Ведущий вводит в игру.",
+      "outro_text": null,
+      "questions": [
+        {
+          "question_code": "intro_q1",
+          "sequence_no": 1,
+          "role_code": "lord_lady",
+          "title": "Готовность",
+          "prompt": "Подтверди готовность дома.",
+          "ui_template": "text",
+          "answer_mode": "text",
+          "auto_check": true,
+          "manual_check_allowed": false,
+          "allowed_house_keys": [],
+          "content": {
+            "time_limit_sec": 15
+          },
+          "reward": {},
+          "fail_effect": {}
+        }
+      ]
+    },
+    {
+      "round_code": "stage_warmup",
+      "title": "Лёгкие раунды",
+      "order_no": 20,
+      "act_number": 20,
+      "round_type": "host_round_series",
+      "round_kind": "host_round_series",
+      "check_mode": "auto",
+      "questions_total": 2,
+      "time_limit_sec": null,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "scoring_mode": null,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Втягиваем игроков.",
+      "outro_text": null,
+      "questions": [
+        {
+          "question_code": "warmup_q1",
+          "sequence_no": 1,
+          "role_code": "maester",
+          "title": "Разогрев 1",
+          "prompt": "Выбери верное утверждение",
+          "ui_template": "truth_lie",
+          "answer_mode": "single_choice",
+          "auto_check": true,
+          "manual_check_allowed": false,
+          "allowed_house_keys": [],
+          "content": {
+            "time_limit_sec": 30,
+            "statements": [
+              {
+                "code": "a",
+                "text": "Дом уже имеет союз"
+              },
+              {
+                "code": "b",
+                "text": "Союзов ещё нет"
+              }
+            ],
+            "correct_answer": "b"
+          },
+          "reward": {},
+          "fail_effect": {}
+        },
+        {
+          "question_code": "warmup_q2",
+          "sequence_no": 2,
+          "role_code": "maester",
+          "title": "Разогрев 2",
+          "prompt": "Что ближе к правде?",
+          "ui_template": "truth_lie",
+          "answer_mode": "single_choice",
+          "auto_check": true,
+          "manual_check_allowed": false,
+          "allowed_house_keys": [],
+          "content": {
+            "time_limit_sec": 30,
+            "statements": [
+              {
+                "code": "a",
+                "text": "Золото уже тратится"
+              },
+              {
+                "code": "b",
+                "text": "Все копят ресурсы"
+              }
+            ],
+            "correct_answer": "a"
+          },
+          "reward": {},
+          "fail_effect": {}
+        }
+      ]
+    },
+    {
+      "round_code": "imported_warmup_test",
+      "title": "Ð ÐµÐ°Ð»ÑÐ½ÑÐµ Ð²Ð¾Ð¿ÑÐ¾ÑÑ â ÑÐµÑÑÐ¾Ð²ÑÐ¹ Ð¿ÑÐ¾Ð³Ð¾Ð½",
+      "order_no": 25,
+      "act_number": 25,
+      "round_type": "host_round_series",
+      "round_kind": "host_round_series",
+      "check_mode": "auto",
+      "questions_total": 13,
+      "time_limit_sec": null,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "scoring_mode": null,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Тестовый прогон импортированных реальных вопросов.",
+      "outro_text": null,
+      "questions": []
+    },
+    {
+      "round_code": "stage_map_entry",
+      "title": "Открытие карты",
+      "order_no": 30,
+      "act_number": 30,
+      "round_type": "system_stage",
+      "round_kind": "system_stage",
+      "check_mode": "auto",
+      "questions_total": 1,
+      "time_limit_sec": null,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "scoring_mode": null,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Открывается карта и экспедиции",
+      "outro_text": null,
+      "questions": []
+    },
+    {
+      "round_code": "stage_diplomacy_1",
+      "title": "Дипломатия 1",
+      "order_no": 40,
+      "act_number": 40,
+      "round_type": "system_stage",
+      "round_kind": "system_stage",
+      "check_mode": "auto",
+      "questions_total": 1,
+      "time_limit_sec": null,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "scoring_mode": null,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Первое окно переговоров",
+      "outro_text": null,
+      "questions": []
+    },
+    {
+      "round_code": "stage_crest",
+      "title": "Сборка герба",
+      "order_no": 50,
+      "act_number": 50,
+      "round_type": "system_stage",
+      "round_kind": "system_stage",
+      "check_mode": "auto",
+      "questions_total": 1,
+      "time_limit_sec": null,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "scoring_mode": null,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Дома собирают гербы",
+      "outro_text": null,
+      "questions": []
+    },
+    {
+      "round_code": "stage_free_play",
+      "title": "Свободная игра",
+      "order_no": 60,
+      "act_number": 60,
+      "round_type": "system_stage",
+      "round_kind": "system_stage",
+      "check_mode": "auto",
+      "questions_total": 1,
+      "time_limit_sec": null,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "scoring_mode": null,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Карта + сделки + скрытые действия",
+      "outro_text": null,
+      "questions": []
+    },
+    {
+      "round_code": "stage_upgrade",
+      "title": "Усиление домов",
+      "order_no": 70,
+      "act_number": 70,
+      "round_type": "system_stage",
+      "round_kind": "system_stage",
+      "check_mode": "auto",
+      "questions_total": 1,
+      "time_limit_sec": null,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "scoring_mode": null,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Дома улучшают позиции",
+      "outro_text": null,
+      "questions": []
+    },
+    {
+      "round_code": "stage_duels",
+      "title": "Дуэли домов",
+      "order_no": 80,
+      "act_number": 80,
+      "round_type": "system_stage",
+      "round_kind": "system_stage",
+      "check_mode": "auto",
+      "questions_total": 1,
+      "time_limit_sec": null,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "scoring_mode": null,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Начинаются дуэли",
+      "outro_text": null,
+      "questions": []
+    },
+    {
+      "round_code": "stage_intrigue",
+      "title": "Интриги",
+      "order_no": 90,
+      "act_number": 90,
+      "round_type": "system_stage",
+      "round_kind": "system_stage",
+      "check_mode": "auto",
+      "questions_total": 1,
+      "time_limit_sec": null,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "scoring_mode": null,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Скрытые действия перед финалом",
+      "outro_text": null,
+      "questions": []
+    },
+    {
+      "round_code": "stage_court",
+      "title": "Суд домов",
+      "order_no": 100,
+      "act_number": 100,
+      "round_type": "host_round_series",
+      "round_kind": "host_round_series",
+      "check_mode": "auto",
+      "questions_total": 1,
+      "time_limit_sec": null,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "scoring_mode": null,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Кульминация",
+      "outro_text": null,
+      "questions": [
+        {
+          "question_code": "court_q1",
+          "sequence_no": 1,
+          "role_code": "lord_lady",
+          "title": "Позиция дома",
+          "prompt": "Объявите позицию дома",
+          "ui_template": "text",
+          "answer_mode": "text",
+          "auto_check": true,
+          "manual_check_allowed": false,
+          "allowed_house_keys": [],
+          "content": {
+            "time_limit_sec": 30
+          },
+          "reward": {},
+          "fail_effect": {}
+        }
+      ]
+    },
+    {
+      "round_code": "stage_final",
+      "title": "Финал",
+      "order_no": 110,
+      "act_number": 110,
+      "round_type": "final",
+      "round_kind": "final",
+      "check_mode": "auto",
+      "questions_total": 1,
+      "time_limit_sec": null,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "scoring_mode": null,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Определение победителя",
+      "outro_text": null,
+      "questions": [
+        {
+          "question_code": "final_q1",
+          "sequence_no": 1,
+          "role_code": "lord_lady",
+          "title": "Финал",
+          "prompt": "Подтвердить завершение",
+          "ui_template": "text",
+          "answer_mode": "text",
+          "auto_check": true,
+          "manual_check_allowed": false,
+          "allowed_house_keys": [],
+          "content": {
+            "time_limit_sec": 15
+          },
+          "reward": {},
+          "fail_effect": {}
+        }
+      ]
+    }
+  ]
+}

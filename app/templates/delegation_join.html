@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Войти по грамоте</title>
+</head>
+<body>
+    <h1>Вход по верительной грамоте</h1>
+
+    <form method="post" action="/delegation/join">
+        <div style="margin-bottom: 12px;">
+            <label for="game_code">Код игры:</label>
+            <input type="text" id="game_code" name="game_code" value="{{ default_game_code or 'LIVE01' }}" required>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+            <label for="invite_code">Верительная грамота:</label>
+            <input type="text" id="invite_code" name="invite_code" value="{{ default_invite_code or '' }}" required>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+            <label for="nickname">Имя участника:</label>
+            <input type="text" id="nickname" name="nickname" required>
+        </div>
+
+        <button type="submit">Войти в Дом</button>
+    </form>
+
+    {% if error %}
+        <p style="color: red; margin-top: 16px;">{{ error }}</p>
+    {% endif %}
+
+    <p><a href="/delegation/start">Я создаю делегацию впервые</a></p>
+</body>
+</html>

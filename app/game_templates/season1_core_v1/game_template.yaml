@@ -1,0 +1,41 @@
+template_code: season1_core_v1
+name: "приСтолов / Сезон 1 / ядро"
+version: 1
+description: "Базовый шаблон для первой цифровой версии"
+
+default_team_size_min: 2
+default_team_size_max: 10
+
+modules:
+  map_influence: true
+  lord_right_of_move: true
+  embassy_circle: true
+  house_treasury: true
+  whispers_in_shadow: true
+  heraldic_progress: true
+
+session_rules:
+  acts_total: 4
+
+  supported_houses_min: 2
+  supported_houses_max: 12
+  recommended_houses: 4
+  simultaneous_houses_supported: 10
+
+  allow_role_overlap_in_small_team: true
+
+  unique_house_roles:
+    - lord_lady
+    - diplomat
+    - treasurer
+    - maester
+    - whisper_master
+
+  mass_roles:
+    - house_sworn
+
+content_strategy:
+  per_house_variation_required: true
+  per_role_variation_required: true
+  avoid_same_assignments_between_houses: true
+  assignment_selection_mode: "pool_random_unique"

@@ -1,0 +1,211 @@
+﻿{
+  "scenario": {
+    "code": "season1_full_run_v1",
+    "name": "Сезон 1 — полный тестовый прогон",
+    "description": "Полноценный тестовый сценарий для последовательного прогона комнаты IRON01 с реальными раундами и вопросами.",
+    "version": 1,
+    "status": "active",
+    "metadata": {
+      "room_code": "IRON01",
+      "purpose": "full_test_run",
+      "content_level": "playable_test"
+    }
+  },
+  "rounds": [
+    {
+      "round_code": "opening_briefing",
+      "title": "Открытие вечера",
+      "round_type": "intro",
+      "round_kind": "intro",
+      "order_no": 10,
+      "intro_text": "Ведущий открывает вечер, объявляет старт и собирает внимание всех Домов.",
+      "questions": [
+        {
+          "question_code": "opening_briefing_q1",
+          "sequence_no": 1,
+          "role_code": "lord_lady",
+          "title": "Открытие вечера",
+          "prompt": "Подтверди, что Дом готов к началу вечера и первому акту.",
+          "ui_template": "text",
+          "answer_mode": "text",
+          "auto_check": true,
+          "content": {
+            "time_limit_sec": 20,
+            "note": "Служебный стартовый шаг для ведущего и лордов."
+          }
+        }
+      ]
+    },
+    {
+      "round_code": "act1_recon_01",
+      "title": "Разведка",
+      "round_type": "host_round_series",
+      "round_kind": "host_round_series",
+      "order_no": 20,
+      "intro_text": "Лёгкий старт: мейстеры отвечают на разведывательные вопросы и входят в ритм игры.",
+      "questions": [
+        {"question_code":"act1_recon_01_q1","sequence_no":1,"role_code":"maester","title":"Разведка 1","prompt":"Какой город считается столицей Семи Королевств?","ui_template":"single_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Королевская Гавань"},{"code":"b","text":"Винтерфелл"},{"code":"c","text":"Старомест"},{"code":"d","text":"Драконий Камень"}],"correct_answer":"a"}},
+        {"question_code":"act1_recon_01_q2","sequence_no":2,"role_code":"maester","title":"Разведка 2","prompt":"Какой материал особенно ценится против белых ходоков?","ui_template":"single_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Серебро"},{"code":"b","text":"Драконье стекло"},{"code":"c","text":"Мрамор"},{"code":"d","text":"Янтарь"}],"correct_answer":"b"}},
+        {"question_code":"act1_recon_01_q3","sequence_no":3,"role_code":"maester","title":"Разведка 3","prompt":"Какой замок считается оплотом Севера?","ui_template":"single_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Орлиное Гнездо"},{"code":"b","text":"Кастерли Рок"},{"code":"c","text":"Винтерфелл"},{"code":"d","text":"Хайгарден"}],"correct_answer":"c"}},
+        {"question_code":"act1_recon_01_q4","sequence_no":4,"role_code":"maester","title":"Разведка 4","prompt":"Кто хранит знания и письма в Доме?","ui_template":"single_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Казначей"},{"code":"b","text":"Мейстер"},{"code":"c","text":"Дипломат"},{"code":"d","text":"Присяжный меч"}],"correct_answer":"b"}},
+        {"question_code":"act1_recon_01_q5","sequence_no":5,"role_code":"maester","title":"Разведка 5","prompt":"Какое море лежит к востоку от Вестероса?","ui_template":"single_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Закатное море"},{"code":"b","text":"Узкое море"},{"code":"c","text":"Нефритовое море"},{"code":"d","text":"Летнее море"}],"correct_answer":"b"}},
+        {"question_code":"act1_recon_01_q6","sequence_no":6,"role_code":"maester","title":"Разведка 6","prompt":"Какая птица чаще всего несёт письма между замками?","ui_template":"single_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Сокол"},{"code":"b","text":"Ворон"},{"code":"c","text":"Лебедь"},{"code":"d","text":"Чайка"}],"correct_answer":"b"}},
+        {"question_code":"act1_recon_01_q7","sequence_no":7,"role_code":"maester","title":"Разведка 7","prompt":"Как называется ледяная граница на Севере?","ui_template":"single_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Стена"},{"code":"b","text":"Предел"},{"code":"c","text":"Клык зимы"},{"code":"d","text":"Ледяной тракт"}],"correct_answer":"a"}},
+        {"question_code":"act1_recon_01_q8","sequence_no":8,"role_code":"maester","title":"Разведка 8","prompt":"Что лучше всего описывает задачу разведки в начале вечера?","ui_template":"single_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Сразу тратить все ресурсы"},{"code":"b","text":"Понять обстановку и собрать факты"},{"code":"c","text":"Закрыть окно дипломатии"},{"code":"d","text":"Начать дуэль без подготовки"}],"correct_answer":"b"}}
+      ]
+    },
+    {
+      "round_code": "act1_truth_lie_01",
+      "title": "Знамёна и слухи",
+      "round_type": "host_round_series",
+      "round_kind": "host_round_series",
+      "order_no": 30,
+      "intro_text": "Мастера над шёпотом разбирают слухи, ложь и искажения фактов.",
+      "questions": [
+        {"question_code":"act1_truth_lie_01_q1","sequence_no":1,"role_code":"whisper_master","title":"Слух 1","prompt":"Если слух слишком выгоден вашему Дому, его стоит перепроверить.","ui_template":"truth_lie","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":20,"statements":[{"code":"true","text":"Истина"},{"code":"false","text":"Ложь"}],"correct_answer":"true"}},
+        {"question_code":"act1_truth_lie_01_q2","sequence_no":2,"role_code":"whisper_master","title":"Слух 2","prompt":"Открытый союз почти всегда полезнее тайного соглашения.","ui_template":"truth_lie","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":20,"statements":[{"code":"true","text":"Истина"},{"code":"false","text":"Ложь"}],"correct_answer":"false"}},
+        {"question_code":"act1_truth_lie_01_q3","sequence_no":3,"role_code":"whisper_master","title":"Слух 3","prompt":"Источник информации важнее уверенного тона рассказчика.","ui_template":"truth_lie","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":20,"statements":[{"code":"true","text":"Истина"},{"code":"false","text":"Ложь"}],"correct_answer":"true"}},
+        {"question_code":"act1_truth_lie_01_q4","sequence_no":4,"role_code":"whisper_master","title":"Слух 4","prompt":"Чем громче спорят за столом, тем точнее информация.","ui_template":"truth_lie","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":20,"statements":[{"code":"true","text":"Истина"},{"code":"false","text":"Ложь"}],"correct_answer":"false"}},
+        {"question_code":"act1_truth_lie_01_q5","sequence_no":5,"role_code":"whisper_master","title":"Слух 5","prompt":"Слух от двух независимых источников обычно надёжнее.","ui_template":"truth_lie","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":20,"statements":[{"code":"true","text":"Истина"},{"code":"false","text":"Ложь"}],"correct_answer":"true"}},
+        {"question_code":"act1_truth_lie_01_q6","sequence_no":6,"role_code":"whisper_master","title":"Слух 6","prompt":"Выгодно делиться всеми разведданными сразу, чтобы казаться честным союзником.","ui_template":"truth_lie","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":20,"statements":[{"code":"true","text":"Истина"},{"code":"false","text":"Ложь"}],"correct_answer":"false"}},
+        {"question_code":"act1_truth_lie_01_q7","sequence_no":7,"role_code":"whisper_master","title":"Слух 7","prompt":"Молчание за столом тоже может быть важным сигналом.","ui_template":"truth_lie","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":20,"statements":[{"code":"true","text":"Истина"},{"code":"false","text":"Ложь"}],"correct_answer":"true"}},
+        {"question_code":"act1_truth_lie_01_q8","sequence_no":8,"role_code":"whisper_master","title":"Слух 8","prompt":"Если слух знают все, он точно бесполезен.","ui_template":"truth_lie","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":20,"statements":[{"code":"true","text":"Истина"},{"code":"false","text":"Ложь"}],"correct_answer":"false"}},
+        {"question_code":"act1_truth_lie_01_q9","sequence_no":9,"role_code":"whisper_master","title":"Слух 9","prompt":"Хороший шёпот работает не только фактами, но и таймингом.","ui_template":"truth_lie","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":20,"statements":[{"code":"true","text":"Истина"},{"code":"false","text":"Ложь"}],"correct_answer":"true"}},
+        {"question_code":"act1_truth_lie_01_q10","sequence_no":10,"role_code":"whisper_master","title":"Слух 10","prompt":"Лучший шпион всегда говорит первым и громче всех.","ui_template":"truth_lie","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":20,"statements":[{"code":"true","text":"Истина"},{"code":"false","text":"Ложь"}],"correct_answer":"false"}}
+      ]
+    },
+    {
+      "round_code": "diplomacy_window_01",
+      "title": "Первое дипломатическое окно",
+      "round_type": "diplomacy",
+      "round_kind": "diplomacy",
+      "order_no": 40,
+      "intro_text": "Дипломаты получают первое окно переговоров и обмена обещаниями.",
+      "questions": [
+        {
+          "question_code": "diplomacy_window_01_q1",
+          "sequence_no": 1,
+          "role_code": "diplomat",
+          "title": "Первое дипломатическое окно",
+          "prompt": "Подтверди открытие переговоров и готовность дипломатов начать обмен предложениями.",
+          "ui_template": "text",
+          "answer_mode": "text",
+          "auto_check": true,
+          "content": {
+            "time_limit_sec": 20,
+            "note": "Служебный шаг для входа в дипломатию."
+          }
+        }
+      ]
+    },
+    {
+      "round_code": "act2_feast_01",
+      "title": "Пир приСтолов",
+      "round_type": "host_round_series",
+      "round_kind": "host_round_series",
+      "order_no": 50,
+      "intro_text": "Барный и атмосферный раунд: казначеи выбирают лучшее решение на пиру.",
+      "questions": [
+        {"question_code":"act2_feast_01_q1","sequence_no":1,"role_code":"treasurer","title":"Пир 1","prompt":"Какой напиток чаще всего ассоциируется с богатством и южным вкусом?","ui_template":"single_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Арборское золотое"},{"code":"b","text":"Талая вода"},{"code":"c","text":"Северный настой"},{"code":"d","text":"Козье молоко"}],"correct_answer":"a"}},
+        {"question_code":"act2_feast_01_q2","sequence_no":2,"role_code":"treasurer","title":"Пир 2","prompt":"На шумном пиру что полезнее казначею?","ui_template":"resource_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Считать, кто кому обязан"},{"code":"b","text":"Игнорировать обмен подарками"},{"code":"c","text":"Уйти от стола первым"},{"code":"d","text":"Доверить всё слухам"}],"correct_answer":"a"}},
+        {"question_code":"act2_feast_01_q3","sequence_no":3,"role_code":"treasurer","title":"Пир 3","prompt":"Какой подарок на пиру выглядит щедро, но стоит дешевле громких обещаний?","ui_template":"single_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Редкая специя"},{"code":"b","text":"Половина замка"},{"code":"c","text":"Титул короля"},{"code":"d","text":"Чужой флот"}],"correct_answer":"a"}},
+        {"question_code":"act2_feast_01_q4","sequence_no":4,"role_code":"treasurer","title":"Пир 4","prompt":"Музыканты просят оплату. Что выберет расчётливый Дом?","ui_template":"single_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Платить после выступления"},{"code":"b","text":"Пообещать всё и сразу"},{"code":"c","text":"Отдать казну полностью"},{"code":"d","text":"Спрятаться под столом"}],"correct_answer":"a"}},
+        {"question_code":"act2_feast_01_q5","sequence_no":5,"role_code":"treasurer","title":"Пир 5","prompt":"Какой подход лучше всего подходит Дому на богатом пиру?","ui_template":"resource_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Показывать роскошь без остатка"},{"code":"b","text":"Тратить так, чтобы усилить влияние"},{"code":"c","text":"Ничего не замечать"},{"code":"d","text":"Сразу требовать долги силой"}],"correct_answer":"b"}},
+        {"question_code":"act2_feast_01_q6","sequence_no":6,"role_code":"treasurer","title":"Пир 6","prompt":"Если пир шумный и союзники рядом, что особенно важно сохранить?","ui_template":"single_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Только еду"},{"code":"b","text":"Холодную голову и счёт выгод"},{"code":"c","text":"Молчание весь вечер"},{"code":"d","text":"Случайные обещания"}],"correct_answer":"b"}}
+      ]
+    },
+    {
+      "round_code": "act2_intrigue_01",
+      "title": "Заговоры",
+      "round_type": "host_round_series",
+      "round_kind": "host_round_series",
+      "order_no": 60,
+      "intro_text": "Ситуационный раунд про интриги, давление и тайные решения.",
+      "questions": [
+        {"question_code":"act2_intrigue_01_q1","sequence_no":1,"role_code":"whisper_master","title":"Заговор 1","prompt":"Твой Дом знает о тайной встрече двух соперников. Какой первый ход сильнее?","ui_template":"strategic_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Сразу публично обвинить обоих"},{"code":"b","text":"Сначала подтвердить детали и только потом использовать слух"},{"code":"c","text":"Забыть услышанное"},{"code":"d","text":"Передать слух случайному дому"}],"correct_answer":"b"}},
+        {"question_code":"act2_intrigue_01_q2","sequence_no":2,"role_code":"whisper_master","title":"Заговор 2","prompt":"Союзник просит раскрыть источник информации. Что обычно выгоднее?","ui_template":"strategic_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Никогда ничего не отвечать"},{"code":"b","text":"Раскрыть всех информаторов"},{"code":"c","text":"Поделиться выводом, не ломая канал"},{"code":"d","text":"Попросить золото за одно имя"}],"correct_answer":"c"}},
+        {"question_code":"act2_intrigue_01_q3","sequence_no":3,"role_code":"whisper_master","title":"Заговор 3","prompt":"Враг хочет спровоцировать панику. Что делает сильный мастер над шёпотом?","ui_template":"strategic_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Усиливает панику внутри своего стола"},{"code":"b","text":"Перехватывает повестку и задаёт свою версию событий"},{"code":"c","text":"Покидает переговоры"},{"code":"d","text":"Сжигает все записи"}],"correct_answer":"b"}},
+        {"question_code":"act2_intrigue_01_q4","sequence_no":4,"role_code":"whisper_master","title":"Заговор 4","prompt":"Если у Дома мало фактов, но нужен эффект, что лучше?","ui_template":"strategic_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Строить игру на вопросах, а не на прямой лжи"},{"code":"b","text":"Придумать любой удобный миф"},{"code":"c","text":"Сразу признать поражение"},{"code":"d","text":"Публично отказаться от интриг"}],"correct_answer":"a"}},
+        {"question_code":"act2_intrigue_01_q5","sequence_no":5,"role_code":"whisper_master","title":"Заговор 5","prompt":"Когда лучше всего запускать сильный слух?","ui_template":"strategic_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Когда стол готов его подхватить и использовать"},{"code":"b","text":"Сразу после старта вечера без повода"},{"code":"c","text":"После финала"},{"code":"d","text":"Только когда все расходятся"}],"correct_answer":"a"}}
+      ]
+    },
+    {
+      "round_code": "diplomacy_window_02",
+      "title": "Второе дипломатическое окно",
+      "round_type": "diplomacy",
+      "round_kind": "diplomacy",
+      "order_no": 70,
+      "intro_text": "Второе окно дипломатии: договоры уточняются, долги вспоминаются, позиции перед финалом закрепляются.",
+      "questions": [
+        {
+          "question_code": "diplomacy_window_02_q1",
+          "sequence_no": 1,
+          "role_code": "diplomat",
+          "title": "Второе дипломатическое окно",
+          "prompt": "Подтверди запуск финального окна переговоров перед судом Домов.",
+          "ui_template": "text",
+          "answer_mode": "text",
+          "auto_check": true,
+          "content": {
+            "time_limit_sec": 20,
+            "note": "Служебный шаг второго дипломатического окна."
+          }
+        }
+      ]
+    },
+    {
+      "round_code": "court_of_houses_01",
+      "title": "Суд Домов",
+      "round_type": "host_round_series",
+      "round_kind": "host_round_series",
+      "order_no": 80,
+      "intro_text": "Публичный раунд: лорды отвечают за решения Дома и выбирают, какой путь выглядит сильнее перед залом.",
+      "questions": [
+        {"question_code":"court_of_houses_01_q1","sequence_no":1,"role_code":"lord_lady","title":"Суд 1","prompt":"Что сильнее укрепляет позицию Дома на суде?","ui_template":"single_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Чёткая позиция и готовность отвечать за последствия"},{"code":"b","text":"Случайные обвинения без фактов"},{"code":"c","text":"Молчание до конца"},{"code":"d","text":"Отказ говорить с залом"}],"correct_answer":"a"}},
+        {"question_code":"court_of_houses_01_q2","sequence_no":2,"role_code":"lord_lady","title":"Суд 2","prompt":"Если Дом обвиняют в двойной игре, лучший ответ — это:","ui_template":"single_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Показать мотив и перевести удар в стратегию"},{"code":"b","text":"Уйти из зала"},{"code":"c","text":"Обвинить всех подряд"},{"code":"d","text":"Отказаться от любого решения"}],"correct_answer":"a"}},
+        {"question_code":"court_of_houses_01_q3","sequence_no":3,"role_code":"lord_lady","title":"Суд 3","prompt":"Что опаснее всего на публичном суде?","ui_template":"single_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Слишком ясная речь"},{"code":"b","text":"Внутреннее противоречие позиции"},{"code":"c","text":"Короткий ответ"},{"code":"d","text":"Спокойный тон"}],"correct_answer":"b"}},
+        {"question_code":"court_of_houses_01_q4","sequence_no":4,"role_code":"lord_lady","title":"Суд 4","prompt":"Если Дом слаб по ресурсам, но силён по влиянию, что выгоднее показать?","ui_template":"single_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Сеть союзов и политическую опору"},{"code":"b","text":"Притвориться богатейшим Домом"},{"code":"c","text":"Скрыть всех союзников"},{"code":"d","text":"Не участвовать в суде"}],"correct_answer":"a"}},
+        {"question_code":"court_of_houses_01_q5","sequence_no":5,"role_code":"lord_lady","title":"Суд 5","prompt":"Какая черта лидера особенно ценится в финале открытого спора?","ui_template":"single_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Последовательность"},{"code":"b","text":"Резкая смена мнения каждые полминуты"},{"code":"c","text":"Полное отсутствие решения"},{"code":"d","text":"Пренебрежение к союзникам"}],"correct_answer":"a"}}
+      ]
+    },
+    {
+      "round_code": "final_battle_01",
+      "title": "Великая Битва",
+      "round_type": "host_round_series",
+      "round_kind": "host_round_series",
+      "order_no": 90,
+      "intro_text": "Сложный финальный блок: лорды принимают тяжёлые решения под давлением.",
+      "questions": [
+        {"question_code":"final_battle_01_q1","sequence_no":1,"role_code":"lord_lady","title":"Битва 1","prompt":"У тебя один сильный ход на финал. Что обычно ценнее?","ui_template":"strategic_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Ход, который совпадает с общей стратегией Дома"},{"code":"b","text":"Самый шумный ход без плана"},{"code":"c","text":"Полный отказ от инициативы"},{"code":"d","text":"Случайный выбор из эмоций"}],"correct_answer":"a"}},
+        {"question_code":"final_battle_01_q2","sequence_no":2,"role_code":"lord_lady","title":"Битва 2","prompt":"Союзник просит рискованный манёвр в финале. Лучший критерий решения?","ui_template":"strategic_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Совпадает ли манёвр с выгодой вашего Дома"},{"code":"b","text":"Насколько громко его просили"},{"code":"c","text":"Бросок монеты"},{"code":"d","text":"Только красота жеста"}],"correct_answer":"a"}},
+        {"question_code":"final_battle_01_q3","sequence_no":3,"role_code":"lord_lady","title":"Битва 3","prompt":"Если противник готовит решающий удар, что первым делом делает сильный лидер?","ui_template":"strategic_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Уточняет слабое место и готовит ответ"},{"code":"b","text":"Паникует на весь зал"},{"code":"c","text":"Распускает стол"},{"code":"d","text":"Полностью меняет роль"}],"correct_answer":"a"}},
+        {"question_code":"final_battle_01_q4","sequence_no":4,"role_code":"lord_lady","title":"Битва 4","prompt":"Когда цена ошибки особенно высока, что важнее?","ui_template":"strategic_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Темп и дисциплина исполнения"},{"code":"b","text":"Красивый импульс без команды"},{"code":"c","text":"Мгновенный отказ от плана"},{"code":"d","text":"Надежда на случай"}],"correct_answer":"a"}},
+        {"question_code":"final_battle_01_q5","sequence_no":5,"role_code":"lord_lady","title":"Битва 5","prompt":"Что чаще всего приносит победу в великой битве Домов?","ui_template":"strategic_choice","answer_mode":"single_choice","auto_check":true,"content":{"time_limit_sec":30,"options":[{"code":"a","text":"Согласованность людей, информации и решения"},{"code":"b","text":"Один громкий тост"},{"code":"c","text":"Полное отсутствие риска"},{"code":"d","text":"Только удача без подготовки"}],"correct_answer":"a"}}
+      ]
+    },
+    {
+      "round_code": "final_results",
+      "title": "Итоги вечера",
+      "round_type": "final",
+      "round_kind": "final",
+      "order_no": 100,
+      "intro_text": "Вечер завершён: ведущий фиксирует итоги, а Дома подводят финальные результаты.",
+      "questions": [
+        {
+          "question_code": "final_results_q1",
+          "sequence_no": 1,
+          "role_code": "lord_lady",
+          "title": "Итоги вечера",
+          "prompt": "Подтверди завершение вечера и готовность Дома к объявлению итогов.",
+          "ui_template": "text",
+          "answer_mode": "text",
+          "auto_check": true,
+          "content": {
+            "time_limit_sec": 15,
+            "note": "Финальный служебный шаг сценария."
+          }
+        }
+      ]
+    }
+  ]
+}

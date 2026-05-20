@@ -1,0 +1,20 @@
+houses:
+  - house_key: wolf
+    name: "Дом Волка"
+    theme_tags: ["сила", "стая", "напор"]
+    content_bias:
+      diplomat: ["conflict", "pressure", "territory"]
+      maester: ["chronicle", "oath", "chain_of_events"]
+      whisper_master: ["betrayal", "fear", "rumor"]
+      treasurer: ["supply", "scarcity"]
+      lord_lady: ["dominance", "risk"]
+
+  - house_key: tower
+    name: "Дом Башни"
+    theme_tags: ["порядок", "высота", "надзор"]
+    content_bias:
+      diplomat: ["protocol", "access", "gate"]
+      maester: ["archive", "structure", "evidence"]
+      whisper_master: ["surveillance", "leak"]
+      treasurer: ["fortification", "reserve"]
+      lord_lady: ["authority", "stability"]

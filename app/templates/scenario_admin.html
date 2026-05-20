@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Управление сценариями</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #171717;
+            --panel: #232323;
+            --panel-2: #2d2d2d;
+            --border: #3f3f3f;
+            --text: #f3f3f3;
+            --muted: #b8b8b8;
+            --accent: #e2b24b;
+            --danger: #e06c75;
+            --ok: #7bd88f;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Georgia, "Times New Roman", serif;
+            background: linear-gradient(180deg, #111111 0%, #1c1c1c 100%);
+            color: var(--text);
+        }
+
+        .page {
+            width: min(1180px, calc(100% - 32px));
+            margin: 32px auto 56px;
+        }
+
+        h1 {
+            margin: 0 0 24px;
+            font-size: 34px;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: rgba(35, 35, 35, 0.96);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 18px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.22);
+        }
+
+        .card h2 {
+            margin: 0 0 14px;
+            font-size: 22px;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        button {
+            background: var(--accent);
+            color: #1a1a1a;
+            border: 0;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        button:hover {
+            filter: brightness(1.06);
+        }
+
+        label {
+            display: block;
+            margin: 10px 0 6px;
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            background: var(--panel-2);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 14px;
+        }
+
+        textarea {
+            min-height: 260px;
+            resize: vertical;
+            font-family: Consolas, "Courier New", monospace;
+            line-height: 1.45;
+        }
+
+        pre {
+            margin: 12px 0 0;
+            background: #121212;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            overflow: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            min-height: 72px;
+        }
+
+        .scenario-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 12px;
+        }
+
+        .scenario-item {
+            background: #1a1a1a;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px;
+        }
+
+        .scenario-item .code {
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 6px;
+        }
+
+        .scenario-item .name {
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .scenario-meta {
+            display: grid;
+            gap: 4px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .error {
+            color: var(--danger);
+        }
+
+        .ok {
+            color: var(--ok);
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <h1>Управление сценариями</h1>
+
+        <div class="layout">
+            <section class="card">
+                <h2>Список сценариев</h2>
+                <div class="toolbar">
+                    <button type="button" onclick="loadScenarios()">Обновить список сценариев</button>
+                </div>
+                <div id="scenariosList" class="scenario-list">
+                    <div class="muted">Загрузка сценариев...</div>
+                </div>
+            </section>
+
+            <section class="card">
+                <h2>Применить сценарий к игре</h2>
+
+                <label for="gameRoomCode">room_code</label>
+                <input id="gameRoomCode" type="text" placeholder="Например: IRON01">
+
+                <label for="gameScenarioCode">scenario_code</label>
+                <input id="gameScenarioCode" list="scenarioCodesList" type="text" placeholder="Например: season1_bar_pilot">
+                <datalist id="scenarioCodesList"></datalist>
+
+                <label for="gameScenarioApplyMode">Режим применения</label>
+                <select id="gameScenarioApplyMode">
+                    <option value="replace" selected>replace</option>
+                    <option value="merge">merge</option>
+                    <option value="create">create</option>
+                </select>
+
+                <div class="toolbar" style="margin-top: 12px;">
+                    <button type="button" onclick="loadGameScenario()">Показать сценарий игры</button>
+                    <button type="button" onclick="applyScenarioToGame()">Применить сценарий к игре</button>
+                </div>
+
+                <pre id="gameScenarioResult">Ответ backend появится здесь</pre>
+            </section>
+
+            <section class="card">
+                <h2>Импорт сценария</h2>
+
+                <label for="scenarioImportMode">Режим импорта</label>
+                <select id="scenarioImportMode">
+                    <option value="create" selected>create</option>
+                    <option value="replace">replace</option>
+                    <option value="merge">merge</option>
+                </select>
+
+                <label for="scenarioImportJson">JSON сценария</label>
+                <textarea id="scenarioImportJson" placeholder='{
+  "scenario": {
+    "code": "season1_bar_pilot",
+    "name": "Season 1 Bar Pilot",
+    "version": 1,
+    "status": "active"
+  },
+  "rounds": []
+}'></textarea>
+
+                <div class="toolbar" style="margin-top: 12px;">
+                    <button type="button" onclick="submitScenarioImport()">Импортировать сценарий</button>
+                </div>
+
+                <pre id="scenarioImportResult">Ответ backend появится здесь</pre>
+            </section>
+
+            <section class="card">
+                <h2>Импорт раунда</h2>
+
+                <label for="roundScenarioCode">scenario_code</label>
+                <input id="roundScenarioCode" type="text" placeholder="Например: season1_bar_pilot">
+
+                <label for="roundImportMode">Режим импорта</label>
+                <select id="roundImportMode">
+                    <option value="merge" selected>merge</option>
+                    <option value="create">create</option>
+                    <option value="replace">replace</option>
+                </select>
+
+                <label for="roundImportJson">JSON раунда</label>
+                <textarea id="roundImportJson" placeholder='{
+  "round_code": "act1_truth_lie_01",
+  "title": "Правда или ложь",
+  "round_type": "host_round_series",
+  "order_no": 1,
+  "questions": []
+}'></textarea>
+
+                <div class="toolbar" style="margin-top: 12px;">
+                    <button type="button" onclick="submitRoundImport()">Импортировать раунд</button>
+                </div>
+
+                <pre id="roundImportResult">Ответ backend появится здесь</pre>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        function setPre(id, value) {
+            const node = document.getElementById(id);
+            if (!node) return;
+            node.textContent = typeof value === "string" ? value : JSON.stringify(value, null, 2);
+        }
+
+        async function loadScenarios() {
+            const root = document.getElementById("scenariosList");
+            const datalist = document.getElementById("scenarioCodesList");
+            if (!root) return;
+
+            root.innerHTML = '<div class="muted">Загрузка сценариев...</div>';
+
+            try {
+                const res = await fetch("/dev/scenarios");
+                const data = await res.json();
+
+                if (!data?.ok) {
+                    root.innerHTML = `<div class="error">${data?.message || "Не удалось загрузить сценарии"}</div>`;
+                    return;
+                }
+
+                const scenarios = data?.scenarios || [];
+                if (datalist) {
+                    datalist.innerHTML = scenarios.map(item => `<option value="${item.code || ""}"></option>`).join("");
+                }
+
+                if (!scenarios.length) {
+                    root.innerHTML = '<div class="muted">Сценарии пока не загружены</div>';
+                    return;
+                }
+
+                root.innerHTML = scenarios.map(item => `
+                    <div class="scenario-item">
+                        <div class="code">${item.code || "—"}</div>
+                        <div class="name">${item.name || "Без названия"}</div>
+                        <div class="scenario-meta">
+                            <div>version: ${item.version ?? "—"}</div>
+                            <div>status: ${item.status ?? "—"}</div>
+                            <div>rounds: ${item.rounds_count ?? 0}</div>
+                            <div>questions: ${item.questions_count ?? 0}</div>
+                        </div>
+                    </div>
+                `).join("");
+            } catch (e) {
+                root.innerHTML = `<div class="error">Ошибка загрузки сценариев: ${e}</div>`;
+            }
+        }
+
+        async function loadGameScenario() {
+            const roomCode = document.getElementById("gameRoomCode")?.value?.trim();
+            if (!roomCode) {
+                setPre("gameScenarioResult", "Заполни room_code");
+                return;
+            }
+
+            try {
+                const res = await fetch(`/dev/games/${encodeURIComponent(roomCode)}/scenario`);
+                const data = await res.json();
+                setPre("gameScenarioResult", data);
+            } catch (e) {
+                setPre("gameScenarioResult", `Ошибка загрузки сценария игры: ${e}`);
+            }
+        }
+
+        async function applyScenarioToGame() {
+            const roomCode = document.getElementById("gameRoomCode")?.value?.trim();
+            const scenarioCode = document.getElementById("gameScenarioCode")?.value?.trim();
+            const applyMode = document.getElementById("gameScenarioApplyMode")?.value || "replace";
+
+            if (!roomCode) {
+                setPre("gameScenarioResult", "Заполни room_code");
+                return;
+            }
+
+            if (!scenarioCode) {
+                setPre("gameScenarioResult", "Заполни scenario_code");
+                return;
+            }
+
+            try {
+                const res = await fetch(`/dev/games/${encodeURIComponent(roomCode)}/scenario/apply`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        scenario_code: scenarioCode,
+                        apply_mode: applyMode
+                    })
+                });
+                const data = await res.json();
+                setPre("gameScenarioResult", data);
+
+                if (data?.ok) {
+                    loadScenarios();
+                }
+            } catch (e) {
+                setPre("gameScenarioResult", `Ошибка применения сценария: ${e}`);
+            }
+        }
+
+        async function submitScenarioImport() {
+            const textarea = document.getElementById("scenarioImportJson");
+            const mode = document.getElementById("scenarioImportMode")?.value || "create";
+
+            if (!textarea) return;
+
+            let payload;
+            try {
+                payload = JSON.parse(textarea.value);
+            } catch (e) {
+                setPre("scenarioImportResult", `Невалидный JSON: ${e}`);
+                return;
+            }
+
+            if (!payload.import_mode) {
+                payload.import_mode = mode;
+            }
+
+            try {
+                const res = await fetch("/dev/scenarios/import", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                setPre("scenarioImportResult", data);
+
+                if (data?.ok) {
+                    loadScenarios();
+                }
+            } catch (e) {
+                setPre("scenarioImportResult", `Ошибка импорта сценария: ${e}`);
+            }
+        }
+
+        async function submitRoundImport() {
+            const scenarioCode = document.getElementById("roundScenarioCode")?.value?.trim();
+            const textarea = document.getElementById("roundImportJson");
+            const mode = document.getElementById("roundImportMode")?.value || "merge";
+
+            if (!scenarioCode) {
+                setPre("roundImportResult", "Заполни scenario_code");
+                return;
+            }
+
+            if (!textarea) return;
+
+            let payload;
+            try {
+                payload = JSON.parse(textarea.value);
+            } catch (e) {
+                setPre("roundImportResult", `Невалидный JSON: ${e}`);
+                return;
+            }
+
+            if (!payload.import_mode) {
+                payload.import_mode = mode;
+            }
+
+            try {
+                const res = await fetch(`/dev/scenarios/${encodeURIComponent(scenarioCode)}/import-round`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                setPre("roundImportResult", data);
+
+                if (data?.ok) {
+                    loadScenarios();
+                }
+            } catch (e) {
+                setPre("roundImportResult", `Ошибка импорта раунда: ${e}`);
+            }
+        }
+
+        loadScenarios();
+    </script>
+</body>
+</html>

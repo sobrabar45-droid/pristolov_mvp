@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>приСтолов — Game Master</title>
+
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel: #1e293b;
+            --panel-soft: rgba(255,255,255,0.06);
+            --border: #334155;
+            --text: #ffffff;
+            --muted: rgba(255,255,255,0.72);
+            --blue: #38bdf8;
+            --slate: #94a3b8;
+            --gold: #fbbf24;
+            --danger: #fb7185;
+            --ok: #34d399;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: Arial, sans-serif;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 320px 1fr 420px;
+            grid-template-rows: 150px 1fr;
+            height: 100vh;
+        }
+
+        .header {
+            grid-column: 1 / 4;
+            padding: 20px 22px;
+            background: var(--panel);
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .header-left h1 {
+            margin: 0 0 8px 0;
+            font-size: 28px;
+            line-height: 1.1;
+        }
+
+        .phase-line {
+            font-size: 22px;
+            color: var(--muted);
+        }
+
+        .header-stats {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .stat-card {
+            min-width: 240px;
+            background: var(--panel-soft);
+            border-radius: 12px;
+            padding: 12px 14px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            line-height: 1.15;
+        }
+
+        .houses {
+            padding: 18px;
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+        }
+
+        .center {
+            padding: 22px;
+            overflow-y: auto;
+        }
+
+        .right {
+            padding: 18px;
+            border-left: 1px solid var(--border);
+            overflow-y: auto;
+        }
+
+        .main-phase {
+            font-size: 56px;
+            font-weight: 900;
+            line-height: 1;
+            margin: 0 0 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            letter-spacing: 1px;
+            transition: all 0.25s ease;
+            text-shadow: 0 0 20px rgba(56, 189, 248, 0.18);
+        }
+
+        .main-phase::before {
+            content: "⚡";
+            display: inline-block;
+        }
+
+        .main-phase.diplomacy {
+            color: var(--blue);
+            animation: pulse 2s infinite;
+        }
+
+        .main-phase.diplomacy::before {
+            color: var(--blue);
+        }
+
+        .main-phase.intermission {
+            color: var(--slate);
+        }
+
+        .main-phase.intermission::before {
+            color: var(--slate);
+        }
+
+        .main-phase.market {
+            color: var(--gold);
+        }
+
+        .main-phase.market::before {
+            color: var(--gold);
+        }
+
+        .main-phase.voting,
+        .main-phase.court {
+            color: #fda4af;
+        }
+
+        .main-phase.voting::before,
+        .main-phase.court::before {
+            color: #fda4af;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.74; }
+            50% { opacity: 1; }
+            100% { opacity: 0.74; }
+        }
+
+        .phase-meta {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+            align-items: center;
+        }
+
+        .timer {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--muted);
+        }
+
+        .timer.warning {
+            color: var(--gold);
+        }
+
+        .timer.danger {
+            color: var(--danger);
+        }
+
+        .pressure {
+            font-size: 18px;
+            color: var(--muted);
+            margin-bottom: 22px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin: 0 0 12px 0;
+        }
+
+        .card {
+            margin-bottom: 12px;
+            padding: 12px 14px;
+            background: var(--panel);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.04);
+            transition: background 0.2s ease, box-shadow 0.2s ease;
+            position: relative;
+        }
+
+        .card:hover {
+            background: #273449;
+        }
+
+        .card.closed {
+            opacity: 0.76;
+            border-left: 3px solid rgba(255,255,255,0.18);
+        }
+
+        .house {
+            margin-bottom: 10px;
+            padding: 12px;
+            background: var(--panel);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.04);
+        }
+
+        .house.leader-gold {
+            border-color: rgba(251, 191, 36, 0.72);
+            box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.14);
+        }
+
+        .house.leader-influence {
+            border-color: rgba(56, 189, 248, 0.72);
+            box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.14);
+        }
+
+        .house-badges {
+            font-size: 12px;
+            min-height: 16px;
+            margin-bottom: 4px;
+            color: var(--muted);
+        }
+
+        .house-name {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .house-main-row {
+            font-size: 16px;
+            margin-bottom: 8px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .house-resource-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .res-chip {
+            background: rgba(255,255,255,0.05);
+            border-radius: 999px;
+            padding: 4px 8px;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .status-pill {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            margin-top: 8px;
+            background: rgba(255,255,255,0.06);
+            color: var(--muted);
+        }
+
+        .status-pill.accepted {
+            color: var(--ok);
+        }
+
+        .status-pill.cancelled,
+        .status-pill.rejected {
+            color: var(--danger);
+        }
+
+        .right h3 {
+            font-size: 18px;
+            margin: 0 0 12px 0;
+        }
+
+        .subblock {
+            margin-top: 26px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="layout">
+
+    <div class="header">
+        <div class="header-top">
+            <div class="header-left">
+                <h1 id="round_title">Загрузка…</h1>
+                <div id="phases_line" class="phase-line">Нет активных фаз</div>
+            </div>
+
+            <div class="header-stats">
+                <div class="stat-card">
+                    <div class="stat-label">Лидер по золоту</div>
+                    <div class="stat-value" id="leader_gold">—</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-label">Лидер по влиянию</div>
+                    <div class="stat-value" id="leader_influence">—</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <aside class="houses" id="houses"></aside>
+
+    <main class="center">
+        <div id="main_phase" class="main-phase">—</div>
+
+        <div class="phase-meta">
+            <div id="phase_timer" class="timer"></div>
+        </div>
+
+        <div id="pressure" class="pressure"></div>
+
+        <div class="section-title">Раунд</div>
+        <div id="round_detail"></div>
+    </main>
+
+    <aside class="right">
+        <h3>Сделки</h3>
+        <div id="deals"></div>
+
+        <div class="subblock">
+            <h3>Недавние события</h3>
+            <div id="recent_closed"></div>
+        </div>
+    </aside>
+
+</div>
+
+<script>
+const ROOM_CODE = "{{ room_code }}";
+
+const PHASE_LABELS = {
+    intermission: "Антракт",
+    diplomacy: "Дипломатия",
+    host_round: "Раунд ведущего",
+    market: "Рынок",
+    voting: "Голосование",
+    court: "Суд Домов"
+};
+
+function phaseLabel(code) {
+    return PHASE_LABELS[code] || code || "—";
+}
+
+function getPhaseCode(phase) {
+    if (!phase) return null;
+    if (typeof phase === "string") return phase;
+    if (typeof phase === "object") return phase.phase_type || phase.code || null;
+    return null;
+}
+
+function getPhaseOpenedAt(phase) {
+    if (!phase || typeof phase !== "object") return null;
+    return phase.opened_at || null;
+}
+
+function pickMainPhase(activePhases) {
+    if (!Array.isArray(activePhases) || activePhases.length === 0) {
+        return { code: null, raw: null };
+    }
+
+    const preferred = activePhases.find(p => getPhaseCode(p) !== "intermission");
+    const chosen = preferred || activePhases[0];
+
+    return {
+        code: getPhaseCode(chosen),
+        raw: chosen
+    };
+}
+
+function asNumber(value, fallback = 0) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+}
+
+function getHouseName(h) {
+    return h?.name || h?.title || h?.house_name || h?.house_key || "Дом без названия";
+}
+
+function getResourceBag(h) {
+    const r = h?.resources || {};
+    return {
+        gold: asNumber(h?.gold ?? r.gold, 0),
+        influence: asNumber(h?.influence ?? r.influence, 0),
+
+        stone: asNumber(h?.stone ?? r.stone, 0),
+        wood: asNumber(h?.wood ?? r.wood, 0),
+        iron: asNumber(h?.iron ?? r.iron, 0),
+        scroll: asNumber(h?.scroll ?? h?.scrolls ?? r.scroll ?? r.scrolls, 0),
+        key: asNumber(h?.key ?? r.key, 0),
+        fire: asNumber(h?.fire ?? r.fire, 0)
+    };
+}
+
+function getDealFromHouse(d) {
+    return d?.from_house_name || d?.from_house?.name || d?.from_house || "Неизвестно";
+}
+
+function getDealToHouse(d) {
+    return d?.to_house_name || d?.to_house?.name || d?.to_house || "Неизвестно";
+}
+
+function formatStatus(status) {
+    if (!status) return "";
+    const map = {
+        accepted: "подтверждено",
+        rejected: "отклонено",
+        cancelled: "отменено",
+        countered: "встречное предложение",
+        pending: "ожидает подтверждения"
+    };
+    return map[status] || status;
+}
+
+function formatElapsedFromISO(isoString) {
+    if (!isoString) return "";
+    const ts = new Date(isoString).getTime();
+    if (!Number.isFinite(ts)) return "";
+
+    const diff = Math.max(0, Date.now() - ts);
+    const sec = Math.floor(diff / 1000);
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `идёт ${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+function formatCountdownToISO(isoString) {
+    if (!isoString) return null;
+    const ts = new Date(isoString).getTime();
+    if (!Number.isFinite(ts)) return null;
+
+    const diff = Math.max(0, ts - Date.now());
+    const sec = Math.floor(diff / 1000);
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+
+    return {
+        text: `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`,
+        totalSec: sec
+    };
+}
+
+function renderPhaseTimer(data, mainPhaseRaw) {
+    const timerEl = document.getElementById("phase_timer");
+    timerEl.className = "timer";
+
+    // 1) если backend в будущем начнёт отдавать точку конца фазы
+    const countdown = formatCountdownToISO(data?.phase_ends_at);
+    if (countdown) {
+        timerEl.innerText = countdown.text;
+        if (countdown.totalSec <= 30) timerEl.classList.add("danger");
+        else if (countdown.totalSec <= 90) timerEl.classList.add("warning");
+        return;
+    }
+
+    // 2) fallback — показываем, сколько фаза уже идёт
+    const openedAt = getPhaseOpenedAt(mainPhaseRaw);
+    const elapsed = formatElapsedFromISO(openedAt);
+
+    timerEl.innerText = elapsed || "";
+}
+
+function renderPressure(houses) {
+    const pressureEl = document.getElementById("pressure");
+
+    if (!Array.isArray(houses) || houses.length === 0) {
+        pressureEl.innerText = "";
+        return;
+    }
+
+    const prepared = houses.map(h => {
+        const res = getResourceBag(h);
+        return {
+            name: getHouseName(h),
+            influence: res.influence
+        };
+    }).sort((a, b) => b.influence - a.influence);
+
+    if (prepared.length === 0) {
+        pressureEl.innerText = "";
+        return;
+    }
+
+    const top = prepared[0];
+    const second = prepared[1];
+
+    if (!second) {
+        pressureEl.innerText = `Политический вес: ${top.name}`;
+        return;
+    }
+
+    const diff = top.influence - second.influence;
+
+    if (diff >= 5) {
+        pressureEl.innerText = `Политическое давление: ${top.name} заметно отрывается`;
+    } else if (diff >= 2) {
+        pressureEl.innerText = `Политическое давление: лидирует ${top.name}`;
+    } else if (diff === 0) {
+        pressureEl.innerText = `Политическое давление: вершина поделена`;
+    } else {
+        pressureEl.innerText = `Политическое давление: борьба обостряется`;
+    }
+}
+
+function renderLeaders(houses) {
+    const goldEl = document.getElementById("leader_gold");
+    const influenceEl = document.getElementById("leader_influence");
+
+    if (!Array.isArray(houses) || houses.length === 0) {
+        goldEl.innerText = "—";
+        influenceEl.innerText = "—";
+        return { maxGold: 0, maxInfluence: 0 };
+    }
+
+    let maxGold = -1;
+    let maxInfluence = -1;
+
+    houses.forEach(h => {
+        const res = getResourceBag(h);
+        if (res.gold > maxGold) maxGold = res.gold;
+        if (res.influence > maxInfluence) maxInfluence = res.influence;
+    });
+
+    const goldLeaders = houses
+        .filter(h => getResourceBag(h).gold === maxGold)
+        .map(getHouseName);
+
+    const influenceLeaders = houses
+        .filter(h => getResourceBag(h).influence === maxInfluence)
+        .map(getHouseName);
+
+    goldEl.innerText = goldLeaders.length ? `${goldLeaders.join(", ")} — ${maxGold}` : "—";
+    influenceEl.innerText = influenceLeaders.length ? `${influenceLeaders.join(", ")} — ${maxInfluence}` : "—";
+
+    return { maxGold, maxInfluence };
+}
+
+function renderHouses(houses, maxGold, maxInfluence) {
+    const housesEl = document.getElementById("houses");
+    housesEl.innerHTML = "";
+
+    (houses || []).forEach(h => {
+        const houseName = getHouseName(h);
+        const res = getResourceBag(h);
+
+        const isGoldLeader = res.gold === maxGold;
+        const isInfluenceLeader = res.influence === maxInfluence;
+
+        const div = document.createElement("div");
+        div.className = "house";
+        if (isGoldLeader) div.classList.add("leader-gold");
+        if (isInfluenceLeader) div.classList.add("leader-influence");
+
+        div.innerHTML = `
+            <div class="house-badges">
+                ${isGoldLeader ? "👑 золото" : ""}
+                ${isInfluenceLeader ? (isGoldLeader ? " • " : "") + "⚔ влияние" : ""}
+            </div>
+            <div class="house-name">${houseName}</div>
+            <div class="house-main-row">
+                <span>🪙 ${res.gold}</span>
+                <span>⚔ ${res.influence}</span>
+            </div>
+            <div class="house-resource-row">
+                <span class="res-chip">🪨 камень: ${res.stone}</span>
+                <span class="res-chip">🌲 дерево: ${res.wood}</span>
+                <span class="res-chip">⛓ железо: ${res.iron}</span>
+                <span class="res-chip">📜 свиток: ${res.scroll}</span>
+                <span class="res-chip">🗝 ключ: ${res.key}</span>
+                <span class="res-chip">🔥 огонь: ${res.fire}</span>
+            </div>
+        `;
+
+        housesEl.appendChild(div);
+    });
+}
+
+function renderRound(data) {
+    const roundTitleEl = document.getElementById("round_title");
+    const roundDetailEl = document.getElementById("round_detail");
+
+    roundTitleEl.innerText = data?.active_host_round?.title || "Нет активного раунда";
+    roundDetailEl.innerHTML = "";
+
+    if (data?.active_host_round) {
+        roundDetailEl.innerHTML = `
+            <div class="card">
+                <div><b>${data.active_host_round.title || "Без названия"}</b></div>
+                <div class="muted" style="margin-top: 6px;">Код: ${data.active_host_round.round_code || "—"}</div>
+                <div class="status-pill">${data.active_host_round.status || "—"}</div>
+            </div>
+        `;
+    } else {
+        roundDetailEl.innerHTML = `<div class="card">Активного раунда нет</div>`;
+    }
+}
+
+function renderDealsBlock(containerId, deals, isClosed = false) {
+    const root = document.getElementById(containerId);
+    root.innerHTML = "";
+
+    (deals || []).forEach(d => {
+        const fromHouse = getDealFromHouse(d);
+        const toHouse = getDealToHouse(d);
+        const offerText = d?.offer_text || "Без описания";
+        const statusText = formatStatus(d?.status);
+
+        const div = document.createElement("div");
+        div.className = isClosed ? "card closed" : "card";
+
+        div.innerHTML = `
+            <div><b>${fromHouse}</b> → <b>${toHouse}</b></div>
+            <div class="muted" style="margin-top: 6px;">${offerText}</div>
+            ${statusText ? `<div class="status-pill ${d.status || ""}">${statusText}</div>` : ""}
+        `;
+
+        root.appendChild(div);
+    });
+}
+
+async function loadData() {
+    try {
+        const res = await fetch(`/dev/game-master/${ROOM_CODE}/tv-state`);
+        const data = await res.json();
+        render(data);
+    } catch (err) {
+        console.error("TV load error:", err);
+    }
+}
+
+function render(data) {
+    const activePhases = Array.isArray(data?.active_phases) ? data.active_phases : [];
+    const phaseCodes = activePhases.map(getPhaseCode).filter(Boolean);
+
+    document.getElementById("phases_line").innerText =
+        phaseCodes.length ? phaseCodes.map(phaseLabel).join(" • ") : "Нет активных фаз";
+
+    const { code: mainPhaseCode, raw: mainPhaseRaw } = pickMainPhase(activePhases);
+
+    const mainPhaseEl = document.getElementById("main_phase");
+    mainPhaseEl.className = "main-phase";
+    if (mainPhaseCode) mainPhaseEl.classList.add(mainPhaseCode);
+    mainPhaseEl.innerText = phaseLabel(mainPhaseCode).toUpperCase();
+
+    renderPhaseTimer(data, mainPhaseRaw);
+    renderRound(data);
+
+    const houses = Array.isArray(data?.houses) ? data.houses : [];
+    renderPressure(houses);
+
+    const { maxGold, maxInfluence } = renderLeaders(houses);
+    renderHouses(houses, maxGold, maxInfluence);
+
+    renderDealsBlock("deals", [
+        ...(data?.deals?.pending || []),
+        ...(data?.deals?.countered || [])
+    ], false);
+
+    renderDealsBlock("recent_closed", data?.deals?.recent_closed || [], true);
+}
+
+setInterval(loadData, 3000);
+loadData();
+</script>
+
+</body>
+</html>

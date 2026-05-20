@@ -1,0 +1,31 @@
+pools:
+  - pool_code: treasurer_market_pool
+    role_code: treasurer
+    assignment_type: treasury_choice
+    selection_policy: weighted_random
+    tasks:
+      - task_code: tr_001
+        difficulty: 1
+        act_min: 1
+        act_max: 4
+        title: "Решение казны"
+        prompt: "Куда направить золото?"
+        ui_template: "resource_choice"
+        content:
+          options:
+            - code: buy_stone
+              text: "Купить камень"
+              cost:
+                gold: 1
+              reward:
+                stone: 1
+            - code: save_gold
+              text: "Сохранить золото ради большого хода позже"
+              reward:
+                reserve_mark: 1
+            - code: risk_trade
+              text: "Войти в рискованный обмен"
+              reward:
+                random_resource: 1
+              fail_effect:
+                gold: -1

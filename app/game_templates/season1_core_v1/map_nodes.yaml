@@ -1,0 +1,57 @@
+map_nodes:
+  - node_code: market_square
+    name: "Рыночная площадь"
+    node_type: resource_trade
+    visible_for_roles: ["diplomat", "treasurer"]
+    visible_for_houses: ["*"]
+    act_min: 1
+    act_max: 4
+    move_cost: 1
+    result_mode: "choice"
+    payload:
+      options:
+        - code: take_gold
+          text: "Получить 1 золото"
+          reward:
+            gold: 1
+        - code: exchange_scroll
+          text: "Обменять свиток на влияние"
+          cost:
+            scroll: 1
+          reward:
+            influence: 1
+
+  - node_code: hidden_archive
+    name: "Тайный архив"
+    node_type: knowledge
+    visible_for_roles: ["maester"]
+    visible_for_houses: ["*"]
+    act_min: 1
+    act_max: 4
+    move_cost: 1
+    result_mode: "assignment_from_pool"
+    payload:
+      pool_code: maester_archive_pool
+
+  - node_code: black_stair
+    name: "Чёрная лестница"
+    node_type: whisper
+    visible_for_roles: ["whisper_master"]
+    visible_for_houses: ["*"]
+    act_min: 1
+    act_max: 4
+    move_cost: 1
+    result_mode: "assignment_from_pool"
+    payload:
+      pool_code: whisper_black_stair_pool
+
+  - node_code: empty_lane
+    name: "Пустой переулок"
+    node_type: empty
+    visible_for_roles: ["diplomat", "whisper_master", "treasurer", "maester"]
+    visible_for_houses: ["*"]
+    act_min: 1
+    act_max: 4
+    move_cost: 1
+    result_mode: "empty"
+    payload: {}

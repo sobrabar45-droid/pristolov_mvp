@@ -1,0 +1,4179 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>приСтолов — TV Mode v7</title>
+  <style>
+    :root{
+      --bg:#090807;
+      --panel:rgba(28,22,17,.94);
+      --line:rgba(216,178,96,.22);
+      --gold:#ddb669;
+      --gold2:#f1d08a;
+      --text:#f4ebd8;
+      --muted:#b7ab99;
+      --muted2:#8f8577;
+      --silver:#c9ced7;
+      --bronze:#c98954;
+      --ok:#7fb18b;
+      --warn:#cfa05a;
+      --radius:24px;
+      --shadow:0 18px 44px rgba(0,0,0,.42);
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{
+      width:100%;height:100%;overflow:hidden;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(128,89,36,.18), transparent 28%),
+        radial-gradient(circle at 0% 100%, rgba(76,52,20,.12), transparent 26%),
+        linear-gradient(180deg,#13100d 0%,#090807 56%,#050403 100%);
+      color:var(--text);
+      font-family:"Segoe UI","Inter",Arial,sans-serif;
+    }
+
+    body::before{
+      content:"";
+      position:fixed;inset:0;pointer-events:none;
+      background:
+        linear-gradient(90deg, rgba(221,182,105,.03) 0%, transparent 12%, transparent 88%, rgba(221,182,105,.03) 100%),
+        radial-gradient(circle at 18% 12%, rgba(221,182,105,.05), transparent 20%),
+        radial-gradient(circle at 82% 18%, rgba(221,182,105,.04), transparent 22%);
+      opacity:.95;
+    }
+
+    .screen{
+      width:100vw;height:100vh;
+      display:grid;
+      grid-template-rows: 96px 1fr 58px;
+      gap:10px;
+      padding:10px 14px 10px;
+    }
+
+    .topbar{
+      display:grid;
+      grid-template-columns:1.18fr .94fr .94fr;
+      gap:10px;
+      min-height:0;
+    }
+
+    .panel{
+      position:relative;
+      min-width:0;min-height:0;overflow:hidden;
+      border-radius:var(--radius);
+      background:linear-gradient(180deg, rgba(32,25,19,.96) 0%, rgba(18,14,11,.98) 100%);
+      border:1px solid var(--line);
+      box-shadow:var(--shadow);
+    }
+
+    .panel::before{
+      content:"";
+      position:absolute;inset:0;pointer-events:none;
+      background:radial-gradient(circle at top center, rgba(221,182,105,.08), transparent 36%);
+      opacity:.75;
+    }
+
+    .topbox{
+      position:relative;z-index:1;
+      padding:12px 16px;
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      min-width:0;
+    }
+
+    .eyebrow{
+      color:var(--gold);
+      letter-spacing:.16em;
+      text-transform:uppercase;
+      font-size:11px;
+      font-weight:800;
+      margin-bottom:5px;
+    }
+    .title-main{
+      font-size:31px;
+      line-height:1.02;
+      font-weight:900;
+      text-shadow:0 0 22px rgba(221,182,105,.08);
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    .subline{
+      margin-top:6px;
+      color:var(--muted);
+      font-size:13px;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+
+    .phase-pill{
+      display:inline-flex;align-items:center;gap:10px;
+      background:rgba(221,182,105,.08);
+      border:1px solid rgba(221,182,105,.22);
+      color:var(--text);
+      border-radius:999px;
+      padding:10px 14px;
+      font-size:16px;
+      font-weight:800;
+      box-shadow:inset 0 0 18px rgba(221,182,105,.06);
+      max-width:100%;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    .phase-dot{
+      width:10px;height:10px;border-radius:50%;
+      background:var(--gold);
+      box-shadow:0 0 16px rgba(221,182,105,.8);
+      animation:pulseDot 2.6s ease-in-out infinite;
+      flex:0 0 auto;
+    }
+    @keyframes pulseDot{
+      0%,100%{transform:scale(1);opacity:1}
+      50%{transform:scale(1.22);opacity:.75}
+    }
+
+    .timer-wrap{width:100%;text-align:center}
+    .timer-label{
+      color:var(--muted);
+      font-size:11px;
+      letter-spacing:.16em;
+      text-transform:uppercase;
+      margin-bottom:6px;
+    }
+    .timer-value{
+      font-size:48px;
+      font-weight:900;
+      line-height:1;
+      color:var(--gold2);
+      text-shadow:0 0 18px rgba(221,182,105,.18);
+      font-variant-numeric:tabular-nums;
+    }
+    .timer-note{margin-top:5px;font-size:12px;color:var(--muted)}
+
+    .leader-row{
+      display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;
+    }
+    .leader-card{
+      position:relative;
+      padding:10px 12px;
+      border-radius:16px;
+      min-width:0;
+      background:rgba(255,255,255,.03);
+      border:1px solid rgba(221,182,105,.15);
+    }
+    .leader-label{
+      color:var(--muted);
+      font-size:10px;
+      text-transform:uppercase;
+      letter-spacing:.14em;
+      margin-bottom:6px;
+    }
+    .leader-house{
+      font-size:21px;
+      font-weight:900;
+      line-height:1.02;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    .leader-score{
+      margin-top:4px;
+      color:var(--gold);
+      font-size:15px;
+      font-weight:800;
+    }
+
+    .stage{position:relative;min-height:0;overflow:hidden}
+    .slides{position:relative;width:100%;height:100%}
+    .slide{
+      position:absolute;inset:0;
+      opacity:0;transform:translateX(22px) scale(.985);
+      transition:opacity .75s ease, transform .75s ease;
+      pointer-events:none;
+    }
+    .slide.active{
+      opacity:1;transform:translateX(0) scale(1);
+      pointer-events:auto;
+    }
+    .slide-inner{width:100%;height:100%;display:grid;gap:10px}
+
+    .slide-head{
+      display:flex;align-items:end;justify-content:space-between;gap:12px;
+      padding:4px 2px 0;
+    }
+    .slide-title{
+      font-size:15px;
+      font-weight:900;
+      letter-spacing:.16em;
+      color:var(--gold);
+      text-transform:uppercase;
+    }
+    .slide-sub{
+      color:var(--muted);
+      font-size:12px;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+
+    .question-layout{grid-template-rows:auto 1fr auto}
+    .balance-layout{grid-template-rows:auto 1fr}
+    .resources-layout{grid-template-rows:auto 1fr}
+    .politics-layout{grid-template-columns:1fr 1fr}
+    .phase-layout{grid-template-rows:1fr auto}
+
+    .question-hero{
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap:10px;
+      min-height:0;
+    }
+    .question-card{
+      position:relative;
+      border-radius:26px;
+      padding:22px 26px;
+      border:1px solid rgba(221,182,105,.18);
+      display:flex;
+      flex-direction:column;
+      background:
+        radial-gradient(circle at 0% 0%, rgba(221,182,105,.08), transparent 30%),
+        linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      overflow:hidden;
+    }
+    .question-card::after{
+      content:"";
+      position:absolute;inset:auto -40px -40px auto;
+      width:180px;height:180px;border-radius:50%;
+      background:radial-gradient(circle, rgba(221,182,105,.08), transparent 70%);
+      pointer-events:none;
+    }
+    .question-kicker{
+      color:var(--gold);
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      font-size:12px;
+      font-weight:900;
+      margin-bottom:14px;
+    }
+    .question-title{
+      font-size:44px;
+      line-height:1.02;
+      font-weight:900;
+      margin-bottom:14px;
+      text-shadow:0 0 20px rgba(221,182,105,.08);
+    }
+    .tv-question-media{
+      display:none;
+      margin:0 0 18px;
+      padding:10px;
+      border-radius:20px;
+      border:1px solid rgba(221,182,105,.18);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)),
+        radial-gradient(circle at top, rgba(221,182,105,.08), transparent 60%);
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.03);
+    }
+    .tv-question-media.is-visible{
+      display:block;
+    }
+    .tv-question-media img{
+      display:block;
+      width:100%;
+      max-height:40vh;
+      object-fit:contain;
+      border-radius:14px;
+      margin:0 auto;
+      background:rgba(9, 14, 22, .42);
+    }
+    .question-media-hint{
+      margin:0 0 14px;
+      padding:10px 14px;
+      border-radius:14px;
+      border:1px solid rgba(221,182,105,.16);
+      background:rgba(255,255,255,.04);
+      color:rgba(246,241,231,.82);
+      font-size:16px;
+      line-height:1.2;
+      font-weight:700;
+    }
+    .question-prompt{
+      font-size:30px;
+      line-height:1.18;
+      color:var(--text);
+      max-width:95%;
+    }
+    body.tv-long-question .question-title{
+      font-size:clamp(38px, 3.5vw, 64px);
+      line-height:1.02;
+    }
+    body.tv-very-long-question .question-title{
+      font-size:clamp(24px, 2.4vw, 42px);
+      line-height:1.02;
+    }
+    body.tv-long-question .question-prompt{
+      font-size:clamp(24px, 2.2vw, 28px);
+      line-height:1.14;
+    }
+    body.tv-very-long-question .question-prompt{
+      font-size:clamp(20px, 1.9vw, 24px);
+      line-height:1.12;
+    }
+    .question-full-text{
+      font-size:clamp(18px, 1.4vw, 24px);
+      line-height:1.22;
+      opacity:.92;
+      max-width:100%;
+      margin-bottom:14px;
+    }
+    .question-reveal{
+      display:grid;
+      gap:14px;
+    }
+    .question-reveal-kicker{
+      font-size:14px;
+      font-weight:900;
+      letter-spacing:.16em;
+      text-transform:uppercase;
+      color:var(--gold2);
+    }
+    .question-reveal-question{
+      font-size:18px;
+      line-height:1.24;
+      color:rgba(246,241,231,.84);
+    }
+    .question-reveal-answer{
+      font-size:clamp(32px, 3.2vw, 56px);
+      line-height:1.06;
+      font-weight:900;
+      color:var(--gold2);
+      text-shadow:0 0 24px rgba(221,182,105,.14);
+    }
+    .question-reveal-explanation{
+      font-size:clamp(18px, 1.5vw, 24px);
+      line-height:1.24;
+      color:rgba(246,241,231,.9);
+      padding:14px 16px;
+      border-radius:16px;
+      border:1px solid rgba(221,182,105,.14);
+      background:rgba(255,255,255,.035);
+    }
+    .question-option.correct{
+      border-color:rgba(127,177,139,.34);
+      background:rgba(127,177,139,.13);
+      box-shadow:0 0 0 1px rgba(127,177,139,.12);
+    }
+    body.tv-very-long-question .question-layout{
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
+    body.tv-very-long-question .question-hero{
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+      min-height:0;
+    }
+    body.tv-very-long-question .question-main{
+      width:100%;
+      max-width:none;
+      overflow:auto;
+      scrollbar-width:none;
+      -ms-overflow-style:none;
+    }
+    body.tv-very-long-question .question-main::-webkit-scrollbar{
+      width:0;
+      height:0;
+    }
+    body.tv-very-long-question .question-side{
+      width:100%;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      grid-template-rows:none;
+      gap:18px;
+    }
+    body.tv-question-fullscreen #slide-question .question-layout{
+      grid-template-rows:auto 1fr;
+    }
+    body.tv-question-fullscreen #slide-question .question-hero{
+      grid-template-columns:minmax(0, 1.45fr) minmax(280px, .55fr);
+      gap:18px;
+      min-height:0;
+      align-items:stretch;
+    }
+    body.tv-question-fullscreen #slide-question .question-main{
+      min-height:clamp(420px, 68vh, 760px);
+      max-height:72vh;
+      overflow:auto;
+      scrollbar-width:none;
+      -ms-overflow-style:none;
+    }
+    body.tv-question-fullscreen #slide-question .question-main::-webkit-scrollbar{
+      width:0;
+      height:0;
+    }
+    body.tv-question-fullscreen #slide-question .question-side{
+      grid-template-rows:auto auto;
+      gap:18px;
+      align-content:start;
+    }
+    body.tv-question-fullscreen #slide-question .question-status-row,
+    body.tv-question-fullscreen #slide-question .question-house-grid{
+      display:none !important;
+    }
+    body.tv-question-fullscreen #slide-question .question-prompt{
+      font-size:clamp(28px, 3vw, 52px);
+      line-height:1.08;
+      max-width:100%;
+    }
+    body.tv-question-fullscreen.tv-very-long-question #slide-question .question-title{
+      font-size:clamp(20px, 1.9vw, 34px);
+      line-height:1.04;
+    }
+    body.tv-question-fullscreen.tv-very-long-question #slide-question .question-prompt,
+    body.tv-question-fullscreen.tv-very-long-question #slide-question .question-full-text{
+      font-size:clamp(22px, 2.2vw, 38px);
+      line-height:1.12;
+    }
+    .question-options{
+      margin-top:18px;
+      display:grid;
+      gap:10px;
+      max-width:95%;
+    }
+    .question-option{
+      display:flex;
+      align-items:flex-start;
+      gap:12px;
+      padding:12px 14px;
+      border-radius:16px;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(221,182,105,.14);
+    }
+    .question-option-code{
+      min-width:28px;
+      color:var(--gold2);
+      font-size:24px;
+      font-weight:900;
+      line-height:1.1;
+    }
+      .question-option-text{
+        color:var(--text);
+        font-size:24px;
+        line-height:1.18;
+      }
+      .tv-activity-block{
+        padding:24px;
+      }
+      .tv-activity-title{
+        font-size:22px;
+        font-weight:700;
+        margin-bottom:12px;
+      }
+      .tv-activity-item{
+        font-size:18px;
+        margin-bottom:8px;
+      }
+      .tv-activity-sub{
+        opacity:.7;
+      }
+      .tv-activity-list{
+        display:grid;
+        gap:10px;
+        margin-top:12px;
+      }
+      .tv-activity-row{
+        padding:10px 12px;
+        border-radius:14px;
+        background:rgba(255,255,255,.04);
+        border:1px solid rgba(221,182,105,.12);
+      }
+      .tv-activity-meta{
+        margin-top:4px;
+        opacity:.76;
+        font-size:15px;
+        line-height:1.25;
+      }
+    .question-side{
+      display:grid;
+      grid-template-rows: 1fr 1fr;
+      gap:10px;
+      min-height:0;
+    }
+    .question-metric{
+      border-radius:22px;
+      padding:18px 20px;
+      border:1px solid rgba(221,182,105,.14);
+      background:rgba(255,255,255,.03);
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      min-height:0;
+    }
+    .question-metric-label{
+      color:var(--muted);
+      font-size:12px;
+      letter-spacing:.16em;
+      text-transform:uppercase;
+      margin-bottom:10px;
+    }
+    .question-metric-value{
+      font-size:46px;
+      line-height:1;
+      font-weight:900;
+      color:var(--gold2);
+    }
+    .question-metric-sub{
+      margin-top:8px;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.3;
+    }
+    .question-status-row{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap:10px;
+      min-height:0;
+    }
+    .q-stat{
+      border-radius:18px;
+      padding:14px 16px;
+      background:rgba(255,255,255,.03);
+      border:1px solid rgba(221,182,105,.12);
+    }
+    .q-stat-label{
+      color:var(--muted);
+      font-size:11px;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      margin-bottom:8px;
+    }
+    .q-stat-value{
+      font-size:32px;
+      line-height:1;
+      font-weight:900;
+    }
+    .question-house-grid{
+      display:grid;
+      grid-template-columns:repeat(3, minmax(0,1fr));
+      gap:10px;
+      min-height:0;
+    }
+    .question-house{
+      border-radius:18px;
+      padding:14px 16px;
+      background:rgba(255,255,255,.03);
+      border:1px solid rgba(221,182,105,.10);
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      min-width:0;
+    }
+    .question-house-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      min-width:0;
+    }
+    .question-house-name{
+      font-size:20px;
+      font-weight:900;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .question-house-badge{
+      font-size:12px;
+      font-weight:900;
+      border-radius:999px;
+      padding:6px 10px;
+      background:rgba(255,255,255,.06);
+      white-space:nowrap;
+    }
+    .question-house-meta{
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.3;
+    }
+
+    .question-focus-theme .question-card{
+      box-shadow:0 0 0 1px rgba(221,182,105,.12), 0 0 40px rgba(221,182,105,.08);
+      animation:questionGlow 2.8s ease-in-out infinite;
+    }
+    .question-focus-theme .question-title{
+      color:var(--gold2);
+      text-shadow:0 0 26px rgba(221,182,105,.18);
+    }
+    .question-timer-card{
+      background:
+        radial-gradient(circle at 50% 0%, rgba(221,182,105,.10), transparent 58%),
+        rgba(255,255,255,.03);
+    }
+    .question-timer-value{
+      font-variant-numeric:tabular-nums;
+      transition:color .25s ease, text-shadow .25s ease, transform .25s ease;
+    }
+    .question-timer-value.warn{
+      color:#ffd28c;
+      text-shadow:0 0 24px rgba(221,182,105,.25);
+    }
+    .question-timer-value.danger{
+      color:#ff8c79;
+      text-shadow:0 0 28px rgba(219,109,114,.34);
+      animation:dangerPulse .9s ease-in-out infinite;
+    }
+    .question-progress{
+      position:relative;
+      margin-top:12px;
+      height:10px;
+      border-radius:999px;
+      background:rgba(255,255,255,.06);
+      overflow:hidden;
+      border:1px solid rgba(221,182,105,.12);
+    }
+    .question-progress-fill{
+      position:absolute;inset:0 auto 0 0;
+      width:0%;
+      background:linear-gradient(90deg, rgba(221,182,105,.92), rgba(241,208,138,.95));
+      box-shadow:0 0 18px rgba(221,182,105,.25);
+      transition:width .35s ease;
+    }
+    .runtime-green{
+      color:var(--ok);
+      border-color:rgba(127,177,139,.20);
+      background:rgba(127,177,139,.10);
+    }
+    .runtime-red{
+      color:#ffb2a7;
+      border-color:rgba(219,109,114,.22);
+      background:rgba(219,109,114,.10);
+    }
+    .runtime-blue{
+      color:#9fd2ff;
+      border-color:rgba(86,184,255,.20);
+      background:rgba(86,184,255,.10);
+    }
+    .runtime-gold{
+      color:var(--gold2);
+      border-color:rgba(221,182,105,.22);
+      background:rgba(221,182,105,.10);
+    }
+    @keyframes questionGlow{
+      0%,100%{box-shadow:0 0 0 1px rgba(221,182,105,.12), 0 0 36px rgba(221,182,105,.06)}
+      50%{box-shadow:0 0 0 1px rgba(241,208,138,.18), 0 0 52px rgba(221,182,105,.16)}
+    }
+    @keyframes dangerPulse{
+      0%,100%{transform:scale(1);opacity:1}
+      50%{transform:scale(1.04);opacity:.86}
+    }
+
+    .question-card.timeout-mode{
+      border-color:rgba(219,109,114,.30);
+      box-shadow:0 0 0 1px rgba(219,109,114,.18), 0 0 54px rgba(219,109,114,.12);
+      animation:timeoutPulse 1.1s ease-in-out infinite;
+    }
+    .question-card.hold-mode{
+      border-color:rgba(221,182,105,.28);
+      box-shadow:0 0 0 1px rgba(221,182,105,.16), 0 0 44px rgba(221,182,105,.12);
+    }
+    .question-progress-fill.danger-fill{
+      background:linear-gradient(90deg, rgba(219,109,114,.95), rgba(255,170,140,.95));
+      box-shadow:0 0 20px rgba(219,109,114,.24);
+    }
+    @keyframes timeoutPulse{
+      0%,100%{transform:scale(1);filter:saturate(1)}
+      50%{transform:scale(1.006);filter:saturate(1.08)}
+    }
+
+    .balance-main{
+      display:grid;
+      grid-template-columns: 1.16fr .84fr;
+      gap:10px;
+      min-height:0;
+    }
+
+    .ranking-grid{
+      display:grid;
+      grid-template-rows:repeat(5, minmax(0, 1fr));
+      gap:8px;
+      min-height:0;
+    }
+
+    .rank-card{
+      position:relative;
+      overflow:hidden;
+      display:grid;
+      grid-template-columns:auto 1fr auto auto;
+      gap:10px;
+      align-items:center;
+      border-radius:20px;
+      padding:12px 16px;
+      border:1px solid rgba(221,182,105,.14);
+      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border-left:5px solid var(--gold);
+    }
+    .rank-card.top-1{
+      background:
+        radial-gradient(circle at left center, rgba(241,208,138,.14), transparent 35%),
+        linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      box-shadow:0 0 28px rgba(221,182,105,.10), inset 0 0 0 1px rgba(241,208,138,.08);
+    }
+    .rank-card.top-2{ box-shadow: inset 0 0 0 1px rgba(201,206,215,.06); }
+    .rank-card.top-3{ box-shadow: inset 0 0 0 1px rgba(201,137,84,.06); }
+
+    .rank-badge{
+      width:42px;height:42px;border-radius:50%;
+      display:grid;place-items:center;
+      font-size:17px;font-weight:900;
+      border:1px solid rgba(221,182,105,.34);
+      color:var(--gold);
+      background:rgba(0,0,0,.16);
+    }
+    .top-1 .rank-badge{ background:var(--gold2); color:#20170b; border-color:rgba(241,208,138,.70); }
+    .top-2 .rank-badge{ background:var(--silver); color:#1c1d20; border-color:rgba(201,206,215,.70); }
+    .top-3 .rank-badge{ background:var(--bronze); color:#1f140d; border-color:rgba(201,137,84,.70); }
+
+    .rank-main{min-width:0}
+    .rank-house{
+      font-size:28px;font-weight:900;line-height:1.02;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    .rank-style{
+      margin-top:4px;
+      color:var(--muted2);
+      font-size:11px;
+      letter-spacing:.1em;
+      text-transform:uppercase;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    .rank-value,.rank-gold{
+      text-align:right;
+      min-width:86px;
+    }
+    .rank-score{
+      font-size:40px;
+      font-weight:900;
+      line-height:.9;
+      color:var(--gold2);
+      font-variant-numeric:tabular-nums;
+      text-shadow:0 0 18px rgba(221,182,105,.10);
+    }
+    .rank-label,.rank-gold-label{
+      margin-top:5px;
+      color:var(--muted);
+      font-size:11px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .rank-gold-score{
+      font-size:25px;font-weight:900;line-height:1;color:var(--gold);
+    }
+
+    .balance-side{
+      display:grid;
+      grid-template-rows:1fr 1fr;
+      gap:10px;
+      min-height:0;
+    }
+
+    .side-card{
+      position:relative;overflow:hidden;
+      border-radius:20px;
+      border:1px solid rgba(221,182,105,.14);
+      background:rgba(255,255,255,.03);
+      padding:16px;
+      display:flex;flex-direction:column;justify-content:center;
+    }
+    .side-label{
+      font-size:11px;font-weight:900;
+      color:var(--gold);
+      letter-spacing:.14em;text-transform:uppercase;
+      margin-bottom:8px;
+    }
+    .side-title{
+      font-size:30px;font-weight:900;line-height:1.02;margin-bottom:8px;
+    }
+    .side-text{
+      color:var(--muted);
+      font-size:16px;line-height:1.25;
+    }
+
+    .resources-grid{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+      grid-template-rows:repeat(5, minmax(0, 1fr));
+      gap:8px;
+      min-height:0;
+    }
+
+    .resource-card{
+      position:relative;
+      overflow:hidden;
+      border-radius:18px;
+      border:1px solid rgba(221,182,105,.14);
+      background:rgba(255,255,255,.03);
+      padding:10px 12px;
+      display:grid;
+      grid-template-rows:auto auto 1fr;
+      gap:6px;
+      border-left:4px solid var(--gold);
+    }
+    .resource-head{
+      display:flex;justify-content:space-between;gap:8px;align-items:center;
+      min-width:0;
+    }
+    .resource-house{
+      font-size:17px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+      min-width:0;
+    }
+    .resource-rank{
+      flex:0 0 auto;
+      font-size:11px;color:var(--gold);font-weight:900;
+      border:1px solid rgba(221,182,105,.24);
+      padding:4px 8px;border-radius:999px;
+      background:rgba(221,182,105,.06);
+    }
+    .resource-primary{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:6px;
+    }
+    .metric-box{
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.05);
+      background:rgba(255,255,255,.025);
+      padding:6px 8px;
+    }
+    .metric-k{
+      color:var(--muted);
+      font-size:9px;
+      text-transform:uppercase;
+      letter-spacing:.12em;
+      margin-bottom:4px;
+    }
+    .metric-v{
+      font-size:24px;font-weight:900;line-height:1;
+      font-variant-numeric:tabular-nums;
+      color:var(--gold2);
+    }
+    .metric-box.secondary .metric-v{color:var(--gold);font-size:21px}
+      .resource-line{
+        display:grid;
+        grid-template-columns:repeat(2, minmax(0, 1fr));
+        gap:4px;
+        align-self:end;
+      }
+    .chip{
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.045);
+      background:rgba(255,255,255,.025);
+      padding:5px 2px 4px;
+      text-align:center;
+    }
+    .chip.rare{
+      border-color:rgba(221,182,105,.16);
+      background:rgba(221,182,105,.05);
+    }
+    .chip-k{
+      color:var(--muted);
+      font-size:9px;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+      line-height:1;
+    }
+    .chip-v{
+      margin-top:3px;
+      font-size:13px;
+      font-weight:900;
+      line-height:1;
+      color:var(--text);
+      font-variant-numeric:tabular-nums;
+    }
+
+    .feed-panel{
+      position:relative;
+      overflow:hidden;
+      border-radius:22px;
+      border:1px solid rgba(221,182,105,.14);
+      background:rgba(255,255,255,.03);
+      display:flex;flex-direction:column;
+      min-height:0;
+    }
+    .feed-head{
+      padding:14px 16px 10px;
+      display:flex;justify-content:space-between;align-items:center;gap:10px;
+      border-bottom:1px solid rgba(221,182,105,.08);
+    }
+    .feed-title{
+      font-size:13px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);
+    }
+    .feed-count{font-size:12px;color:var(--muted)}
+    .feed-list{
+      padding:10px;
+      display:flex;flex-direction:column;gap:8px;
+      min-height:0;
+    }
+    .feed-item{
+      position:relative;overflow:hidden;
+      border-radius:16px;
+      padding:12px 14px;
+      background:rgba(255,255,255,.025);
+      border:1px solid rgba(255,255,255,.04);
+      border-left:4px solid #b99247;
+      min-width:0;
+    }
+    .feed-item.counter{border-left-color:#8b63c5}
+    .feed-item.closed{border-left-color:#668f70}
+    .feed-item.major{
+      background:rgba(221,182,105,.05);
+      box-shadow:inset 0 0 0 1px rgba(221,182,105,.08);
+    }
+    .feed-item-title{
+      font-size:24px;
+      font-weight:900;
+      line-height:1.04;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    .feed-item-meta{
+      margin-top:5px;
+      display:flex;justify-content:space-between;align-items:center;gap:10px;
+      min-width:0;
+      color:var(--muted);
+      font-size:15px;
+      line-height:1.2;
+    }
+    .feed-item-text{
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;
+    }
+    .feed-item-amount{
+      flex:0 0 auto;font-weight:900;color:var(--gold);white-space:nowrap;
+    }
+    .empty{
+      flex:1;
+      display:grid;place-items:center;
+      color:rgba(182,169,150,.76);
+      font-size:18px;
+      text-align:center;padding:18px;
+    }
+
+    .hero-panel{
+      position:relative;
+      overflow:hidden;
+      border-radius:24px;
+      border:1px solid rgba(221,182,105,.18);
+      background:
+        radial-gradient(circle at center, rgba(221,182,105,.12), transparent 50%),
+        linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.012));
+    }
+    .hero-panel::before,.hero-panel::after{
+      content:"";
+      position:absolute;
+      width:340px;height:340px;border-radius:50%;
+      border:1px solid rgba(221,182,105,.06);
+      left:50%;top:50%;transform:translate(-50%,-50%);
+      animation:slowBreath 7s ease-in-out infinite;
+      pointer-events:none;
+    }
+    .hero-panel::after{
+      width:430px;height:430px;
+      animation-delay:-2.3s;
+    }
+    @keyframes slowBreath{
+      0%,100%{opacity:.72;transform:translate(-50%,-50%) scale(1)}
+      50%{opacity:.28;transform:translate(-50%,-50%) scale(1.09)}
+    }
+    .hero-content{
+      position:relative;z-index:1;
+      width:100%;height:100%;
+      display:flex;flex-direction:column;
+      align-items:center;justify-content:center;
+      text-align:center;padding:18px 24px;
+    }
+    .phase-name{
+      font-size:clamp(56px, 7vw, 108px);
+      line-height:.92;
+      font-weight:900;
+      letter-spacing:.08em;
+      color:var(--gold2);
+      text-transform:uppercase;
+      text-shadow:0 0 28px rgba(221,182,105,.15);
+      max-width:90%;
+    }
+    .phase-sub{
+      margin-top:16px;
+      color:var(--muted);
+      font-size:24px;
+      line-height:1.2;
+      max-width:82%;
+    }
+    .phase-badges{
+      margin-top:18px;
+      display:flex;justify-content:center;gap:8px;flex-wrap:wrap;
+    }
+    body.tv-activity-mode .phase-layout{
+      grid-template-rows:minmax(180px, 220px) auto;
+    }
+    body.tv-activity-mode .hero-panel{
+      min-height:180px;
+      max-height:220px;
+    }
+    body.tv-activity-mode .hero-content{
+      padding:14px 20px;
+      justify-content:center;
+    }
+    body.tv-activity-mode .phase-name{
+      font-size:clamp(42px, 4.8vw, 76px);
+      line-height:.96;
+      max-width:94%;
+      max-height:2.1em;
+      overflow:hidden;
+    }
+    body.tv-activity-mode .phase-sub{
+      margin-top:10px;
+      font-size:18px;
+      line-height:1.16;
+      max-width:88%;
+      max-height:2.4em;
+      overflow:hidden;
+    }
+    body.tv-activity-mode .phase-badges{
+      margin-top:12px;
+    }
+    body.tv-activity-mode .hero-panel::before,
+    body.tv-activity-mode .hero-panel::after{
+      opacity:.32;
+    }
+    .court-scene{
+      display:grid;
+      gap:18px;
+    }
+    .court-title{
+      font-size:clamp(34px, 3.4vw, 58px);
+      line-height:.98;
+      font-weight:900;
+      color:var(--text);
+      text-shadow:0 0 18px rgba(221,182,105,.12);
+    }
+    .court-current-pair{
+      display:grid;
+      grid-template-columns:minmax(0, 1fr) auto minmax(0, 1fr);
+      gap:16px;
+      align-items:center;
+      padding:22px 24px;
+      border-radius:24px;
+      border:1px solid rgba(221,182,105,.24);
+      background:
+        radial-gradient(circle at top, rgba(221,182,105,.11), transparent 60%),
+        linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      box-shadow:inset 0 0 24px rgba(221,182,105,.05), 0 18px 44px rgba(0,0,0,.22);
+    }
+    .court-house{
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .court-vs{
+      font-size:clamp(32px, 3vw, 54px);
+      font-weight:900;
+      letter-spacing:.14em;
+      color:var(--gold);
+      text-transform:uppercase;
+      text-align:center;
+      white-space:nowrap;
+      text-shadow:0 0 18px rgba(221,182,105,.18);
+    }
+    .court-alive{
+      font-size:clamp(34px, 3vw, 54px);
+      line-height:1;
+      font-weight:900;
+      color:var(--gold2);
+    }
+    .court-pair-list{
+      display:grid;
+      gap:8px;
+    }
+    .court-pair-row{
+      display:grid;
+      grid-template-columns:auto 1fr auto;
+      gap:10px;
+      align-items:center;
+      padding:9px 12px;
+      border-radius:14px;
+      background:rgba(255,255,255,.03);
+      border:1px solid rgba(221,182,105,.12);
+    }
+    .court-pair-row.finished{
+      border-color:rgba(127,177,139,.18);
+      background:rgba(127,177,139,.06);
+    }
+    .court-pair-meta{
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.25;
+    }
+    .court-warning{
+      padding:12px 14px;
+      border-radius:16px;
+      border:1px solid rgba(207,160,90,.26);
+      background:rgba(207,160,90,.1);
+      color:var(--gold2);
+      font-size:15px;
+      font-weight:800;
+      line-height:1.3;
+    }
+    .court-winner{
+      padding:16px 18px;
+      border-radius:18px;
+      border:1px solid rgba(127,177,139,.18);
+      background:rgba(127,177,139,.07);
+    }
+    .court-winner-title{
+      color:var(--gold);
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.16em;
+      text-transform:uppercase;
+      margin-bottom:8px;
+    }
+    .court-winner-name{
+      font-size:clamp(26px, 2.3vw, 40px);
+      line-height:1.02;
+      font-weight:900;
+      color:var(--text);
+    }
+    .court-winner-meta{
+      margin-top:8px;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.3;
+    }
+    body.tv-court-mode .phase-layout{
+      grid-template-rows:1fr;
+    }
+    body.tv-court-mode .topbar{
+      grid-template-columns:.94fr .94fr;
+    }
+    body.tv-court-mode .topbar > .topbox:first-child{
+      display:none;
+    }
+    body.tv-court-mode .hero-panel{
+      display:none;
+    }
+    body.tv-court-mode #slide-phase .balance-main{
+      height:100%;
+      grid-template-columns:minmax(0, 1.42fr) minmax(260px, .58fr) !important;
+      align-items:stretch;
+    }
+    body.tv-court-mode #slide-phase .side-card:first-child{
+      display:flex;
+      flex-direction:column;
+      min-height:0;
+    }
+    body.tv-court-mode #slide-phase .side-card:first-child .side-label,
+    body.tv-court-mode #slide-phase .side-card:first-child .side-title,
+    body.tv-court-mode #slide-phase .side-card:last-child .side-label{
+      display:none;
+    }
+    body.tv-court-mode #slide-phase #airText{
+      flex:1;
+      display:block;
+      height:100%;
+      max-height:none;
+      overflow:hidden;
+    }
+    body.tv-court-mode #slide-phase #turnText{
+      white-space:normal;
+    }
+    .court-stage{
+      display:grid;
+      grid-template-columns:minmax(0, 1.34fr) minmax(250px, .66fr);
+      gap:16px;
+      min-height:0;
+      height:100%;
+    }
+    .court-header{
+      display:grid;
+      gap:10px;
+    }
+    .court-subtitle{
+      color:var(--muted);
+      font-size:clamp(17px, 1.4vw, 23px);
+      line-height:1.2;
+    }
+    .court-battle-line{
+      display:grid;
+      grid-template-columns:minmax(0, 1fr) auto minmax(0, 1fr);
+      gap:14px;
+      align-items:center;
+    }
+    .court-house-name{
+      font-size:clamp(24px, 2vw, 40px);
+      line-height:1.04;
+      font-weight:900;
+      min-width:0;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .court-score{
+      font-size:clamp(42px, 4vw, 72px);
+      line-height:1;
+      font-weight:900;
+      color:var(--gold2);
+      text-shadow:0 0 20px rgba(221,182,105,.16);
+    }
+    .court-question-zone{
+      min-height:0;
+      padding:18px 20px;
+      border-radius:22px;
+      border:1px solid rgba(221,182,105,.18);
+      background:
+        radial-gradient(circle at top, rgba(221,182,105,.08), transparent 60%),
+        linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.02));
+      overflow:auto;
+      scrollbar-width:none;
+    }
+    .court-question-zone::-webkit-scrollbar{
+      width:0;
+      height:0;
+    }
+    .court-question-kicker{
+      color:var(--gold);
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      font-size:11px;
+      font-weight:900;
+      margin-bottom:10px;
+    }
+    .court-question-title{
+      font-size:clamp(32px, 2.8vw, 50px);
+      line-height:1.03;
+      font-weight:900;
+      margin-bottom:14px;
+      text-shadow:0 0 20px rgba(221,182,105,.08);
+    }
+    .court-question-zone .question-prompt{
+      max-width:100%;
+      font-size:clamp(24px, 2vw, 34px);
+      line-height:1.15;
+    }
+    .court-question-zone .question-full-text{
+      font-size:clamp(19px, 1.5vw, 25px);
+      line-height:1.22;
+    }
+    .court-question-zone .question-option-text{
+      font-size:clamp(18px, 1.5vw, 26px);
+    }
+    .court-question-zone .question-option-code{
+      font-size:clamp(20px, 1.7vw, 28px);
+    }
+    .court-question-zone .question-reveal-answer{
+      font-size:clamp(30px, 2.8vw, 50px);
+    }
+    .court-question-zone .tv-question-media{
+      display:none;
+      margin:0 0 18px;
+    }
+    .court-question-zone .tv-question-media.is-visible{
+      display:block;
+    }
+    .court-queue-compact{
+      display:grid;
+      gap:10px;
+      min-height:0;
+      align-content:start;
+    }
+    .court-queue-title{
+      color:var(--gold);
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.16em;
+      text-transform:uppercase;
+    }
+    .court-battle-score{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:12px;
+      font-size:clamp(36px, 3.4vw, 62px);
+      line-height:1;
+      font-weight:900;
+      color:var(--gold2);
+      text-shadow:0 0 20px rgba(221,182,105,.16);
+      white-space:nowrap;
+    }
+    .court-battle-sword{
+      color:var(--gold);
+      font-size:.72em;
+      opacity:.9;
+    }
+    .court-loser{
+      opacity:.58;
+      filter:saturate(.8);
+    }
+    .court-pair-note{
+      color:var(--muted2);
+      font-size:11px;
+      line-height:1.2;
+      margin-top:2px;
+    }
+    .phase-badge{
+      padding:7px 11px;border-radius:999px;
+      font-size:13px;font-weight:800;
+      color:var(--text);
+      border:1px solid rgba(221,182,105,.16);
+      background:rgba(255,255,255,.03);
+    }
+
+    .ticker{
+      display:flex;align-items:center;gap:14px;
+      border-radius:18px;
+      border:1px solid var(--line);
+      background:linear-gradient(180deg, rgba(34,27,21,.96), rgba(20,16,12,.98));
+      box-shadow:var(--shadow);
+      overflow:hidden;min-width:0;
+    }
+    .ticker-label{
+      flex:0 0 auto;align-self:stretch;display:flex;align-items:center;
+      padding:0 18px;
+      background:rgba(221,182,105,.10);
+      color:var(--gold);
+      font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.16em;
+      border-right:1px solid rgba(221,182,105,.18);
+    }
+    .ticker-window{
+      position:relative;flex:1 1 auto;min-width:0;height:100%;
+      overflow:hidden;display:flex;align-items:center;
+    }
+    .ticker-track{
+      white-space:nowrap;
+      display:inline-block;
+      padding-left:100%;
+      will-change:transform;
+      animation:tickerMove 42s linear infinite;
+      color:var(--text);
+      font-size:16px;
+      font-weight:700;
+    }
+    .ticker-track span{margin-right:34px;color:var(--text)}
+    .ticker-track .sep{color:var(--gold);margin-right:34px}
+    @keyframes tickerMove{
+      from{transform:translateX(0)}
+      to{transform:translateX(-100%)}
+    }
+
+    .slide-indicators{
+      position:absolute;right:18px;bottom:16px;
+      display:flex;gap:8px;z-index:3;
+    }
+    .dot{
+      width:10px;height:10px;border-radius:50%;
+      background:rgba(255,255,255,.18);
+      border:1px solid rgba(221,182,105,.20);
+      transition:all .3s ease;
+    }
+    .dot.active{
+      width:28px;border-radius:999px;background:var(--gold);
+      box-shadow:0 0 18px rgba(221,182,105,.45);
+    }
+
+    @media (max-width: 1600px){
+      .screen{grid-template-rows:90px 1fr 56px}
+      .title-main{font-size:28px}
+      .timer-value{font-size:42px}
+      .leader-house{font-size:19px}
+      .rank-house{font-size:24px}
+      .rank-score{font-size:36px}
+      .feed-item-title{font-size:21px}
+      .feed-item-meta{font-size:14px}
+      .phase-sub{font-size:21px}
+      .ticker-track{font-size:15px}
+      .resource-house{font-size:15px}
+      .metric-v{font-size:21px}
+      .metric-box.secondary .metric-v{font-size:18px}
+    }
+  </style>
+</head>
+<body>
+  <div class="screen">
+    <header class="topbar">
+      <section class="panel topbox">
+        <div style="min-width:0;">
+          <div class="eyebrow">Железный Стол • TV режим v7</div>
+          <div class="title-main" id="roundTitle">Игра идёт</div>
+          <div class="subline" id="phaseLine">Ожидание данных двора</div>
+        </div>
+        <div style="max-width:48%; min-width:210px;">
+          <div class="phase-pill">
+            <span class="phase-dot"></span>
+            <span id="phasePillText">Подготовка двора</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel topbox">
+        <div class="timer-wrap">
+          <div class="timer-label">Время фазы</div>
+          <div class="timer-value" id="timerValue">—:—</div>
+          <div class="timer-note" id="timerNote">ожидание сигнала распорядителя</div>
+        </div>
+      </section>
+
+      <section class="panel topbox">
+        <div class="leader-row">
+          <div class="leader-card">
+            <div class="leader-label">Лидер по золоту</div>
+            <div class="leader-house" id="leaderGoldHouse">—</div>
+            <div class="leader-score" id="leaderGoldScore">0 золота</div>
+          </div>
+          <div class="leader-card">
+            <div class="leader-label">Лидер по влиянию</div>
+            <div class="leader-house" id="leaderInfluenceHouse">—</div>
+            <div class="leader-score" id="leaderInfluenceScore">0 влияния</div>
+          </div>
+        </div>
+      </section>
+    </header>
+
+    <main class="stage">
+      <div class="slides">
+        <section class="slide active" id="slide-question" data-slide-key="question">
+          <div class="slide-inner question-layout">
+            <div class="slide-head">
+              <div class="slide-title">Раунд ведущего</div>
+              <div class="slide-sub" id="questionMeta">Вопрос появится здесь, когда ведущий откроет его на своём пульте</div>
+            </div>
+            <div class="question-hero">
+              <section class="question-card question-main">
+                <div class="question-kicker" id="questionKicker">Слово за ведущим</div>
+                <div class="question-title" id="questionTitle">Ожидание вопроса</div>
+                <div class="tv-question-media" id="questionMediaBlock">
+                  <img id="questionMediaImage" alt="Иллюстрация вопроса">
+                </div>
+                <div class="question-prompt" id="questionPrompt">Когда ведущий откроет вопрос, зал увидит его здесь крупно и без лишних помех.</div>
+                <div class="question-progress"><div class="question-progress-fill" id="questionProgressFill"></div></div>
+              </section>
+
+              <section class="question-side">
+                <div class="question-metric">
+                  <div class="question-metric-label">Ход раунда</div>
+                  <div class="question-metric-value" id="questionAnsweredMain">0 / 0</div>
+                  <div class="question-metric-sub" id="questionAnsweredSub">Ответы ещё не выданы</div>
+                </div>
+                <div class="question-metric question-timer-card">
+                  <div class="question-metric-label">Осталось времени</div>
+                  <div class="question-metric-value question-timer-value" id="questionTimerValue">—:—</div>
+                  <div class="question-metric-sub" id="questionTimerSub">Таймер включится, когда вопрос выйдет на экран</div>
+                </div>
+              </section>
+            </div>
+
+            <div style="display:grid; gap:10px;">
+              <div class="question-status-row" id="questionStatsRow"></div>
+              <div class="question-house-grid" id="questionHouseGrid"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="slide" id="slide-balance" data-slide-key="balance">
+          <div class="slide-inner balance-layout">
+            <div class="slide-head">
+              <div class="slide-title">Баланс сил</div>
+              <div class="slide-sub" id="balanceMeta">Топ Домов по влиянию</div>
+            </div>
+            <div class="balance-main">
+              <div class="ranking-grid" id="rankingGrid"></div>
+              <div class="balance-side">
+                <div class="side-card">
+                  <div class="side-label">Главный Дом</div>
+                  <div class="side-title" id="balanceLeaderTitle">—</div>
+                  <div class="side-text" id="balanceLeaderText">Ожидание первой сильной партии.</div>
+                </div>
+                <div class="side-card">
+                  <div class="side-label">Ближайшая угроза</div>
+                  <div class="side-title" id="balanceThreatTitle">—</div>
+                  <div class="side-text" id="balanceThreatText">Пока преследователь ещё не проявился.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="slide" id="slide-resources" data-slide-key="resources">
+          <div class="slide-inner resources-layout">
+            <div class="slide-head">
+              <div class="slide-title">10 Домов и ресурсы</div>
+              <div class="slide-sub" id="resourcesMeta">Полный расклад по всем активным Домам</div>
+            </div>
+            <div class="resources-grid" id="resourcesGrid"></div>
+          </div>
+        </section>
+
+        <section class="slide" id="slide-politics" data-slide-key="politics">
+          <div class="slide-inner politics-layout">
+            <section class="feed-panel">
+              <div class="feed-head">
+                <div class="feed-title">Активные переговоры</div>
+                <div class="feed-count" id="dealsCount">0</div>
+              </div>
+              <div class="feed-list" id="dealsFeed"></div>
+            </section>
+            <section class="feed-panel">
+              <div class="feed-head">
+                <div class="feed-title">Недавние сдвиги</div>
+                <div class="feed-count" id="eventsCount">0</div>
+              </div>
+              <div class="feed-list" id="eventsFeed"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="slide" id="slide-phase" data-slide-key="phase">
+          <div class="slide-inner phase-layout">
+            <div class="hero-panel">
+              <div class="hero-content">
+                <div class="phase-name" id="phaseName">ИГРОВАЯ ФАЗА</div>
+                <div class="phase-sub" id="phaseSub">Двор в движении. Расклад сил меняется быстрее, чем успевают договориться союзники.</div>
+                <div class="phase-badges" id="phaseBadges"></div>
+              </div>
+            </div>
+            <div class="balance-main" style="grid-template-columns:1fr 1fr;">
+              <div class="side-card">
+                <div class="side-label">В политическом воздухе</div>
+                <div class="side-title" id="airTitle">Двор прислушивается</div>
+                <div class="side-text" id="airText">Пока громче всего звучат переговоры и осторожные обмены у стойки.</div>
+              </div>
+              <div class="side-card">
+                <div class="side-label">Последний перелом</div>
+                <div class="side-title" id="turnTitle">Новый ход ещё впереди</div>
+                <div class="side-text" id="turnText">Ждите следующего объявления ведущего — баланс сил ещё можно резко сместить.</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="slide-indicators">
+        <div id="slideCaption" style="color: var(--muted); font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; margin-right: 10px;">
+            Окно 1 из 4
+        </div>
+        <span class="dot active" data-dot-key="question"></span>
+        <span class="dot" data-dot-key="balance"></span>
+        <span class="dot" data-dot-key="resources"></span>
+        <span class="dot" data-dot-key="politics"></span>
+        <span class="dot" data-dot-key="phase"></span>
+    </div>
+    </main>
+
+    <footer class="ticker">
+      <div class="ticker-label">Лента двора</div>
+      <div class="ticker-window">
+        <div class="ticker-track" id="tickerTrack">
+          <span>Двор собирает слухи и золото.</span><span class="sep">✦</span>
+          <span>Только подтверждённая сделка становится историей.</span><span class="sep">✦</span>
+          <span>По залу официально работает дипломат.</span><span class="sep">✦</span>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    const ROOM_CODE = "{{ room_code }}";
+    const TV_STATE_URL = `/dev/game-master/${ROOM_CODE}/tv-state`;
+    const SLIDE_DURATIONS_MS = {
+        question: 15000,
+        balance: 15000,
+        resources: 15000,
+        politics: 12000,
+        phase: 10000
+    };
+    const SLIDE_TITLES = {
+        question: "Вопрос ведущего",
+        balance: "Баланс сил",
+        resources: "10 Домов и ресурсы",
+        politics: "Политика и сделки",
+        phase: "Фаза и атмосфера"
+    };
+
+    const HOUSE_ICONS = {
+      wolf: "🐺", tower: "🗼", sun: "☀️", sword: "🗡️", scroll: "📜",
+      seal: "🪪", key: "🗝️", fire: "🔥", raven: "🐦", cup: "🏆"
+    };
+
+    const HOUSE_COLORS = {
+      wolf: "#60646d", tower: "#3d5274", sun: "#b98a2c", sword: "#8b3e41",
+      scroll: "#355d47", seal: "#68448b", key: "#9a6435", fire: "#b95c2c",
+      raven: "#4d5258", cup: "#2f6d5f"
+    };
+
+    const HOUSE_STYLES = {
+      wolf: "манёвр и хитрость", tower: "устойчивость и защита", sun: "влияние и внимание",
+      sword: "давление и конфликт", scroll: "логика и знание", seal: "союзы и право",
+      key: "доступ и редкость", fire: "риск и рывок", raven: "разведка и слухи", cup: "экономика и достаток"
+    };
+
+      const RESOURCE_LAYOUT = [
+        ["scroll", "Свитки"],
+        ["key", "Ключи"]
+      ];
+
+    const phaseState = {
+      endsAt: null,
+      openedAt: null,
+      fallbackLabel: "ожидание сигнала распорядителя"
+    };
+
+    let questionFocusMode = false;
+    let questionTimerEndsAt = null;
+    let questionTimerDurationSec = 60;
+    let activeQuestionVisualKey = null;
+    let questionVisualState = "idle";
+    let questionVisualStateUntil = null;
+    let activeQuestionSceneData = null;
+    let lastQuestionRenderKey = null;
+    let lastQuestionRenderContext = null;
+
+    function normArray(v){ return Array.isArray(v) ? v : []; }
+    function num(v){ const p = Number(v); return Number.isFinite(p) ? p : 0; }
+    function prettify(text){
+      return String(text || "").replace(/[_-]+/g," ").replace(/\s+/g," ").trim().replace(/^./, s => s.toUpperCase());
+    }
+    function escapeHtml(value){
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+    function pickText(value){
+      if (value == null) return "";
+      if (typeof value === "string") return value;
+      if (typeof value === "number" || typeof value === "boolean") return String(value);
+      if (Array.isArray(value)) return value.map(pickText).filter(Boolean).join(" · ");
+      if (typeof value === "object") {
+        const candidates = [value.name,value.title,value.label,value.text,value.summary,value.house_name,value.display_name,value.value].map(pickText).filter(Boolean);
+        if (candidates.length) return candidates[0];
+      }
+      return "";
+    }
+    function safeName(house){
+      return pickText(house?.name) || pickText(house?.title) || prettify(house?.house_key || house?.key || "Дом без имени");
+    }
+    function houseKey(house){ return String(house?.house_key || house?.key || "").toLowerCase(); }
+    function houseResources(house){ return house?.resources || house?.resource || {}; }
+    function houseValue(house,key){
+      return num(house?.[`resource_${key}`] ?? house?.[key] ?? houseResources(house)?.[key] ?? 0);
+    }
+    function totalResources(house){
+      return ["stone","wood","iron","scroll","key","fire"].reduce((sum,key)=>sum + houseValue(house,key), 0);
+    }
+    function byPriority(items){
+      return [...items].sort((a,b)=>{
+        const ai = houseValue(a,"influence"), bi = houseValue(b,"influence");
+        if (bi !== ai) return bi - ai;
+        const ag = houseValue(a,"gold"), bg = houseValue(b,"gold");
+        if (bg !== ag) return bg - ag;
+        const ar = totalResources(a), br = totalResources(b);
+        if (br !== ar) return br - ar;
+        return safeName(a).localeCompare(safeName(b), "ru");
+      });
+    }
+
+      function phaseCodeToTitle(code){
+        const map = {
+          diplomacy:"ДИПЛОМАТИЯ", intermission:"АНТРАКТ", host_round:"РАУНД ВЕДУЩЕГО",
+          market:"РЫНОК", trial:"СУД ДОМОВ", herald:"ГЛАС ДВОРА", feast:"ПИР",
+          final:"ФИНАЛ", game_phase:"ИГРОВАЯ ФАЗА",
+          map:"КАРТА", crest:"ГЕРБ", duel:"ДУЭЛИ",
+          free_play:"СВОБОДНАЯ ИГРА", upgrade:"УСИЛЕНИЕ", intrigue:"ИНТРИГИ"
+        };
+        return map[String(code || "").toLowerCase()] || prettify(String(code || "Игровая фаза"));
+      }
+
+    function phaseText(code){
+      const map = {
+        diplomacy:"Дипломаты у стойки. Сделки рождаются не в тишине, а в присутствии зала.",
+        intermission:"Двор переводит дыхание. Но именно в паузах чаще всего рождаются самые опасные договорённости.",
+        host_round:"Слово за ведущим. Сейчас зал слушает, считает и готовится к новому рывку.",
+        market:"Ресурсы и редкости снова в цене. Те, кто считает ходы наперёд, укрепляют силу Дома.",
+        trial:"На кону честь, влияние и зрелище. Суд Домов решает больше, чем один поединок.",
+          herald:"Глашатай двора меняет напряжение зала. Следующее объявление может поднять или обрушить Дом.",
+          feast:"Пир кормит не только стол, но и амбиции. Золото и аппетит снова работают вместе.",
+          final:"Железный Стол уже близко. Любая ошибка теперь слышна на весь зал.",
+          game_phase:"Двор в движении. Расклад сил меняется быстрее, чем успевают договориться союзники.",
+          map:"Карта открыта. Экспедиции, маршруты и риск могут резко изменить баланс сил.",
+          crest:"Дома собирают гербы и превращают ресурсы в символ силы и финальные преимущества.",
+          duel:"Вызовы объявлены. Ставки, отказ и победа меняют золото, влияние и страх в зале.",
+          free_play:"Сейчас дома свободно используют открытые механики и ищут лучший момент для рывка.",
+          upgrade:"Каждый вложенный ресурс делает дом сильнее перед следующим конфликтом.",
+          intrigue:"Скрытые сведения и влияние становятся опаснее прямого богатства."
+        };
+      return map[String(code || "").toLowerCase()] || "Двор в движении. Расклад сил меняется быстрее, чем успевают договориться союзники.";
+    }
+
+    function getPhaseList(data){
+      const raw = normArray(data.active_phases || data.tv_summary?.active_phases || []);
+      return raw.map(item => {
+        if (typeof item === "string") return { phase_code:item, title:phaseCodeToTitle(item) };
+        const phaseCode = item.phase_code || item.phase_type || item.code || item.slug || "";
+        return { ...item, phase_code: phaseCode, title: item.title || phaseCodeToTitle(phaseCode) };
+      });
+    }
+    function getDirectorState(state){
+      return state?.scenario_director || null;
+    }
+
+    function getFinalOutcomePreviewOverrides(){
+      const params = new URLSearchParams(window.location.search || "");
+      const preview = pickText(params.get("jackpot_preview")).trim().toLowerCase();
+      if (!["won", "carry_over", "pending"].includes(preview)) return null;
+      const amount = pickText(params.get("jackpot_amount")).trim();
+      const currency = pickText(params.get("jackpot_currency")).trim() || "₽";
+      return {
+        outcome_type: preview,
+        jackpot_amount_label: amount ? `${amount} ${currency}` : "",
+        jackpot_currency: currency
+      };
+    }
+
+    function getFinalOutcomeState(state){
+      const outcome = state?.final_outcome && typeof state.final_outcome === "object"
+        ? { ...state.final_outcome }
+        : {};
+      const preview = getFinalOutcomePreviewOverrides();
+      if (!preview) return outcome;
+
+      const winnerHouseName = pickText(outcome.winner_house_name) || "Дом вечера";
+      const jackpotAmountLabel = preview.jackpot_amount_label || pickText(outcome.jackpot_amount_label) || "сумма уточняется ведущим";
+
+      if (preview.outcome_type === "won") {
+        return {
+          ...outcome,
+          ...preview,
+          configured: true,
+          carry_over: false,
+          covers_bill: true,
+          outcome_title: "Счёт Дома покрыт",
+          outcome_text: `${winnerHouseName} выигрывает джекпот игры.`,
+          jackpot_amount_label: jackpotAmountLabel
+        };
+      }
+
+      if (preview.outcome_type === "carry_over") {
+        return {
+          ...outcome,
+          ...preview,
+          configured: true,
+          carry_over: true,
+          covers_bill: false,
+          outcome_title: "Джекпот переходит дальше",
+          outcome_text: "Дом вечера определён, но джекпот переносится на следующую игру.",
+          jackpot_amount_label: jackpotAmountLabel
+        };
+      }
+
+      return {
+        ...outcome,
+        ...preview,
+        configured: false,
+        carry_over: false,
+        covers_bill: false,
+        outcome_title: "Исход джекпота объявляет ведущий",
+        outcome_text: "Победитель вечера определён, приз озвучивается со сцены.",
+        jackpot_amount_label: jackpotAmountLabel
+      };
+    }
+
+    function isFinalShowRound(round){
+      const roundCode = pickText(round?.round_code).trim().toLowerCase();
+      const roundKind = pickText(round?.round_kind).trim().toLowerCase();
+      const roundType = pickText(round?.round_type).trim().toLowerCase();
+      return roundCode === "stage_final_show" || roundKind === "final" || roundType === "final";
+    }
+
+    function renderFinalShowActivity(state){
+      const outcome = getFinalOutcomeState(state);
+      const leaders = state?.leaders || {};
+      const houses = safeList(state?.houses);
+      const influenceLeader = Array.isArray(leaders?.by_influence) ? leaders.by_influence[0] : null;
+      const goldLeader = Array.isArray(leaders?.by_gold) ? leaders.by_gold[0] : null;
+      const scrollLeader = Array.isArray(leaders?.by_scroll) ? leaders.by_scroll[0] : null;
+      const winner = influenceLeader || goldLeader || scrollLeader || houses[0] || null;
+      const winnerName = pickText(outcome?.winner_house_name) || pickText(winner?.name) || "Дом вечера";
+      const influenceValue = winner?.resources?.influence ?? "—";
+      const goldValue = winner?.resources?.gold ?? "—";
+      const scrollValue = winner?.resources?.scroll ?? "—";
+      const jackpotAmountLabel = pickText(outcome?.jackpot_amount_label) || "сумма уточняется ведущим";
+      const outcomeTitle = pickText(outcome?.outcome_title) || "Исход джекпота объявляет ведущий";
+      const outcomeText = pickText(outcome?.outcome_text) || "Победитель вечера определён, приз озвучивается со сцены.";
+      return `
+        <div class="court-scene">
+          <div class="court-stage">
+            <div class="court-header">
+              <div class="court-title">Финал вечера</div>
+              <div class="court-warning">${escapeHtml(outcomeTitle)}</div>
+            </div>
+            <div class="court-current-pair court-winner">
+              <div class="court-house">
+                <div class="court-house-name">${escapeHtml(winnerName)}</div>
+                <div class="court-alive">Влияние ${escapeHtml(influenceValue)} · Золото ${escapeHtml(goldValue)} · Свитки ${escapeHtml(scrollValue)}</div>
+              </div>
+            </div>
+            <div class="court-pair-list">
+              <div class="court-pair-item">
+                <span>Лидер по влиянию</span>
+                <strong>${escapeHtml(pickText(influenceLeader?.name) || winnerName)}</strong>
+              </div>
+              <div class="court-pair-item">
+                <span>Больше всего золота</span>
+                <strong>${escapeHtml(pickText(goldLeader?.name) || winnerName)}</strong>
+              </div>
+              <div class="court-pair-item">
+                <span>Джекпот</span>
+                <strong>${escapeHtml(jackpotAmountLabel)}</strong>
+              </div>
+              <div class="court-pair-item">
+                <span>Итог</span>
+                <strong>${escapeHtml(outcomeText)}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderCourtSetupActivity(state){
+      const court = state?.court_runtime || {};
+      const nextPair = court?.next_pair || null;
+      const nextPairText = nextPair
+        ? `${pickText(nextPair?.house_a_name) || "Дом A"} vs ${pickText(nextPair?.house_b_name) || "Дом B"}`
+        : "Оператор готовит сетку и первый выход Домов.";
+      return `
+        <div class="court-scene">
+          <div class="court-stage">
+            <div class="court-header">
+              <div class="court-title">Перед Судом Домов</div>
+              <div class="court-warning">Последний шанс перед ареной</div>
+            </div>
+            <div class="court-current-pair">
+              <div class="court-house">
+                <div class="court-house-name">Домам пора занять места</div>
+                <div class="court-alive">${escapeHtml(nextPairText)}</div>
+              </div>
+            </div>
+            <div class="court-pair-list">
+              <div class="court-pair-item">
+                <span>Последний заказ</span>
+                <strong>Сейчас ещё можно сделать последний заказ перед Судом</strong>
+              </div>
+              <div class="court-pair-item">
+                <span>Jackpot cutoff</span>
+                <strong>После старта Суда новые заказы уже не входят в jackpot</strong>
+              </div>
+              <div class="court-pair-item">
+                <span>Арена</span>
+                <strong>Персонал готовит лампы, кнопки и площадку для поединков</strong>
+              </div>
+              <div class="court-pair-item">
+                <span>Что дальше</span>
+                <strong>Как только ведущий даст сигнал, стартует первая пара</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function getDirectorSceneModel(state, phases, activeRound){
+      const director = getDirectorState(state);
+      if (!director) return null;
+      const finalContextRound = activeRound || director.current_round || director.last_completed_round || null;
+      const hasFinalOutcome = Boolean(state?.final_outcome && pickText(state.final_outcome.winner_house_name));
+
+      if (isFinalShowRound(finalContextRound) && (director?.scenario_finished || activeRound || director.current_round || hasFinalOutcome)) {
+        return {
+          mode: "final_show",
+          phaseLine: "Финал",
+          pillText: "Финал вечера",
+          phaseName: "ДОМА УЗНАЮТ ИТОГ",
+          phaseSub: "Влияние, золото и репутация складываются в итоговый расклад вечера.",
+          phaseBadges: `<span class="phase-badge">${escapeHtml(pickText(finalContextRound?.title) || "Финал вечера")}</span>`,
+          airTitle: "Финальный расклад",
+          airText: director?.scenario_finished
+            ? "Итог вечера зафиксирован на экране зала."
+            : "Сейчас звучит главное объявление вечера.",
+          turnTitle: director?.scenario_finished ? "Чем всё закончилось" : "Что происходит",
+          turnText: director?.scenario_finished
+            ? "Победитель определён. Ведущий фиксирует исход джекпота и завершает вечер."
+            : "Ведущий подводит политический итог и объявляет Дом вечера."
+        };
+      }
+
+      const currentRound = director.current_round || null;
+      const nextRound = director.next_round || null;
+
+      if (currentRound && currentRound.round_type === "system_stage") {
+          const roundCode = String(currentRound.round_code || "");
+          const sceneMap = {
+            stage_map_entry: {
+              mode: "map",
+              phaseLine: "Карта",
+              pillText: "Экспедиции",
+              phaseName: "ЭКСПЕДИЦИИ НАЧАЛИСЬ",
+            phaseSub: "Дома отправляют людей на карту влияния",
+            phaseBadges: `<span class="phase-badge">${escapeHtml(currentRound.title || "Карта")}</span>`,
+            airTitle: "Открыта карта мира",
+            airText: "Выбирайте направление и рискуйте",
+            turnTitle: "Что происходит",
+            turnText: "Каждая экспедиция может изменить баланс сил"
+            },
+            stage_diplomacy_1: {
+              mode: "diplomacy",
+              phaseLine: "Дипломатия",
+              pillText: "Переговоры",
+              phaseName: "ДОМА ДОГОВАРИВАЮТСЯ",
+            phaseSub: "Бар становится центром политики",
+            phaseBadges: `<span class="phase-badge">${escapeHtml(currentRound.title || "Дипломатия")}</span>`,
+            airTitle: "Переговоры начались",
+            airText: "Союзы и сделки решают исход игры",
+            turnTitle: "Что происходит",
+            turnText: "Договаривайтесь, обманывайте, объединяйтесь"
+            },
+            stage_crest: {
+              mode: "crest",
+              phaseLine: "Сборка герба",
+              pillText: "Герб дома",
+              phaseName: "ДОМА СОБИРАЮТ ГЕРБ",
+            phaseSub: "Найдите недостающие элементы и соберите силу дома",
+            phaseBadges: `<span class="phase-badge">${escapeHtml(currentRound.title || "Герб")}</span>`,
+            airTitle: "Герб почти готов",
+            airText: "Дома ищут недостающие части и вступают в сделки",
+            turnTitle: "Что происходит",
+            turnText: "Обменивайтесь ресурсами и договаривайтесь с другими домами"
+            },
+            stage_duels: {
+              mode: "duel",
+              phaseLine: "Дуэли домов",
+              pillText: "Дуэль",
+              phaseName: "ДОМА ВЫЗЫВАЮТ ДРУГ ДРУГА",
+            phaseSub: "Ставки сделаны — решается исход противостояния",
+            phaseBadges: `<span class="phase-badge">${escapeHtml(currentRound.title || "Дуэли")}</span>`,
+            airTitle: "Дуэль началась",
+              airText: "Дома делают ставки и выбирают соперников",
+              turnTitle: "Что происходит",
+              turnText: "Каждая победа приносит золото и влияние"
+              },
+            stage_court: {
+              mode: "court_setup",
+              phaseLine: "Суд Домов",
+              pillText: "Суд Домов",
+              phaseName: "ПЕРЕД СУДОМ ДОМОВ",
+              phaseSub: "Последний заказ, подготовка арены и сбор Домов перед стартом Суда.",
+              phaseBadges: `<span class="phase-badge">${escapeHtml(currentRound.title || "Суд Домов")}</span>`,
+              airTitle: "Последний шанс перед ареной",
+              airText: "После старта Суда новые заказы уже не входят в jackpot.",
+              turnTitle: "Что происходит",
+              turnText: "Персонал готовит арену, а Домы занимают места перед первым выходом."
+            },
+            stage_free_play: {
+              phaseLine: "Свободная игра",
+              pillText: "Свободная игра",
+            phaseName: "СВОБОДНАЯ ИГРА",
+            phaseSub: "Дома могут использовать открытые механики.",
+            phaseBadges: `<span class="phase-badge">${escapeHtml(currentRound.title || "Свободная игра")}</span>`,
+            airTitle: "Окно свободных решений",
+            airText: "Дома могут использовать открытые механики.",
+            turnTitle: "Что происходит",
+            turnText: "Сейчас инициативу получают те, кто быстрее всего превращает свободу в конкретный выигрыш."
+            },
+            stage_upgrade: {
+              mode: "upgrade",
+              phaseLine: "Усиление",
+              pillText: "Развитие",
+              phaseName: "ДОМА УСИЛИВАЮТСЯ",
+            phaseSub: "Ресурсы превращаются в преимущество",
+            phaseBadges: `<span class="phase-badge">${escapeHtml(currentRound.title || "Усиление")}</span>`,
+            airTitle: "Дома становятся сильнее",
+            airText: "Каждое решение влияет на финал",
+            turnTitle: "Что происходит",
+            turnText: "Инвестируйте ресурсы в силу дома"
+            },
+            stage_intrigue: {
+              mode: "intrigue",
+              phaseLine: "Интриги",
+              pillText: "Интриги",
+              phaseName: "ТАЙНЫЕ ДЕЙСТВИЯ ДОМОВ",
+              phaseSub: "Никто не знает, кто играет против кого",
+              phaseBadges: `<span class="phase-badge">${escapeHtml(currentRound.title || "Интриги")}</span>`,
+              airTitle: "Двор полон слухов",
+              airText: "Скрытые действия могут изменить ход игры",
+              turnTitle: "Что происходит",
+              turnText: "Используйте хитрость и влияние"
+            },
+            stage_final: {
+              phaseLine: "Финал",
+              pillText: "Финал вечера",
+              phaseName: "ФИНАЛ ВЕЧЕРА",
+              phaseSub: "Решающий выбор домов",
+              phaseBadges: `<span class="phase-badge">${escapeHtml(currentRound.title || "Финал")}</span>`,
+              airTitle: "Вечер подходит к развязке",
+              airText: "Каждое решение теперь влияет на итоговый расклад сил.",
+              turnTitle: "Что происходит",
+              turnText: "Дома делают решающий выбор перед завершением вечера."
+            }
+          };
+
+        return sceneMap[roundCode] || null;
+      }
+
+      if (activeRound?.id) {
+        return null;
+      }
+
+      if (!currentRound && nextRound) {
+        return renderTvWaitingScene(state);
+      }
+
+      return null;
+    }
+    function renderTvWaitingScene(state) {
+      const director = getDirectorState(state);
+      const title = pickText(director?.next_round?.title) || "следующий этап";
+
+      return {
+        phaseLine: `Далее: ${title}`,
+        pillText: "Подготовка следующего этапа",
+        phaseName: "ПОДГОТОВКА СЛЕДУЮЩЕГО ЭТАПА",
+        phaseSub: `Далее: ${title}`,
+        phaseBadges: `<span class="phase-badge">${escapeHtml(title)}</span>`,
+        airTitle: "Двор готовится к следующему шагу",
+        airText: "Сценарий ждёт сигнала ведущего, чтобы открыть следующий этап для зала.",
+        turnTitle: "Следующее объявление уже близко",
+        turnText: "Как только ведущий переведёт игру дальше, экран сразу перестроится под новый этап."
+      };
+    }
+    function getMainPhase(phases, activeRound){
+      if (activeRound?.phase_code) return activeRound.phase_code;
+      if (phases.length) return phases[0].phase_code;
+      return "intermission";
+    }
+    function getLeader(leadersBlock, houses, type){
+      const direct = leadersBlock?.[type];
+      if (direct && !Array.isArray(direct)) return direct;
+      const alias = type === "gold" ? leadersBlock?.by_gold : type === "influence" ? leadersBlock?.by_influence : null;
+      if (Array.isArray(alias) && alias.length) {
+        const top = alias[0];
+        return {
+          house_name: pickText(top?.name) || pickText(top?.house_name) || safeName(top),
+          value: houseValue(top, type),
+          house_key: houseKey(top)
+        };
+      }
+      const sorted = [...houses].sort((a,b)=>houseValue(b,type)-houseValue(a,type));
+      const house = sorted[0];
+      if (!house) return null;
+      return { house_name:safeName(house), value:houseValue(house,type), house_key:houseKey(house) };
+    }
+
+    function getReadyState(state){
+      const readiness = state?.readiness || {};
+      const houses = safeList(state?.houses);
+      const total = Number(readiness?.total_count ?? houses.length ?? 0);
+      const readyCount = Number(readiness?.ready_count ?? safeList(houses).filter(house => house?.is_ready).length);
+      const readyNames = safeList(readiness?.ready_houses)
+        .map(house => pickText(house?.name) || pickText(house?.house_key))
+        .filter(Boolean);
+      return { total, readyCount, readyNames };
+    }
+
+    function formatReadyLine(state){
+      const readyState = getReadyState(state);
+      if (!readyState.total) return "";
+      return `Готово ${readyState.readyCount}/${readyState.total} Домов`;
+    }
+    function leaderIcon(entry){
+      const key = String(entry?.house_key || "").toLowerCase();
+      return HOUSE_ICONS[key] || "♜";
+    }
+    function getPhaseBadges(phases){
+      return phases.slice(0,4).map(p => `<span class="phase-badge">${escapeHtml(p.title)}</span>`).join("") || `<span class="phase-badge">Ожидание следующего хода</span>`;
+    }
+
+    function renderTop(phases, activeRound, sceneModel = null, state = null){
+      const readyLine = formatReadyLine(state);
+      if (sceneModel){
+        document.getElementById("roundTitle").textContent = pickText(activeRound?.title) || pickText(sceneModel.phaseName) || "Экран двора";
+        document.getElementById("phaseLine").textContent = readyLine
+          ? `${sceneModel.phaseLine || "В ожидании фазы"} • ${readyLine}`
+          : (sceneModel.phaseLine || "В ожидании фазы");
+        document.getElementById("phasePillText").textContent = sceneModel.pillText || sceneModel.phaseLine || "Подготовка двора";
+        document.getElementById("phaseName").textContent = sceneModel.phaseName || "ИГРОВАЯ ФАЗА";
+        document.getElementById("phaseSub").textContent = sceneModel.phaseSub || "Двор в движении.";
+        document.getElementById("phaseBadges").innerHTML = sceneModel.phaseBadges || `<span class="phase-badge">Ожидание следующего хода</span>`;
+        return;
+      }
+
+      const phaseNames = phases.map(p=>p.title).filter(Boolean);
+      const phaseLineBase = phaseNames.length ? phaseNames.join(" • ") : "В ожидании фазы";
+      const phaseLine = readyLine ? `${phaseLineBase} • ${readyLine}` : phaseLineBase;
+      const mainPhaseCode = getMainPhase(phases, activeRound);
+      const mainPhaseTitle = phaseCodeToTitle(mainPhaseCode);
+      const roundTitle = pickText(activeRound?.title) || pickText(activeRound?.name) || mainPhaseTitle;
+
+      document.getElementById("roundTitle").textContent = roundTitle;
+      document.getElementById("phaseLine").textContent = phaseLine;
+      document.getElementById("phasePillText").textContent = phaseLine;
+      document.getElementById("phaseName").textContent = mainPhaseTitle;
+      document.getElementById("phaseSub").textContent = phaseText(mainPhaseCode);
+      document.getElementById("phaseBadges").innerHTML = getPhaseBadges(phases);
+    }
+
+    function renderLeaders(leadersBlock, houses){
+      const goldLeader = getLeader(leadersBlock, houses, "gold");
+      const influenceLeader = getLeader(leadersBlock, houses, "influence");
+
+      document.getElementById("leaderGoldHouse").textContent =
+        `${leaderIcon(goldLeader)} ${pickText(goldLeader?.house_name) || pickText(goldLeader?.name) || "—"}`;
+      document.getElementById("leaderGoldScore").textContent =
+        `${num(goldLeader?.value ?? goldLeader?.gold ?? 0)} золота`;
+
+      document.getElementById("leaderInfluenceHouse").textContent =
+        `${leaderIcon(influenceLeader)} ${pickText(influenceLeader?.house_name) || pickText(influenceLeader?.name) || "—"}`;
+      document.getElementById("leaderInfluenceScore").textContent =
+        `${num(influenceLeader?.value ?? influenceLeader?.influence ?? 0)} влияния`;
+    }
+
+    function renderBalance(houses, state){
+      const readyLine = formatReadyLine(state);
+      const sorted = byPriority(houses).slice(0,5);
+      document.getElementById("balanceMeta").textContent = houses.length
+        ? `${readyLine || `Активны ${houses.length} из 10 Домов`} • на этом слайде лидеры`
+        : "Пока Домы ещё не вышли в борьбу";
+
+      const grid = document.getElementById("rankingGrid");
+      if (!sorted.length){
+        grid.innerHTML = `<div class="empty">Домы пока не вышли в игру</div>`;
+        document.getElementById("balanceLeaderTitle").textContent = "—";
+        document.getElementById("balanceLeaderText").textContent = "Ожидание первой сильной партии.";
+        document.getElementById("balanceThreatTitle").textContent = "—";
+        document.getElementById("balanceThreatText").textContent = "Пока преследователь ещё не проявился.";
+        return;
+      }
+
+      grid.innerHTML = sorted.map((house, idx) => {
+        const key = houseKey(house);
+        const icon = HOUSE_ICONS[key] || "♜";
+        const color = HOUSE_COLORS[key] || "#af8a43";
+        const topClass = idx < 3 ? `top-${idx+1}` : "";
+        return `
+          <article class="rank-card ${topClass}" style="border-left-color:${color};">
+            <div class="rank-badge">${idx+1}</div>
+            <div class="rank-main">
+              <div class="rank-house">${escapeHtml(icon)} ${escapeHtml(safeName(house))}</div>
+              <div class="rank-style">${escapeHtml(HOUSE_STYLES[key] || "дом в борьбе")}</div>
+            </div>
+            <div class="rank-value">
+              <div class="rank-score">${houseValue(house,"influence")}</div>
+              <div class="rank-label">влияние</div>
+            </div>
+            <div class="rank-gold">
+              <div class="rank-gold-score">${houseValue(house,"gold")}</div>
+              <div class="rank-gold-label">золото</div>
+            </div>
+          </article>
+        `;
+      }).join("");
+
+      const leader = sorted[0];
+      const runner = sorted[1];
+      document.getElementById("balanceLeaderTitle").textContent = `${HOUSE_ICONS[houseKey(leader)] || "♜"} ${safeName(leader)}`;
+      document.getElementById("balanceLeaderText").textContent =
+        `${houseValue(leader,"influence")} влияния, ${houseValue(leader,"gold")} золота и ${totalResources(leader)} ресурсов в запасе.`;
+
+      if (runner){
+        const diff = houseValue(leader,"influence") - houseValue(runner,"influence");
+        document.getElementById("balanceThreatTitle").textContent = `${HOUSE_ICONS[houseKey(runner)] || "♜"} ${safeName(runner)}`;
+        document.getElementById("balanceThreatText").textContent =
+          diff <= 1
+            ? `Отрыв минимален. Один сильный ход — и вершина поменяет хозяина.`
+            : `До лидера ${diff} по влиянию. Это ближайший преследователь прямо сейчас.`;
+      } else {
+        document.getElementById("balanceThreatTitle").textContent = "—";
+        document.getElementById("balanceThreatText").textContent = "Пока преследователь ещё не проявился.";
+      }
+    }
+
+    function renderResources(houses){
+      const sorted = byPriority(houses).slice(0,10);
+      const el = document.getElementById("resourcesGrid");
+      document.getElementById("resourcesMeta").textContent = sorted.length
+        ? `Показаны все ${sorted.length} активных Домов из 10 базовых`
+        : "Пока нет данных по Домам";
+
+      if (!sorted.length){
+        el.innerHTML = `<div class="empty" style="grid-column:1 / -1; grid-row:1 / -1;">Домы пока не вышли в игру</div>`;
+        return;
+      }
+
+      el.innerHTML = sorted.map((house, idx) => {
+        const key = houseKey(house);
+        const color = HOUSE_COLORS[key] || "#af8a43";
+        const chips = RESOURCE_LAYOUT.map(([rKey, label]) => {
+          const rare = (rKey === "key" || rKey === "fire") ? "rare" : "";
+          return `<div class="chip ${rare}"><div class="chip-k">${label}</div><div class="chip-v">${houseValue(house, rKey)}</div></div>`;
+        }).join("");
+        return `
+          <article class="resource-card" style="border-left-color:${color};">
+            <div class="resource-head">
+              <div class="resource-house">${escapeHtml(HOUSE_ICONS[key] || "♜")} ${escapeHtml(safeName(house))}</div>
+              <div class="resource-rank">#${idx + 1}</div>
+            </div>
+            <div class="resource-primary">
+              <div class="metric-box">
+                <div class="metric-k">влияние</div>
+                <div class="metric-v">${houseValue(house, "influence")}</div>
+              </div>
+              <div class="metric-box secondary">
+                <div class="metric-k">золото</div>
+                <div class="metric-v">${houseValue(house, "gold")}</div>
+              </div>
+            </div>
+            <div class="resource-line">${chips}</div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function sideName(item, prefix){
+      const direct = pickText(item?.[`${prefix}_house_name`]) || pickText(item?.[`${prefix}_house`]) || pickText(item?.[`${prefix}_house_name`]);
+      if (direct) return direct;
+      const nested = item?.[`${prefix}_house`] || item?.[prefix] || item?.[`${prefix}_house_obj`] || item?.[`${prefix}_house_data`];
+      return pickText(nested?.name) || pickText(nested?.title) || pickText(nested?.house_name) || pickText(nested) || "";
+    }
+    function offerToText(offer){
+      if (!offer) return "";
+      if (typeof offer === "string") return offer;
+      if (Array.isArray(offer)) return offer.map(offerToText).filter(Boolean).join(" · ");
+      if (typeof offer === "object"){
+        const translated = [];
+        const names = {gold:"золото", influence:"влияние", stone:"камень", wood:"дерево", iron:"железо", scroll:"свиток", key:"ключ", fire:"огонь"};
+        for (const [key, value] of Object.entries(offer)){
+          if (value == null || value === 0 || value === "0") continue;
+          if (typeof value === "object"){
+            const nested = offerToText(value);
+            if (nested) translated.push(nested);
+            continue;
+          }
+          translated.push(`${value} ${names[key] || prettify(key)}`);
+        }
+        return translated.join(" • ");
+      }
+      return String(offer);
+    }
+    function extractAmountText(item){
+      const text = `${pickText(item?.offer_text)} ${pickText(item?.text)} ${pickText(item?.summary)} ${offerToText(item?.offer)}`.toLowerCase();
+      const match = text.match(/(\d+)\s*(золота|золото|gold)/i);
+      if (match) return `${match[1]} золота`;
+      return "";
+    }
+    function humanDeal(item){
+      const from = sideName(item,"from") || "Неизвестный Дом";
+      const to = sideName(item,"to") || sideName(item,"target") || "другой Дом";
+      const text = pickText(item?.offer_text) || pickText(item?.text) || pickText(item?.summary) || pickText(item?.offer_label) || offerToText(item?.offer) || "идёт обмен ресурсами";
+      return { title:`${from} → ${to}`, meta:text, amount:extractAmountText(item) };
+    }
+    function humanEvent(item){
+      const status = String(item.status || item.result || item.event_type || "событие");
+      if (item.offer_text || item.from_house || item.to_house || item.offer){
+        const deal = humanDeal(item);
+        return { title:deal.title, meta:`${prettify(status)} • ${deal.meta}`, amount:deal.amount };
+      }
+      const title = pickText(item.title) || pickText(item.label) || pickText(item.name) || prettify(status);
+      const meta = pickText(item.description) || pickText(item.text) || pickText(item.summary) || "перемена в расстановке сил";
+      return { title, meta, amount:"" };
+    }
+    function isMajor(item, info){
+      const amount = info.amount || "";
+      const match = amount.match(/(\d+)/);
+      return match ? Number(match[1]) >= 2 : false;
+    }
+    function renderFeed(containerId, items, kind, emptyText, maxCount = 4){
+      const container = document.getElementById(containerId);
+      const prepared = items.slice(0, maxCount);
+      if (!prepared.length){
+        container.innerHTML = `<div class="empty">${escapeHtml(emptyText)}</div>`;
+        return;
+      }
+      container.innerHTML = prepared.map(item => {
+        const info = kind === "event" ? humanEvent(item) : humanDeal(item);
+        const cls =
+          item.status === "accepted" || item.status === "closed" ? "closed" :
+          (kind === "counter" ? "counter" : "pending");
+        const major = isMajor(item, info) ? "major" : "";
+        return `
+          <article class="feed-item ${cls} ${major}">
+            <div class="feed-item-title">${escapeHtml(info.title)}</div>
+            <div class="feed-item-meta">
+              <span class="feed-item-text">${escapeHtml(info.meta)}</span>
+              ${info.amount ? `<span class="feed-item-amount">${escapeHtml(info.amount)}</span>` : ""}
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function buildPoliticalAir(houses, pending, counters){
+      const sorted = byPriority(houses);
+      const leader = sorted[0];
+      const runner = sorted[1];
+      if (pending.length + counters.length >= 4){
+        return {
+          title:"У стойки решают быстрее слов",
+          text:"Чем плотнее дипломатическое окно, тем сильнее дрожит расстановка Домов."
+        };
+      }
+      if (leader && runner){
+        const diff = houseValue(leader,"influence") - houseValue(runner,"influence");
+        return {
+          title:`${safeName(leader)} держит верх`,
+          text: diff <= 1
+            ? `${safeName(runner)} почти на одной высоте. Один сильный ход — и таблица перевернётся.`
+            : `${safeName(runner)} остаётся ближе всех к вершине. Остальным нужен рывок или редкий ресурс.`
+        };
+      }
+      return {
+        title:"Двор прислушивается",
+        text:"Пока громче всего звучат переговоры и осторожные обмены у стойки."
+      };
+    }
+
+    function buildTurn(closed, counters, pending){
+      const item = closed[0] || counters[0] || pending[0];
+      if (!item){
+        return {
+          title:"Новый ход ещё впереди",
+          text:"Ждите следующего объявления ведущего — баланс сил ещё можно резко сместить."
+        };
+      }
+      const deal = humanDeal(item);
+      const from = sideName(item,"from") || "Один Дом";
+      const amountTail = deal.amount ? ` ${deal.amount}.` : "";
+      return {
+        title:`${from} изменил ход партии`,
+        text:`${deal.title}. ${deal.meta}.${amountTail}`
+      };
+    }
+
+    function hasCourtRuntime(data){
+      return pickText(data?.court_runtime?.source).trim().toLowerCase() === "court_mvp";
+    }
+
+    function getCourtHouseName(pair, side){
+      const suffix = side === "b" ? "b" : "a";
+      return pickText(pair?.[`house_${suffix}_name`]) || (pair?.[`house_${suffix}_id`] ? `Дом #${pair[`house_${suffix}_id`]}` : "Неизвестный Дом");
+    }
+
+    function getCourtPairStatusText(pair){
+      if (!pair) return "Ожидает выхода";
+      const status = pickText(pair?.status).trim().toLowerCase();
+      if (status === "active") return "На арене";
+      if (status === "finished") return "Победитель пары";
+      return "Ожидает выхода";
+    }
+
+    function getCourtLastEventText(court){
+      if (court?.is_finished || pickText(court?.status).toLowerCase() === "court_finished"){
+        return "Суд завершён. Победители пар и Дом с пропуском зафиксированы.";
+      }
+      const event = court?.last_event || null;
+      const currentPair = court?.current_pair || null;
+      if (!event){
+        return "Суд ожидает следующий вопрос";
+      }
+
+      const pairSource = currentPair && num(currentPair?.pair_no) === num(event?.pair_no) ? currentPair : null;
+      const houseAName = pairSource ? getCourtHouseName(pairSource, "a") : "Дом A";
+      const houseBName = pairSource ? getCourtHouseName(pairSource, "b") : "Дом B";
+
+      if (event.type === "court_answer_result"){
+        const side = pickText(event?.side).toLowerCase();
+        const result = pickText(event?.result).toLowerCase();
+        const actor = side === "b" ? houseBName : houseAName;
+        const target = pickText(event?.loser_house_name) || (side === "b" ? houseAName : houseBName);
+        const score = `${num(event?.house_a_alive)} : ${num(event?.house_b_alive)}`;
+        if (result === "correct"){
+          return `${actor} отвечает верно и выбивает бойца ${target}. Счёт пары: ${score}.`;
+        }
+        return `${actor} ошибается и теряет бойца. Счёт пары: ${score}.`;
+      }
+
+      if (event.type === "extra_question"){
+        return "Суд требует дополнительный вопрос, чтобы определить победителя пары.";
+      }
+
+      if (event.type === "pair_winner_confirmed"){
+        const winnerName = event?.winner_house_id === pairSource?.house_b_id ? houseBName : houseAName;
+        return `${winnerName} подтверждён как победитель пары.`;
+      }
+
+      if (event.type === "pair_started"){
+        return `${houseAName} и ${houseBName} выходят на арену.`;
+      }
+
+      if (event.type === "bye"){
+        return `${pickText(event?.house_name) || "Дом"} ждёт победителей без первого боя.`;
+      }
+
+      return "Суд ожидает следующий вопрос";
+    }
+
+    function getCourtPairNote(pair){
+      if (!pair) return "Битва за проход дальше";
+      if (pair?.winner_house_id){
+        const winnerName = pair.winner_house_id === pair.house_a_id ? getCourtHouseName(pair, "a") : getCourtHouseName(pair, "b");
+        return `Победитель пары: ${winnerName}`;
+      }
+      return "Битва за проход дальше";
+    }
+
+    function renderCourtPairQueue(court){
+      const currentPairNo = num(court?.current_pair?.pair_no);
+      const pairs = safeList(court?.bracket).filter(pair => num(pair?.pair_no) !== currentPairNo);
+      if (!pairs.length){
+        return `<div class="empty">Сетка суда готова. Следующие пары появятся здесь.</div>`;
+      }
+
+      return `
+        <div class="court-pair-list">
+          ${pairs.map(pair => {
+            const statusText = getCourtPairStatusText(pair);
+            return `
+              <div class="court-pair-row ${pair?.status === "finished" ? "finished" : ""}">
+                <div class="court-pair-meta">Пара ${num(pair?.pair_no) || "—"}</div>
+                <div>
+                  <div class="side-title">${escapeHtml(getCourtHouseName(pair, "a"))} <span style="color:var(--muted2)">vs</span> ${escapeHtml(getCourtHouseName(pair, "b"))}</div>
+                  <div class="court-pair-note">${escapeHtml(getCourtPairNote(pair))}</div>
+                </div>
+                <div class="court-pair-meta">${escapeHtml(statusText)}</div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `;
+    }
+
+    function renderCourtWinners(court){
+      const explicitWinners = safeList(court?.winners);
+      const pairWinners = explicitWinners.filter(item => item?.source === "pair");
+      const byeWinners = explicitWinners.filter(item => item?.source === "bye");
+      if (!pairWinners.length && !byeWinners.length){
+        return `<div class="empty">Победители пар появятся здесь после завершения боёв.</div>`;
+      }
+
+      return `
+        <div class="court-pair-list">
+          ${byeWinners.map(item => `
+            <div class="court-winner">
+              <div class="court-winner-title">Дом с пропуском</div>
+              <div class="court-winner-name">${escapeHtml(pickText(item?.house_name) || `Дом #${num(item?.house_id) || "—"}`)}</div>
+              <div class="court-winner-meta">Проходит дальше без первого боя</div>
+            </div>
+          `).join("")}
+          ${pairWinners.map(item => {
+            return `
+              <div class="court-winner">
+                <div class="court-winner-title">Пара ${num(item?.pair_no) || "—"}</div>
+                <div class="court-winner-name">${escapeHtml(pickText(item?.house_name) || `Дом #${num(item?.house_id) || "—"}`)}</div>
+                <div class="court-winner-meta">Победитель пары зафиксирован</div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `;
+    }
+
+    function courtStatusLabel(status){
+      const normalized = pickText(status).trim().toLowerCase();
+      if (normalized === "pair_intro") return "Пара выходит на сцену";
+      if (normalized === "question_active") return "Идёт вопрос суда";
+      if (normalized === "question_reveal") return "Ответ разобран";
+      if (normalized === "needs_extra_question") return "Нужен дополнительный вопрос";
+      if (normalized === "sudden_death") return "Дополнительный вопрос";
+      if (normalized === "pair_result") return "Пара завершена";
+      if (normalized === "bracket_ready") return "Пары назначены";
+      if (normalized === "court_finished") return "Суд завершён";
+      if (normalized === "pair_active") return "Пара сражается";
+      return "Суд Домов";
+    }
+
+    function hydrateCourtMediaBlocks(){
+      document.querySelectorAll(".court-media-image[data-media-candidates]").forEach(image => {
+        const candidates = pickText(image.dataset.mediaCandidates).split("|").filter(Boolean);
+        if (!candidates.length){
+          return;
+        }
+
+        if (candidates.includes(image.getAttribute("src") || "")){
+          return;
+        }
+
+        const block = image.closest(".tv-question-media");
+        let index = 0;
+        image.onerror = () => {
+          index += 1;
+          if (index >= candidates.length){
+            image.onerror = null;
+            image.removeAttribute("src");
+            if (block){
+              block.classList.remove("is-visible");
+            }
+            return;
+          }
+          image.src = candidates[index];
+        };
+        image.src = candidates[index];
+        if (block){
+          block.classList.add("is-visible");
+        }
+      });
+    }
+
+    function renderCourtQuestionBlock(question, debugData){
+      if (!question){
+        return "";
+      }
+
+      const content = getQuestionContentObject(question, debugData);
+      const questionWithContent = { ...question, content };
+      const revealMode = isQuestionRevealMode(questionWithContent, false);
+      const rawTitle = pickText(question?.title) || pickText(question?.prompt) || "Вопрос суда";
+      const rawPrompt = pickText(question?.prompt) || rawTitle;
+      const primaryText = rawPrompt || rawTitle;
+      const useCompactFullText = primaryText.length > 280;
+      const mediaUrls = canRevealQuestionMedia(questionWithContent, debugData, revealMode)
+        ? buildQuestionMediaUrls(questionWithContent, debugData)
+        : [];
+      const mediaMarkup = mediaUrls.length
+        ? `
+          <div class="tv-question-media is-visible">
+            <img class="court-media-image" data-media-candidates="${escapeHtml(mediaUrls.join("|"))}" alt="Иллюстрация вопроса">
+          </div>
+        `
+        : "";
+      const hiddenMediaHint = revealMode ? "" : getDeferredQuestionMediaHint(questionWithContent, debugData, false);
+      const promptMarkup = revealMode
+        ? renderQuestionReveal(questionWithContent, debugData, debugData?.stats || {}, null)
+        : `${hiddenMediaHint}${renderQuestionPromptMarkup(rawPrompt, content, rawTitle, useCompactFullText)}`;
+
+      return `
+        <div class="court-question-zone">
+          <div class="court-question-kicker">${revealMode ? "Разбор вопроса суда" : "Вопрос суда"}</div>
+          <div class="court-question-title">${escapeHtml(useCompactFullText ? safeTruncateQuestion(primaryText, 90) : rawTitle)}</div>
+          ${mediaMarkup}
+          <div class="question-prompt">${promptMarkup}</div>
+        </div>
+      `;
+    }
+
+    function renderCourtMvpScene(data){
+      const court = data?.court_runtime || {};
+      const currentPair = court?.current_pair || null;
+      const activeRound = data?.active_host_round || data?.tv_summary?.active_host_round || null;
+      const currentQuestion = data?.court_runtime?.current_question || data?.current_question || null;
+      const byeItems = safeList(court?.history).filter(item => item?.type === "bye");
+      const status = pickText(court?.status).trim().toLowerCase();
+      const currentPairStatus = currentPair?.sudden_death ? "sudden_death" : pickText(currentPair?.status).trim().toLowerCase();
+      const questionRevealMode = currentQuestion ? isQuestionRevealMode(currentQuestion, false) : false;
+      const questionBlock = currentPair && currentQuestion
+        ? renderCourtQuestionBlock(currentQuestion, data)
+        : "";
+      const queueMarkup = `
+        <div class="court-queue-compact">
+          <div class="court-queue-title">Очередь пар</div>
+          ${renderCourtPairQueue(court)}
+        </div>
+      `;
+
+      if (status === "court_finished"){
+        return `
+          <div class="court-scene">
+            <div class="court-header">
+              <div class="court-title">Суд Домов завершён</div>
+              <div class="court-subtitle">Пары сыграны. Победители зафиксированы в истории суда.</div>
+            </div>
+            ${renderCourtWinners(court)}
+          </div>
+        `;
+      }
+
+      if (currentPair?.status === "pair_result"){
+        const winnerName = currentPair?.winner_house_id === currentPair?.house_a_id
+          ? getCourtHouseName(currentPair, "a")
+          : getCourtHouseName(currentPair, "b");
+        return `
+          <div class="court-scene">
+            <div class="court-header">
+              <div class="court-title">Победитель пары</div>
+              <div class="court-subtitle">Ответ принят</div>
+            </div>
+            <div class="court-winner">
+              <div class="court-winner-title">Пара ${num(currentPair?.pair_no) || "—"}</div>
+              <div class="court-winner-name">${escapeHtml(winnerName || "Победитель подтверждается")}</div>
+              <div class="court-winner-meta">
+                Счёт выживших: ${escapeHtml(getCourtHouseName(currentPair, "a"))} ${num(currentPair?.house_a_alive)} : ${num(currentPair?.house_b_alive)} ${escapeHtml(getCourtHouseName(currentPair, "b"))}
+              </div>
+            </div>
+            <div class="court-current-pair">
+              <div class="court-house ${currentPair?.winner_house_id === currentPair?.house_b_id ? "court-loser" : ""}">
+                <div class="court-house-name">${escapeHtml(getCourtHouseName(currentPair, "a"))}</div>
+                <div class="court-score">${num(currentPair?.house_a_alive)}</div>
+              </div>
+              <div class="court-battle-score"><span class="court-battle-sword">⚔</span>${num(currentPair?.house_a_alive)} : ${num(currentPair?.house_b_alive)}<span class="court-battle-sword">⚔</span></div>
+              <div class="court-house ${currentPair?.winner_house_id === currentPair?.house_a_id ? "court-loser" : ""}" style="align-items:flex-end;text-align:right;">
+                <div class="court-house-name">${escapeHtml(getCourtHouseName(currentPair, "b"))}</div>
+                <div class="court-score">${num(currentPair?.house_b_alive)}</div>
+              </div>
+            </div>
+            <div class="court-warning">Ведущий подтверждает переход к следующей паре.</div>
+            ${queueMarkup}
+          </div>
+        `;
+      }
+
+      if (status === "pair_active" && currentPair && questionBlock){
+        const warning = currentPairStatus === "needs_extra_question" || currentPair?.sudden_death
+          ? `<div class="court-warning">Дополнительный вопрос. Суд требует развязки.</div>`
+          : "";
+        return `
+          <div class="court-scene">
+            <div class="court-stage">
+              <div class="court-scene">
+                <div class="court-header">
+                  <div class="court-title">Суд Домов · Пара №${num(currentPair?.pair_no) || "—"}</div>
+                  <div class="court-subtitle">${questionRevealMode ? "Ответ принят" : "На арене"}</div>
+                </div>
+                <div class="court-current-pair">
+                  <div class="court-house">
+                    <div class="court-house-name">${escapeHtml(getCourtHouseName(currentPair, "a"))}</div>
+                  </div>
+                  <div class="court-battle-score"><span class="court-battle-sword">⚔</span>${num(currentPair?.house_a_alive)} : ${num(currentPair?.house_b_alive)}<span class="court-battle-sword">⚔</span></div>
+                  <div class="court-house" style="align-items:flex-end;text-align:right;">
+                    <div class="court-house-name">${escapeHtml(getCourtHouseName(currentPair, "b"))}</div>
+                  </div>
+                </div>
+                ${warning}
+                ${questionBlock}
+              </div>
+              <div class="court-queue-compact">
+                <div class="court-queue-title">Последний удар</div>
+                <div class="court-warning">${escapeHtml(getCourtLastEventText(court))}</div>
+                <div class="court-pair-row">
+                  <div class="court-pair-meta">Пара ${num(currentPair?.pair_no) || "—"}</div>
+                  <div class="court-pair-meta">Вопросы: ${num(currentPair?.questions_used)} / ${num(currentPair?.max_questions) || 7}</div>
+                  <div class="court-pair-meta">${escapeHtml(questionRevealMode ? "Ответ принят" : "На арене")}</div>
+                </div>
+                ${queueMarkup}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      if (status === "pair_active" && currentPair){
+        const warning = currentPairStatus === "needs_extra_question" || currentPair?.sudden_death
+          ? `<div class="court-warning">Дополнительный вопрос. Суд требует развязки.</div>`
+          : "";
+        return `
+          <div class="court-scene">
+            <div class="court-header">
+              <div class="court-title">Суд Домов</div>
+              <div class="court-subtitle">${currentPairStatus === "pair_intro" ? "На арене" : courtStatusLabel(currentPairStatus)}</div>
+            </div>
+            <div class="court-current-pair">
+              <div class="court-house">
+                <div class="court-house-name">${escapeHtml(getCourtHouseName(currentPair, "a"))}</div>
+              </div>
+              <div class="court-battle-score"><span class="court-battle-sword">⚔</span>${num(currentPair?.house_a_alive)} : ${num(currentPair?.house_b_alive)}<span class="court-battle-sword">⚔</span></div>
+              <div class="court-house" style="align-items:flex-end;text-align:right;">
+                <div class="court-house-name">${escapeHtml(getCourtHouseName(currentPair, "b"))}</div>
+              </div>
+            </div>
+            <div class="court-pair-row">
+              <div class="court-pair-meta">Пара ${num(currentPair?.pair_no) || "—"}</div>
+              <div class="court-pair-meta">Вопросы: ${num(currentPair?.questions_used)} / ${num(currentPair?.max_questions) || 7}</div>
+              <div class="court-pair-meta">${escapeHtml(currentPairStatus === "pair_intro" ? "На арене" : courtStatusLabel(currentPairStatus))}</div>
+            </div>
+            ${warning}
+            <div class="court-queue-title">Последний удар</div>
+            <div class="court-warning">${escapeHtml(getCourtLastEventText(court))}</div>
+            ${queueMarkup}
+          </div>
+        `;
+      }
+
+      return `
+        <div class="court-scene">
+          <div class="court-header">
+            <div class="court-title">Суд Домов</div>
+            <div class="court-subtitle">Пары назначены</div>
+          </div>
+          <div class="court-warning">Пары назначены. Ведущий выбирает следующую пару для выхода на сцену.</div>
+          ${queueMarkup}
+          ${byeItems.length ? `
+            <div class="court-pair-list">
+              ${byeItems.map(item => `
+                <div class="court-warning">${escapeHtml(pickText(item?.house_name) || "Дом")} ждёт победителей.</div>
+              `).join("")}
+            </div>
+          ` : ""}
+        </div>
+      `;
+    }
+
+      function renderInsights(houses, pending, counters, closed, sceneModel = null, state = null){
+        if (sceneModel?.mode === "map") {
+          return renderActivityLayer(renderMapActivity(state), sceneModel);
+        }
+
+        if (sceneModel?.mode === "diplomacy") {
+          return renderActivityLayer(renderDiplomacyActivity(state), sceneModel);
+        }
+
+        if (sceneModel?.mode === "crest") {
+          return renderActivityLayer(renderCrestProgress(state), sceneModel);
+        }
+
+        if (sceneModel?.mode === "duel") {
+          return renderActivityLayer(renderDuels(state), sceneModel);
+        }
+
+        if (sceneModel?.mode === "court_setup") {
+          return renderActivityLayer(renderCourtSetupActivity(state), sceneModel);
+        }
+
+        if (sceneModel?.mode === "final_show") {
+          return renderActivityLayer(renderFinalShowActivity(state), sceneModel);
+        }
+
+        if (sceneModel?.mode === "upgrade") {
+          return renderActivityLayer(renderUpgradeActivity(state), sceneModel);
+        }
+
+        if (sceneModel?.mode === "intrigue") {
+          return renderActivityLayer(renderIntrigueActivity(state), sceneModel);
+        }
+
+        if (sceneModel){
+          document.getElementById("airTitle").textContent = sceneModel.airTitle || "Двор прислушивается";
+          document.getElementById("airText").textContent = sceneModel.airText || "Пока громче всего звучат переговоры и осторожные обмены у стойки.";
+        document.getElementById("turnTitle").textContent = sceneModel.turnTitle || "Новый ход ещё впереди";
+        document.getElementById("turnText").textContent = sceneModel.turnText || "Ждите следующего объявления ведущего — баланс сил ещё можно резко сместить.";
+        return;
+      }
+
+      const air = buildPoliticalAir(houses, pending, counters);
+      const turn = buildTurn(closed, counters, pending);
+      document.getElementById("airTitle").textContent = air.title;
+      document.getElementById("airText").textContent = air.text;
+      document.getElementById("turnTitle").textContent = turn.title;
+      document.getElementById("turnText").textContent = turn.text;
+    }
+
+
+      function assignmentBadgeData(item){
+        if (item?.is_correct === true) return { text:"правильно", cls:"runtime-green" };
+        if (item?.is_correct === false) return { text:"ошибка", cls:"runtime-red" };
+        if (item?.status === "resolved") return { text:"решение принято", cls:"runtime-green" };
+        if (item?.status === "answered") return { text:"решение принято", cls:"runtime-blue" };
+        if (item?.status === "expired") return { text:"не ответил", cls:"runtime-red" };
+        return { text:"решение не принято", cls:"runtime-gold" };
+      }
+
+    function getQuestionContentObject(question, debugData){
+      const candidates = [
+        question?.content_json,
+        question?.content,
+        question?.question_template?.content,
+        question?.question_template?.content_json,
+        debugData?.question_template?.content,
+        debugData?.question_template?.content_json
+      ];
+
+      for (const candidate of candidates){
+        if (candidate && typeof candidate === "object" && !Array.isArray(candidate)){
+          return candidate;
+        }
+      }
+
+      return {};
+    }
+
+    function getQuestionOptionItems(content){
+      const arrays = [
+        content?.options,
+        content?.statements,
+        content?.choices,
+        content?.variants,
+        content?.items
+      ];
+
+      for (const items of arrays){
+        if (Array.isArray(items) && items.length){
+          return items;
+        }
+      }
+
+      return [];
+    }
+
+    function optionLetter(index){
+      const letters = ["А", "Б", "В", "Г", "Д", "Е"];
+      return letters[index] || String(index + 1);
+    }
+
+    function normalizeQuestionText(text){
+      return pickText(text)
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function syncLongQuestionMode(text){
+      const normalized = pickText(text);
+      const length = normalized.length;
+      document.body.classList.toggle("tv-long-question", length > 180);
+      document.body.classList.toggle("tv-very-long-question", length > 280);
+    }
+
+    function syncQuestionFullscreenMode(enabled){
+      document.body.classList.toggle("tv-question-fullscreen", Boolean(enabled));
+    }
+
+    function safeTruncateQuestion(text, limit = 90){
+      const source = pickText(text);
+      if (!source || source.length <= limit){
+        return source;
+      }
+
+      const slice = source.slice(0, limit + 1);
+      const lastSpace = slice.lastIndexOf(" ");
+      const safeCut = lastSpace > Math.floor(limit * 0.6) ? slice.slice(0, lastSpace) : source.slice(0, limit);
+      return `${safeCut.trim()}...`;
+    }
+
+    function slugifyQuestionMediaRef(value){
+      return pickText(value)
+        .toLowerCase()
+        .replace(/^(фото|видео)\s+/i, "")
+        .replace(/[«»"'()]/g, " ")
+        .replace(/[.,!?;:]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .replace(/\s/g, "_");
+    }
+
+    function buildQuestionMediaUrls(question, debugData){
+      const content = getQuestionContentObject(question, debugData);
+      const mediaType = pickText(content?.media_type).toLowerCase();
+      const mediaRef = pickText(content?.media_ref);
+
+      if (mediaType !== "image" || !mediaRef){
+        return [];
+      }
+
+      const slug = slugifyQuestionMediaRef(mediaRef);
+      if (!slug){
+        return [];
+      }
+
+      return [".jpg", ".jpeg", ".png", ".webp", ".jfif"]
+        .map(ext => `/static/questions_media/${encodeURIComponent(slug)}${ext}`);
+    }
+
+    function setQuestionMedia(urls){
+      const mediaBlock = document.getElementById("questionMediaBlock");
+      const mediaImage = document.getElementById("questionMediaImage");
+      if (!mediaBlock || !mediaImage){
+        return;
+      }
+
+      const candidates = Array.isArray(urls) ? urls.filter(Boolean) : [];
+
+      if (!candidates.length){
+        delete mediaBlock.dataset.mediaCandidates;
+        mediaImage.removeAttribute("src");
+        mediaImage.onerror = null;
+        mediaBlock.classList.remove("is-visible");
+        return;
+      }
+
+      const mediaCandidatesKey = candidates.join("|");
+      if (
+        mediaBlock.dataset.mediaCandidates === mediaCandidatesKey
+        && mediaBlock.classList.contains("is-visible")
+        && candidates.includes(mediaImage.getAttribute("src") || "")
+      ){
+        return;
+      }
+
+      let index = 0;
+      mediaBlock.dataset.mediaCandidates = mediaCandidatesKey;
+      mediaImage.onerror = () => {
+        index += 1;
+        if (index >= candidates.length){
+          delete mediaBlock.dataset.mediaCandidates;
+          mediaImage.removeAttribute("src");
+          mediaImage.onerror = null;
+          mediaBlock.classList.remove("is-visible");
+          return;
+        }
+        mediaImage.src = candidates[index];
+      };
+      mediaImage.src = candidates[index];
+      mediaBlock.classList.add("is-visible");
+    }
+
+    function getQuestionMediaUsage(question, debugData){
+      const content = getQuestionContentObject(question, debugData);
+      const revealMode = pickText(content?.media_reveal).toLowerCase() || "after";
+      const explicitUsage = pickText(content?.media_usage).toLowerCase();
+      if (explicitUsage === "clue" || explicitUsage === "reveal" || explicitUsage === "decorate"){
+        return explicitUsage;
+      }
+
+      const promptText = pickText(question?.prompt || question?.title).toLowerCase();
+      const clueMarkers = [
+        "на фото",
+        "что происходит на фото",
+        "что делают эти люди",
+        "что это",
+        "(фото",
+        "фото ",
+        "изображено",
+        "на снимке",
+      ];
+      if (clueMarkers.some(marker => promptText.includes(marker))){
+        return "clue";
+      }
+
+      if (revealMode === "before"){
+        return "clue";
+      }
+
+      return "reveal";
+    }
+
+    function canRevealQuestionMedia(question, debugData, timerEnded = false){
+      const content = getQuestionContentObject(question, debugData);
+      const mediaType = pickText(content?.media_type).toLowerCase();
+      const mediaRef = pickText(content?.media_ref);
+      const mediaUsage = getQuestionMediaUsage(question, debugData);
+
+      if (mediaType !== "image" || !mediaRef){
+        return false;
+      }
+
+      return (
+        mediaUsage === "clue"
+        || mediaUsage === "decorate"
+        || !question?.answers_open
+        || pickText(question?.status).toLowerCase() !== "active"
+        || Boolean(timerEnded)
+      );
+    }
+
+    function shouldShowDeferredMediaHint(question, debugData, timerEnded = false){
+      const content = getQuestionContentObject(question, debugData);
+      const mediaType = pickText(content?.media_type).toLowerCase();
+      const mediaRef = pickText(content?.media_ref);
+      const mediaUsage = getQuestionMediaUsage(question, debugData);
+
+      if (mediaType !== "image" || !mediaRef){
+        return false;
+      }
+
+      return mediaUsage === "reveal" && !canRevealQuestionMedia(question, debugData, timerEnded);
+    }
+
+    function getDeferredQuestionMediaHint(question, debugData, timerEnded = false){
+      if (!shouldShowDeferredMediaHint(question, debugData, timerEnded)){
+        return "";
+      }
+      return `<div class="question-media-hint">Изображение откроется после сигнала</div>`;
+    }
+
+    function syncQuestionMediaVisibility(question, debugData, timerEnded = false){
+      if (canRevealQuestionMedia(question, debugData, timerEnded)){
+        setQuestionMedia(buildQuestionMediaUrls(question, debugData));
+        return true;
+      }
+
+      setQuestionMedia(null);
+      return false;
+    }
+
+    function renderQuestionPromptMarkup(prompt, content, titleText = "", useCompactFullText = false){
+      const safePrompt = escapeHtml(prompt || "Текст вопроса не загружен");
+      const normalizedTitle = normalizeQuestionText(titleText);
+      const normalizedPrompt = normalizeQuestionText(prompt);
+      const isDuplicatePrompt = Boolean(
+        normalizedTitle
+        && normalizedPrompt
+        && (normalizedTitle === normalizedPrompt || normalizedPrompt.startsWith(normalizedTitle))
+      );
+      const items = getQuestionOptionItems(content)
+        .map((item, index) => {
+          const text = typeof item === "string"
+            ? item
+            : pickText(item?.label) || pickText(item?.text) || pickText(item?.title) || pickText(item?.name) || pickText(item);
+
+          if (!text) return "";
+
+          return `
+            <div class="question-option">
+              <div class="question-option-code">${optionLetter(index)}.</div>
+              <div class="question-option-text">${escapeHtml(text)}</div>
+            </div>
+          `;
+        })
+        .filter(Boolean);
+
+      if (useCompactFullText){
+        const fullTextMarkup = `<div class="question-full-text">${safePrompt}</div>`;
+        return `${fullTextMarkup}${items.length ? `<div class="question-options">${items.join("")}</div>` : ""}`;
+      }
+
+      if (!items.length){
+        return isDuplicatePrompt ? "" : safePrompt;
+      }
+
+      const promptMarkup = isDuplicatePrompt ? "" : safePrompt;
+      return `${promptMarkup}${items.length ? `<div class="question-options">${items.join("")}</div>` : ""}`;
+    }
+
+    function isQuestionRevealMode(question, timerEnded = false){
+      if (!question) return false;
+      return (
+        Boolean(timerEnded)
+        || question?.answers_open === false
+        || pickText(question?.status).toLowerCase() !== "active"
+      );
+    }
+
+    function isCourtQuestion(activeRound, question = null){
+      const roundCode = pickText(activeRound?.round_code).trim().toLowerCase();
+      const questionCode = pickText(question?.question_code).trim().toLowerCase();
+      return roundCode === "stage_court" || questionCode === "court_q1";
+    }
+
+    function getQuestionCorrectAnswerText(question, debugData){
+      const content = getQuestionContentObject(question, debugData);
+      const correctAnswer = content?.correct_answer;
+      const normalized = pickText(correctAnswer).trim();
+      if (!normalized){
+        return "Ответ не указан";
+      }
+
+      const lowered = normalized.toLowerCase();
+      if (lowered === "правда"){
+        return "Правда";
+      }
+      if (lowered === "ложь"){
+        return "Ложь";
+      }
+
+      const optionItems = getQuestionOptionItems(content);
+      for (const item of optionItems){
+        if (typeof item === "string"){
+          if (pickText(item).trim().toLowerCase() === lowered){
+            return pickText(item).trim();
+          }
+          continue;
+        }
+
+        const optionCode = pickText(item?.code || item?.value).trim().toLowerCase();
+        const optionText = pickText(item?.label || item?.text || item?.title || item?.name).trim();
+        if (optionCode && optionCode === lowered){
+          return optionText || normalized;
+        }
+        if (optionText && optionText.toLowerCase() === lowered){
+          return optionText;
+        }
+      }
+
+      return normalized;
+    }
+
+    function renderQuestionReveal(question, debugData, stats = {}, activeRound = null){
+      if (isCourtQuestion(activeRound, question)){
+        const answered = num(stats.answered);
+        const total = num(stats.total);
+        return `
+          <div class="question-reveal">
+            <div class="question-reveal-kicker">Позиции Домов приняты</div>
+            <div class="question-reveal-question">Суд услышал голоса Домов</div>
+            <div class="question-reveal-answer">${answered} / ${total}</div>
+            <div class="question-reveal-explanation">Подтверждено Домов: ${answered} из ${total}</div>
+          </div>
+        `;
+      }
+
+      const content = getQuestionContentObject(question, debugData);
+      const originalQuestionText = escapeHtml(pickText(question?.prompt) || pickText(question?.title) || "Вопрос");
+      const correctAnswerText = escapeHtml(getQuestionCorrectAnswerText(question, debugData));
+      const explanationText = pickText(content?.explanation).trim();
+      const optionItems = getQuestionOptionItems(content);
+      const correctAnswerNormalized = pickText(content?.correct_answer).trim().toLowerCase();
+
+      const optionsMarkup = optionItems.length
+        ? `
+          <div class="question-options">
+            ${optionItems.map((item, index) => {
+              const optionText = typeof item === "string"
+                ? pickText(item).trim()
+                : pickText(item?.label || item?.text || item?.title || item?.name || item).trim();
+              const optionCode = typeof item === "string"
+                ? optionText.toLowerCase()
+                : pickText(item?.code || item?.value).trim().toLowerCase();
+              const isCorrect = (
+                optionText.toLowerCase() === correctAnswerNormalized
+                || (optionCode && optionCode === correctAnswerNormalized)
+              );
+              return `
+                <div class="question-option ${isCorrect ? "correct" : ""}">
+                  <div class="question-option-code">${optionLetter(index)}.</div>
+                  <div class="question-option-text">${escapeHtml(optionText || "—")}</div>
+                </div>
+              `;
+            }).join("")}
+          </div>
+        `
+        : "";
+
+      return `
+        <div class="question-reveal">
+          <div class="question-reveal-kicker">Правильный ответ</div>
+          <div class="question-reveal-question">${originalQuestionText}</div>
+          <div class="question-reveal-answer">${correctAnswerText}</div>
+          ${explanationText ? `<div class="question-reveal-explanation">${escapeHtml(explanationText)}</div>` : ""}
+          ${optionsMarkup}
+        </div>
+      `;
+    }
+
+
+    function formatSecondsClock(totalSec){
+      const safe = Math.max(0, Math.floor(totalSec));
+      const minutes = Math.floor(safe / 60);
+      const seconds = safe % 60;
+      return `${String(minutes).padStart(2,"0")}:${String(seconds).padStart(2,"0")}`;
+    }
+
+    function updateQuestionTimerVisual(){
+      const timerValueEl = document.getElementById("questionTimerValue");
+      const timerSubEl = document.getElementById("questionTimerSub");
+      const progressFillEl = document.getElementById("questionProgressFill");
+      const cardEl = document.querySelector("#slide-question .question-card");
+      if (!timerValueEl || !timerSubEl || !progressFillEl || !cardEl) return;
+
+      if (!questionFocusMode || !questionTimerEndsAt || !questionTimerDurationSec || !activeQuestionSceneData){
+        timerValueEl.textContent = "—:—";
+        timerSubEl.textContent = "Таймер включится, когда вопрос выйдет на экран";
+        timerValueEl.classList.remove("warn","danger");
+        progressFillEl.style.width = "0%";
+        progressFillEl.classList.remove("danger-fill");
+        cardEl.classList.remove("timeout-mode","hold-mode");
+        questionVisualState = "idle";
+        questionVisualStateUntil = null;
+        return;
+      }
+
+      const rawMsLeft = questionTimerEndsAt - Date.now();
+      const msLeft = Math.max(0, rawMsLeft);
+      const secLeft = Math.ceil(msLeft / 1000);
+      timerValueEl.textContent = formatSecondsClock(secLeft);
+
+      const elapsed = Math.max(0, questionTimerDurationSec - secLeft);
+      const progress = questionTimerDurationSec > 0 ? Math.min(100, (elapsed / questionTimerDurationSec) * 100) : 0;
+      progressFillEl.style.width = `${progress}%`;
+
+      const timerEnded = rawMsLeft <= 0;
+      if (timerEnded && questionVisualState !== "reveal"){
+        questionVisualState = "reveal";
+        questionVisualStateUntil = null;
+        if (lastQuestionRenderContext){
+          renderQuestion(
+            lastQuestionRenderContext.activeRound,
+            lastQuestionRenderContext.debugData,
+            lastQuestionRenderContext.forcedSlideKeyOverride
+          );
+        }
+      } else if (!timerEnded && questionVisualState !== "active"){
+        questionVisualState = "active";
+        questionVisualStateUntil = null;
+      }
+
+      timerValueEl.classList.remove("warn","danger");
+      progressFillEl.classList.remove("danger-fill");
+      cardEl.classList.remove("timeout-mode","hold-mode");
+
+      if (questionVisualState === "reveal"){
+        timerValueEl.classList.add("danger");
+        progressFillEl.classList.add("danger-fill");
+        timerSubEl.textContent = "Ответы закрыты";
+        cardEl.classList.add("hold-mode");
+        return;
+      }
+
+      if (secLeft <= 10) {
+        timerValueEl.classList.add("danger");
+        progressFillEl.classList.add("danger-fill");
+        timerSubEl.textContent = "Время на исходе";
+      } else if (secLeft <= 20) {
+        timerValueEl.classList.add("warn");
+        timerSubEl.textContent = "Осталось времени";
+      } else {
+        timerSubEl.textContent = "Идёт вопрос ведущего";
+      }
+    }
+
+      function renderQuestion(activeRound, debugData, forcedSlideKeyOverride = null){
+        lastQuestionRenderContext = { activeRound, debugData, forcedSlideKeyOverride };
+        const runtimeQuestion = debugData?.current_question || null;
+        const courtLocked = Boolean(
+          isCourtQuestion(activeRound, runtimeQuestion)
+          || (pickText(activeRound?.round_code).trim().toLowerCase() === "stage_court" && pickText(activeRound?.status).trim().toLowerCase() !== "finished")
+          || (activeQuestionSceneData?.hostRoundId === activeRound?.id && isCourtQuestion(activeRound, activeQuestionSceneData?.question))
+        );
+        const hasStoredRevealQuestion = Boolean(
+          !runtimeQuestion &&
+          activeRound?.id &&
+          activeQuestionSceneData?.hostRoundId === activeRound.id
+        );
+        const hasQuestion = Boolean(runtimeQuestion || hasStoredRevealQuestion || courtLocked);
+        questionFocusMode = hasQuestion;
+
+        if (lastQuestionFocusMode !== hasQuestion || (!hasQuestion && forcedSlideKey !== (forcedSlideKeyOverride || null))) {
+          syncSlideVisibility(hasQuestion, forcedSlideKeyOverride);
+          lastQuestionFocusMode = hasQuestion;
+        }
+
+        const slideQuestionEl = document.getElementById("slide-question");
+        const titleEl = document.getElementById("questionTitle");
+        const promptEl = document.getElementById("questionPrompt");
+        const metaEl = document.getElementById("questionMeta");
+        const kickerEl = document.getElementById("questionKicker");
+        const answeredMainEl = document.getElementById("questionAnsweredMain");
+        const answeredSubEl = document.getElementById("questionAnsweredSub");
+        const timerValueEl = document.getElementById("questionTimerValue");
+        const timerSubEl = document.getElementById("questionTimerSub");
+        const statsRowEl = document.getElementById("questionStatsRow");
+        const houseGridEl = document.getElementById("questionHouseGrid");
+        const progressFillEl = document.getElementById("questionProgressFill");
+
+        slideQuestionEl.classList.toggle("question-focus-theme", hasQuestion);
+
+        if (!hasQuestion){
+          activeQuestionVisualKey = null;
+          lastQuestionRenderKey = null;
+          questionTimerEndsAt = null;
+          questionTimerDurationSec = 60;
+          questionVisualState = "idle";
+          questionVisualStateUntil = null;
+          activeQuestionSceneData = null;
+          setQuestionMedia(null);
+          syncLongQuestionMode("");
+          syncQuestionFullscreenMode(false);
+
+          kickerEl.textContent = activeRound ? "Раунд ведущего готовится" : "Слово за ведущим";
+          titleEl.textContent = activeRound?.title || "Ожидание вопроса";
+          promptEl.textContent = activeRound
+            ? "Вопрос появится здесь сразу после открытия следующего шага на пульте ведущего."
+            : "Когда ведущий откроет вопрос, зал увидит его здесь крупно и без лишних помех.";
+          metaEl.textContent = activeRound
+            ? `Раунд активен: ${pickText(activeRound?.title) || "без названия"}`
+            : "Вопрос появится здесь, когда ведущий откроет его на своём пульте";
+          answeredMainEl.textContent = "0 / 0";
+          answeredSubEl.textContent = activeRound ? "Вопрос ещё не открыт" : "Раунд ведущего пока не активен";
+          timerValueEl.textContent = "—:—";
+          timerSubEl.textContent = activeRound?.round_code ? `Код раунда: ${activeRound.round_code}` : "Раунд ведущего пока не активен";
+          progressFillEl.style.width = "0%";
+          timerValueEl.classList.remove("warn","danger");
+
+          statsRowEl.innerHTML = `
+            <div class="q-stat"><div class="q-stat-label">Выдано</div><div class="q-stat-value">0</div></div>
+            <div class="q-stat"><div class="q-stat-label">Ответили</div><div class="q-stat-value">0</div></div>
+            <div class="q-stat"><div class="q-stat-label">Правильно</div><div class="q-stat-value">0</div></div>
+            <div class="q-stat"><div class="q-stat-label">Ошибки</div><div class="q-stat-value">0</div></div>
+          `;
+          houseGridEl.innerHTML = `
+            <article class="question-house" style="grid-column:1 / -1;">
+              <div class="question-house-top">
+                <div class="question-house-name">Экран вопроса ждёт сигнала</div>
+                <div class="question-house-badge runtime-muted">подготовка</div>
+              </div>
+              <div class="question-house-meta">Как только ведущий откроет вопрос, зал увидит его здесь крупно и ясно.</div>
+            </article>
+          `;
+          return;
+        }
+
+        syncQuestionFullscreenMode(hasQuestion);
+
+        const q = runtimeQuestion || activeQuestionSceneData?.question || {};
+        const isCourt = isCourtQuestion(activeRound, q);
+        const stats = runtimeQuestion
+          ? (debugData?.stats || {})
+          : (activeQuestionSceneData?.stats || debugData?.stats || {});
+        const assignments = runtimeQuestion
+          ? (Array.isArray(debugData?.assignments) ? debugData.assignments : [])
+          : (Array.isArray(activeQuestionSceneData?.assignments) ? activeQuestionSceneData.assignments : []);
+        const currentQuestionKey = `${q.id || "q"}:${q.sequence_no || 0}`;
+        if (runtimeQuestion && activeQuestionVisualKey !== currentQuestionKey){
+          activeQuestionVisualKey = currentQuestionKey;
+          const cq = debugData?.current_question || {};
+          questionTimerDurationSec = num(
+            cq.time_limit_sec ||
+            cq.timer ||
+            cq.duration_sec ||
+            45
+          ) || 45;
+          questionTimerEndsAt = Date.now() + questionTimerDurationSec * 1000;
+        }
+
+        const rawTitle = isCourt ? "Суд Домов" : (pickText(q.title) || "Вопрос без названия");
+        const rawPrompt = isCourt ? "Лорды подтверждают позицию Дома" : (pickText(q.prompt) || "Текст вопроса не загружен");
+        const primaryQuestionText = rawPrompt || rawTitle;
+        const isVeryLongQuestion = primaryQuestionText.length > 280;
+        const questionContent = getQuestionContentObject(q, debugData);
+          const questionWithContent = {
+            ...q,
+            content: questionContent
+          };
+          const timerEnded = questionVisualState === "reveal" || (questionTimerEndsAt ? questionTimerEndsAt <= Date.now() : false);
+          const revealMode = (!runtimeQuestion && hasStoredRevealQuestion)
+            ? true
+            : (!runtimeQuestion && courtLocked)
+              ? false
+            : isQuestionRevealMode(questionWithContent, timerEnded);
+        const hiddenMediaHint = revealMode ? "" : getDeferredQuestionMediaHint(questionWithContent, null, false);
+
+        activeQuestionSceneData = {
+          hostRoundId: activeRound?.id || activeQuestionSceneData?.hostRoundId || null,
+          sequenceNo: q.sequence_no || "—",
+          roleText: prettify(q.role_code || "role"),
+          title: isVeryLongQuestion ? safeTruncateQuestion(primaryQuestionText, 90) : rawTitle,
+          prompt: rawPrompt,
+          question: questionWithContent,
+            stats,
+            assignments,
+            mediaUrls: buildQuestionMediaUrls(questionWithContent, null),
+            revealMode,
+            promptMarkup: revealMode
+              ? renderQuestionReveal(questionWithContent, null, stats, activeRound)
+              : `${hiddenMediaHint}${renderQuestionPromptMarkup(
+                  rawPrompt,
+                  questionContent,
+                  isVeryLongQuestion ? primaryQuestionText : rawTitle,
+                  isVeryLongQuestion
+              )}`
+        };
+
+        syncLongQuestionMode(primaryQuestionText);
+
+        const renderKey = `${q.id || "q"}:${pickText(q.status) || "active"}:${String(q.answers_open)}:${revealMode ? "reveal" : "active"}`;
+          if (lastQuestionRenderKey !== renderKey) {
+            lastQuestionRenderKey = renderKey;
+            kickerEl.textContent = revealMode
+              ? (isCourt ? "Суд Домов" : "Правильный ответ")
+              : (isCourt ? "Суд Домов" : `Шаг ${activeQuestionSceneData.sequenceNo} • ${activeQuestionSceneData.roleText}`);
+            titleEl.textContent = activeQuestionSceneData.title;
+            promptEl.innerHTML = activeQuestionSceneData.promptMarkup;
+            syncQuestionMediaVisibility(activeQuestionSceneData.question, null, revealMode);
+          }
+
+          metaEl.textContent = revealMode
+            ? (isCourt
+              ? "Позиции Домов приняты и объявлены залу"
+              : `Раунд: ${pickText(activeRound?.title) || "без названия"} • Код: ${pickText(q.question_code) || "—"} • Ответ открыт`)
+            : (isCourt
+              ? "Лорды подтверждают позицию Дома"
+              : `Раунд: ${pickText(activeRound?.title) || "без названия"} • Код: ${pickText(q.question_code) || "—"} • Статус: ${pickText(q.status) || "active"}`);
+
+        if (!revealMode && (questionVisualState === "idle" || questionVisualState === "hold" || questionVisualState === "reveal")) {
+          questionVisualState = "active";
+          questionVisualStateUntil = null;
+        }
+
+        answeredMainEl.textContent = `${num(stats.answered)}/${num(stats.total)}`;
+        answeredSubEl.textContent = revealMode
+          ? (isCourt ? "Суд услышал голоса Домов" : "Вопрос закрыт, зал видит правильный ответ")
+          : isCourt
+            ? "Лорды подтверждают позицию Дома"
+            : num(stats.pending) > 0
+              ? `Дома принимают решение: ${num(stats.pending)}`
+              : "Все ответы получены или вопрос уже закрыт";
+        if (!revealMode) {
+          timerSubEl.textContent = isCourt
+            ? "Кнопки подтверждения доступны только Лордам / Леди"
+            : `Код вопроса: ${pickText(q.question_code) || "—"} • ${prettify(q.role_code || "mixed")}`;
+        }
+        updateQuestionTimerVisual();
+
+        statsRowEl.innerHTML = `
+          <div class="q-stat"><div class="q-stat-label">Выдано</div><div class="q-stat-value">${num(stats.total)}</div></div>
+          <div class="q-stat"><div class="q-stat-label">Ответили</div><div class="q-stat-value">${num(stats.answered)}</div></div>
+          <div class="q-stat"><div class="q-stat-label">Правильно</div><div class="q-stat-value">${num(stats.correct)}</div></div>
+          <div class="q-stat"><div class="q-stat-label">Ошибки</div><div class="q-stat-value">${num(stats.wrong)}</div></div>
+        `;
+
+        if (!assignments.length){
+          const emptyCourtTitle = revealMode ? "Позиции Домов зафиксированы" : "Суд ждёт подтверждений Домов";
+          const emptyCourtMeta = revealMode
+            ? "Зал ждёт сигнала ведущего для завершения суда."
+            : "Подтверждения появятся здесь, как только Лорды / Леди дадут ответ.";
+          houseGridEl.innerHTML = `
+            <article class="question-house" style="grid-column:1 / -1;">
+              <div class="question-house-top">
+                <div class="question-house-name">${isCourt ? emptyCourtTitle : "Дома ещё не получили вопрос"}</div>
+                <div class="question-house-badge runtime-muted">подготовка</div>
+              </div>
+              <div class="question-house-meta">${isCourt ? emptyCourtMeta : "Как только вопрос будет роздан, решения домов появятся на этом экране."}</div>
+            </article>
+          `;
+          return;
+        }
+
+        houseGridEl.innerHTML = assignments.slice(0, 6).map(item => {
+          const badge = assignmentBadgeData(item);
+          return `
+            <article class="question-house">
+              <div class="question-house-top">
+                <div class="question-house-name">${escapeHtml(pickText(item.house_name) || "Дом")}</div>
+                <div class="question-house-badge ${badge.cls}">${escapeHtml(badge.text)}</div>
+              </div>
+              <div class="question-house-meta">${escapeHtml(prettify(item.answer_mode || "решение дома"))}</div>
+            </article>
+          `;
+        }).join("");
+      }
+
+    function renderTicker(houses, leadersBlock, pending, counters, closed, phases){
+      const ticker = document.getElementById("tickerTrack");
+      const goldLeader = getLeader(leadersBlock, houses, "gold");
+      const influenceLeader = getLeader(leadersBlock, houses, "influence");
+      const sorted = byPriority(houses);
+
+      const parts = [];
+      if (phases.length) parts.push(`Активные фазы: ${phases.map(p => p.title).join(" • ")}`);
+      if (sorted[0]) parts.push(`Главный Дом сейчас: ${safeName(sorted[0])}`);
+      if (goldLeader) parts.push(`По золоту впереди ${pickText(goldLeader.house_name) || pickText(goldLeader.name)} — ${num(goldLeader.value ?? goldLeader.gold ?? 0)}`);
+      if (influenceLeader) parts.push(`По влиянию ведёт ${pickText(influenceLeader.house_name) || pickText(influenceLeader.name)} — ${num(influenceLeader.value ?? influenceLeader.influence ?? 0)}`);
+      if (pending.length) parts.push(`Открытых переговоров: ${pending.length}`);
+      if (counters.length) parts.push(`Встречных предложений: ${counters.length}`);
+      if (closed.length) parts.push(`Недавних подтверждений: ${closed.length}`);
+
+      if (!parts.length){
+        parts.push("Двор собирает слухи и золото","Только подтверждённая сделка становится историей","По залу официально работает дипломат");
+      }
+
+      const doubled = [...parts, ...parts];
+      ticker.innerHTML = doubled.map((part, idx) => {
+        const sep = idx < doubled.length - 1 ? '<span class="sep">✦</span>' : '';
+        return `<span>${escapeHtml(part)}</span>${sep}`;
+      }).join("");
+    }
+
+    function formatDuration(ms){
+      if (!Number.isFinite(ms) || ms <= 0) return "00:00";
+      const total = Math.floor(ms / 1000);
+      const minutes = Math.floor(total / 60);
+      const seconds = total % 60;
+      return `${String(minutes).padStart(2,"0")}:${String(seconds).padStart(2,"0")}`;
+    }
+    function updateTimer(){
+      updateQuestionTimerVisual();
+      const value = document.getElementById("timerValue");
+      const note = document.getElementById("timerNote");
+      if (phaseState.endsAt){
+        const diff = phaseState.endsAt - Date.now();
+        value.textContent = formatDuration(diff);
+        note.textContent = diff > 0 ? "до смены фазы" : "ожидается новое распоряжение";
+        return;
+      }
+      if (phaseState.openedAt){
+        const dt = new Date(phaseState.openedAt);
+        if (!Number.isNaN(dt.getTime())){
+          value.textContent = dt.toLocaleTimeString("ru-RU", { hour:"2-digit", minute:"2-digit" });
+          note.textContent = "фаза открыта с";
+          return;
+        }
+      }
+      value.textContent = "—:—";
+      note.textContent = phaseState.fallbackLabel;
+    }
+    function syncTimerSource(activeRound, phasesRaw){
+      const fromRound = activeRound?.phase_ends_at || activeRound?.ends_at || null;
+      const phaseWithTimer = normArray(phasesRaw).find(p => p?.phase_ends_at || p?.ends_at || p?.opened_at);
+      const endsAt = fromRound || phaseWithTimer?.phase_ends_at || phaseWithTimer?.ends_at || null;
+      const openedAt = activeRound?.opened_at || phaseWithTimer?.opened_at || normArray(phasesRaw)[0]?.opened_at || null;
+      phaseState.endsAt = endsAt ? new Date(endsAt).getTime() : null;
+      phaseState.openedAt = openedAt || null;
+      phaseState.fallbackLabel = "ожидание сигнала распорядителя";
+      updateTimer();
+    }
+
+
+    const slideEls = Array.from(document.querySelectorAll(".slide"));
+    const dotEls = Array.from(document.querySelectorAll(".dot"));
+    let visibleSlideKeys = ["balance","resources","politics","phase"];
+    let slideIndex = 0;
+    let forcedSlideKey = null;
+
+    function syncSlideVisibility(hasQuestion, nextForcedSlideKey = null){
+      questionFocusMode = Boolean(hasQuestion);
+      forcedSlideKey = hasQuestion ? null : (nextForcedSlideKey || null);
+      visibleSlideKeys = hasQuestion
+        ? ["question"]
+        : (forcedSlideKey ? [forcedSlideKey] : ["balance","resources","politics","phase"]);
+
+      slideEls.forEach(el => {
+        const key = el.dataset.slideKey;
+        el.style.display = visibleSlideKeys.includes(key) ? "" : "none";
+      });
+
+      dotEls.forEach(el => {
+        const key = el.dataset.dotKey;
+        el.style.display = visibleSlideKeys.includes(key) ? "" : "none";
+      });
+
+      slideIndex = 0;
+      showSlide(slideIndex);
+    }
+
+    function showSlide(index){
+      if (!visibleSlideKeys.length) return;
+      slideIndex = ((index % visibleSlideKeys.length) + visibleSlideKeys.length) % visibleSlideKeys.length;
+      const activeKey = visibleSlideKeys[slideIndex];
+
+      slideEls.forEach(el => el.classList.toggle("active", el.dataset.slideKey === activeKey));
+      dotEls.forEach(el => el.classList.toggle("active", el.dataset.dotKey === activeKey));
+      const captionEl = document.getElementById("slideCaption");
+      if (captionEl) {
+        captionEl.textContent = `Окно ${slideIndex + 1} из ${visibleSlideKeys.length} • ${SLIDE_TITLES[activeKey] || "Экран"}`;
+      }
+      scheduleNextSlideRotation(); 
+    }
+
+    let slideRotationTimer = null;
+    let lastQuestionFocusMode = null;
+
+function getCurrentSlideDuration() {
+  const activeKey = visibleSlideKeys[slideIndex] || "balance";
+  return SLIDE_DURATIONS_MS[activeKey] || 12000;
+}
+
+function scheduleNextSlideRotation() {
+  if (slideRotationTimer) {
+    clearTimeout(slideRotationTimer);
+    slideRotationTimer = null;
+  }
+
+  if (questionFocusMode || forcedSlideKey || visibleSlideKeys.length <= 1) {
+    return;
+  }
+
+  if (!visibleSlideKeys.length) return;
+
+  const duration = getCurrentSlideDuration();
+
+  slideRotationTimer = setTimeout(() => {
+    if (questionFocusMode || forcedSlideKey) {
+      return;
+    }
+
+    if (!visibleSlideKeys.length) return;
+
+    showSlide(slideIndex + 1);
+  }, duration);
+}
+
+      async function fetchTvState(){
+        try{
+          const response = await fetch(TV_STATE_URL, { cache:"no-store" });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const data = await response.json();
+
+          const phasesRaw = normArray(data.active_phases || data.tv_summary?.active_phases || []);
+        const phases = getPhaseList(data);
+        const director = getDirectorState(data);
+        const activeRound = data.active_host_round || data.tv_summary?.active_host_round || null;
+        const houses = normArray(data.houses || data.tv_summary?.houses || []);
+        const dealsBlock = data.deals || {};
+        const pending = normArray(dealsBlock.pending);
+        const counters = normArray(dealsBlock.countered);
+        const closed = normArray(dealsBlock.recent_closed);
+        const recentEvents = normArray(data.events || data.recent_events || data.tv_summary?.recent_events || []);
+          const leaders = data.leaders || data.tv_summary?.leaders || {};
+          const directorSceneModel = getDirectorSceneModel(data, phases, activeRound);
+          const courtRuntime = data?.court_runtime || null;
+          const shouldForceCourtScene = hasCourtRuntime(data);
+          const shouldForceSpecialScene = shouldForceCourtScene || Boolean(directorSceneModel?.mode);
+
+          let debugData = null;
+          if (activeRound?.id){
+          try{
+            const debugResponse = await fetch(`/dev/host-rounds/${activeRound.id}/debug`, { cache:"no-store" });
+            if (debugResponse.ok){
+              debugData = await debugResponse.json();
+            }
+          } catch (debugError){
+            console.warn("Host round debug fetch failed:", debugError);
+          }
+        }
+
+          const shouldFreezeOnPhaseSlide = shouldForceSpecialScene;
+          document.body.classList.toggle("tv-activity-mode", shouldFreezeOnPhaseSlide);
+          document.body.classList.toggle("tv-court-mode", shouldForceCourtScene);
+
+          renderTop(phases, activeRound, directorSceneModel, data);
+          renderLeaders(leaders, houses);
+          if (shouldForceSpecialScene){
+            renderQuestion(null, null, "phase");
+          } else {
+            renderQuestion(activeRound, debugData, shouldFreezeOnPhaseSlide ? "phase" : null);
+        }
+        renderBalance(houses, data);
+        renderResources(houses);
+        try {
+          if (shouldForceCourtScene){
+            renderActivityLayer(renderCourtMvpScene(data), {
+              airTitle: "",
+              turnTitle: courtRuntime?.is_finished ? "Итог суда" : "Последний удар",
+              turnText: getCourtLastEventText(courtRuntime)
+            });
+            hydrateCourtMediaBlocks();
+          } else {
+            renderInsights(houses, pending, counters, closed, directorSceneModel, data);
+          }
+        } catch (e) {
+          console.error("[tv] renderInsights crash", e);
+          const mainContent = document.getElementById("mainContent");
+          if (mainContent) {
+            mainContent.innerHTML = "<div class='tv-error'>Ошибка отображения данных</div>";
+          } else {
+            const airText = document.getElementById("airText");
+            if (airText) {
+              airText.innerHTML = "<div class='tv-error'>Ошибка отображения данных</div>";
+            }
+          }
+        }
+        renderFeed("dealsFeed", [...pending, ...counters], "deal", "Пока переговоры не вспыхнули", 4);
+        renderFeed("eventsFeed", recentEvents.length ? recentEvents : closed, recentEvents.length ? "event" : "closed", "Пока двор ждёт первого громкого сдвига", 4);
+        document.getElementById("dealsCount").textContent = String(pending.length + counters.length);
+        document.getElementById("eventsCount").textContent = String((recentEvents.length ? recentEvents : closed).length);
+        renderTicker(houses, leaders, pending, counters, closed, phases);
+        syncTimerSource(activeRound, phasesRaw);
+      } catch(error){
+        console.error("TV state fetch failed:", error);
+        document.body.classList.remove("tv-activity-mode");
+        document.body.classList.remove("tv-court-mode");
+        document.getElementById("phaseLine").textContent = "Нет связи с двором";
+        document.getElementById("timerValue").textContent = "—:—";
+        document.getElementById("timerNote").textContent = "проверь tv-state и room_code";
+        document.getElementById("rankingGrid").innerHTML = `<div class="empty">Не удалось получить state экрана</div>`;
+        document.getElementById("resourcesGrid").innerHTML = `<div class="empty" style="grid-column:1 / -1; grid-row:1 / -1;">Проверь tv-state и структуру ресурсов</div>`;
+        document.getElementById("dealsFeed").innerHTML = `<div class="empty">Проверь серверный маршрут и JSON</div>`;
+        document.getElementById("eventsFeed").innerHTML = `<div class="empty">Проверь серверный маршрут и JSON</div>`;
+        renderQuestion(null, null);
+      }
+    }
+
+      setInterval(updateTimer, 1000);
+      setInterval(updateQuestionTimerVisual, 1000);
+      syncSlideVisibility(false);
+      fetchTvState();
+      setInterval(fetchTvState, 10000);
+
+      function renderActivityLayer(markup, sceneModel){
+        document.getElementById("airTitle").textContent = sceneModel?.airTitle || "Что происходит";
+        document.getElementById("airText").innerHTML = markup;
+        document.getElementById("turnTitle").textContent = sceneModel?.turnTitle || "Что происходит";
+        document.getElementById("turnText").textContent = sceneModel?.turnText || "";
+      }
+
+      function safeList(value){
+        return Array.isArray(value) ? value : [];
+      }
+
+      function getHouseNameById(state, houseId){
+        if (!houseId) return "Неизвестный дом";
+        const house = safeList(state?.houses).find(item => item?.id === houseId);
+        return pickText(house?.name) || pickText(house?.house_key) || `Дом #${houseId}`;
+      }
+
+      function getHousePower(house){
+        const resources = house?.resources || {};
+        return [
+          resources.gold,
+          resources.influence,
+          resources.stone,
+          resources.wood,
+          resources.iron,
+          resources.scroll,
+          resources.key,
+          resources.fire
+        ].reduce((sum, value) => sum + Number(value || 0), 0);
+      }
+
+      function formatDealStatus(status){
+        if (status === "pending") return "ожидает";
+        if (status === "countered") return "встречное";
+        return "закрыта";
+      }
+
+      function normalizeDealText(deal) {
+        try {
+          if (!deal || typeof deal !== "object") return "договорённость";
+
+          const offer = deal.offer && typeof deal.offer === "object"
+            ? deal.offer
+            : {};
+
+          const type = offer.type;
+
+          if (type === "resource") {
+            const map = {
+              gold: "золото",
+              influence: "влияние",
+              stone: "камень",
+              wood: "дерево",
+              iron: "железо",
+              scroll: "свиток",
+              key: "ключ",
+              fire: "огонь"
+            };
+
+            const resource = map[offer.resource_type] || "ресурс";
+            const amount = Number.isFinite(offer.resource_amount)
+              ? offer.resource_amount
+              : "?";
+
+            return `${resource} × ${amount}`;
+          }
+
+          if (type === "crest_piece") {
+            return offer.crest_piece || "часть герба";
+          }
+
+    if (type === "open_agreement") {
+      return offer.text || "договорённость";
+    }
+
+    if (type === "alliance") {
+      return offer.text || "союз домов";
+    }
+
+    if (typeof deal.offer_text === "string") {
+      return fixEncoding(deal.offer_text);
+    }
+
+          return "договорённость";
+        } catch (e) {
+          console.error("[tv] normalizeDealText crash", e, deal);
+          return "договорённость";
+        }
+      }
+
+      function formatDealLine(state, deal){
+        const fromName = pickText(deal?.from_house?.name) || getHouseNameById(state, deal?.from_house?.id);
+        const toName = pickText(deal?.to_house?.name) || getHouseNameById(state, deal?.to_house?.id);
+        const offerText = normalizeDealText(deal) || "условия не раскрыты";
+        const statusText = formatDealStatus(deal?.status);
+        return `
+          <div class="tv-activity-row">
+            <div class="tv-activity-item">${escapeHtml(fromName)} → ${escapeHtml(toName)}</div>
+            <div class="tv-activity-meta">${escapeHtml(offerText)} • ${escapeHtml(statusText)}</div>
+          </div>
+        `;
+      }
+
+      function formatExpeditionTarget(expedition) {
+        return pickText(expedition?.target_location_name)
+          || pickText(expedition?.location_name)
+          || pickText(expedition?.target_location_code)
+          || pickText(expedition?.location_code)
+          || "неизвестная точка";
+      }
+
+      function formatExpeditionReward(expedition) {
+        const labels = {
+          gold: "золото",
+          influence: "влияние",
+          scroll: "свиток",
+          key: "ключ",
+          wood: "дерево",
+          stone: "камень",
+          iron: "железо",
+          fire: "огонь"
+        };
+
+        const gainLines = Object.entries(expedition?.reward || {})
+          .filter(([, value]) => Number(value) !== 0)
+          .map(([key, value]) => `+${Math.abs(Number(value))} ${labels[key] || key}`);
+        const lossLines = Object.entries(expedition?.penalty || {})
+          .filter(([, value]) => Number(value) !== 0)
+          .map(([key, value]) => `-${Math.abs(Number(value))} ${labels[key] || key}`);
+
+        const parts = [...gainLines, ...lossLines];
+        return parts.length ? parts.join(", ") : "без добычи";
+      }
+
+      function renderExpeditionRow(expedition, mode) {
+        const houseName = pickText(expedition?.house_name) || "Дом";
+        const target = formatExpeditionTarget(expedition);
+        const outcomeText = pickText(expedition?.outcome_text) || pickText(expedition?.result_text) || "";
+        const rewardText = formatExpeditionReward(expedition);
+
+        if (mode === "planned") {
+          const prepText = expedition?.choices_count > 0
+            ? `выбирает маршрут • ответов ${num(expedition?.choices_count || 0)}`
+            : "собирает состав";
+          return `
+            <div class="tv-activity-row">
+              <div class="tv-activity-item">${escapeHtml(houseName)} — ${escapeHtml(prepText)}</div>
+              ${expedition?.members_count ? `<div class="tv-activity-meta">состав: ${num(expedition.members_count)} участников</div>` : ""}
+            </div>
+          `;
+        }
+
+        if (mode === "approved") {
+          return `
+            <div class="tv-activity-row">
+              <div class="tv-activity-item">${escapeHtml(houseName)} → ${escapeHtml(target)}</div>
+              <div class="tv-activity-meta">статус: в пути</div>
+            </div>
+          `;
+        }
+
+        if (expedition?.success === false) {
+          return `
+            <div class="tv-activity-row">
+              <div class="tv-activity-item">${escapeHtml(houseName)} — экспедиция сорвалась</div>
+              <div class="tv-activity-meta">${escapeHtml(outcomeText || "Дом вернулся без результата")}</div>
+              <div class="tv-activity-meta">результат: ${escapeHtml(rewardText)}</div>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="tv-activity-row">
+            <div class="tv-activity-item">${escapeHtml(houseName)} дошёл до ${escapeHtml(target)}</div>
+            <div class="tv-activity-meta">${escapeHtml(outcomeText || rewardText)}</div>
+            <div class="tv-activity-meta">результат: ${escapeHtml(rewardText)}</div>
+          </div>
+        `;
+      }
+
+      function renderMapActivity(state) {
+        const planned = safeList(state?.expeditions?.planned).slice(0, 2);
+        const approved = safeList(state?.expeditions?.approved).slice(0, 2);
+        const resolved = safeList(state?.expeditions?.recently_resolved).slice(0, 2);
+
+        const sections = [];
+
+        if (planned.length || approved.length){
+          sections.push(`
+            <div class="tv-activity-block">
+              <div class="tv-activity-title">На карте прямо сейчас</div>
+              <div class="tv-activity-list">
+                ${planned.map(item => `
+                  <div class="tv-activity-row">
+                    <div class="tv-activity-item">${escapeHtml(pickText(item?.house_name) || "Дом")} собирает экспедицию</div>
+                  </div>
+                `).join("")}
+                ${approved.map(item => `
+                  <div class="tv-activity-row">
+                    <div class="tv-activity-item">${escapeHtml(pickText(item?.house_name) || "Дом")} в пути</div>
+                    ${formatExpeditionTarget(item) !== "неизвестная точка" ? `<div class="tv-activity-meta">${escapeHtml(formatExpeditionTarget(item))}</div>` : ""}
+                  </div>
+                `).join("")}
+              </div>
+              <div class="tv-activity-sub">Результат станет известен скоро</div>
+            </div>
+          `);
+        }
+
+        if (resolved.length){
+          sections.push(`
+            <div class="tv-activity-block">
+              <div class="tv-activity-title">Вернулись с карты</div>
+              <div class="tv-activity-list">
+                ${resolved.map(item => renderExpeditionRow(item, "resolved")).join("")}
+              </div>
+              <div class="tv-activity-sub">Самые свежие итоги карты появляются здесь</div>
+            </div>
+          `);
+        }
+
+        if (sections.length){
+          return sections.join("");
+        }
+
+        return `
+          <div class="tv-activity-block">
+            <div class="tv-activity-title">Экспедиции</div>
+            <div class="tv-activity-item">Экспедиции в процессе</div>
+            <div class="tv-activity-sub">Лорды назначают состав и маршрут</div>
+          </div>
+        `;
+      }
+
+      function renderDiplomacyActivity(state) {
+        const pending = safeList(state?.deals?.pending);
+        const countered = safeList(state?.deals?.countered);
+        const recentClosed = safeList(state?.deals?.recent_closed);
+        const alliances = safeList(state?.alliances).slice(0, 3);
+        const brokenAlliances = safeList(state?.broken_alliances_recent).slice(0, 2);
+        const isRenderableDeal = deal => {
+          const normalizedText = normalizeDealText(deal);
+          if (!normalizedText) return false;
+          if (normalizedText.includes("????")) return false;
+          if (normalizedText.includes("resource_")) return false;
+          if (normalizedText.includes("undefined")) return false;
+          return true;
+        };
+        const items = [...pending, ...countered]
+          .filter(isRenderableDeal)
+          .slice(0, 3);
+        const closedItems = recentClosed
+          .filter(isRenderableDeal)
+          .slice(0, 2);
+
+        if (!items.length && !closedItems.length && !alliances.length && !brokenAlliances.length){
+          return `
+            <div class="tv-activity-block">
+              <div class="tv-activity-title">Переговоры</div>
+              <div class="tv-activity-item">Дома ведут переговоры у барной стойки</div>
+              <div class="tv-activity-sub">Пока ни одна сделка не вынесена на двор</div>
+            </div>
+          `;
+        }
+
+        const allianceBlock = alliances.length ? `
+          <div class="tv-activity-block">
+            <div class="tv-activity-title">Союзы</div>
+            <div class="tv-activity-list">
+              ${alliances.map(item => {
+                const houseA = escapeHtml(pickText(item?.house_a?.name) || "Дом");
+                const houseB = escapeHtml(pickText(item?.house_b?.name) || "Дом");
+                const bonusText = escapeHtml(pickText(item?.bonus_text) || "+1 влияние обоим Домам");
+                return `
+                  <div class="tv-activity-row">
+                    <div class="tv-activity-item">${houseA} 🤝 ${houseB}</div>
+                    <div class="tv-activity-meta">${bonusText}</div>
+                  </div>
+                `;
+              }).join("")}
+            </div>
+          </div>
+        ` : "";
+
+        const brokenAllianceBlock = brokenAlliances.length ? `
+          <div class="tv-activity-block">
+            <div class="tv-activity-title">Разрыв союзов</div>
+            <div class="tv-activity-list">
+              ${brokenAlliances.map(item => {
+                const breaker = escapeHtml(pickText(item?.broken_by_house?.name) || "Дом");
+                const other = escapeHtml(pickText(item?.other_house?.name) || "Дом");
+                const isBetrayal = item?.break_mode === "betrayal" || item?.status === "alliance_betrayed";
+                return `
+                  <div class="tv-activity-row">
+                    <div class="tv-activity-item">${isBetrayal
+                      ? `${breaker} предал союз с ${other}`
+                      : `${breaker} разорвал союз с ${other}`}</div>
+                    <div class="tv-activity-meta">${escapeHtml(
+                      isBetrayal
+                        ? `${pickText(item?.broken_by_house?.name) || "Дом"}: +1 золото, -1 влияние; ${pickText(item?.other_house?.name) || "Дом"}: +1 влияние`
+                        : pickText(item?.break_text) || "Союз разорван по решению Дома"
+                    )}</div>
+                  </div>
+                `;
+              }).join("")}
+            </div>
+          </div>
+        ` : "";
+
+        const activeBlock = items.length ? `
+          <div class="tv-activity-block">
+            <div class="tv-activity-title">Переговоры</div>
+            <div class="tv-activity-list">
+              ${items.map(item => {
+                try {
+                  return formatDealLine(state, item);
+                } catch (e) {
+                  console.error("[tv] deal render crash", e, item);
+                  return "";
+                }
+              }).join("")}
+            </div>
+            <div class="tv-activity-sub">Любое соглашение может изменить игру</div>
+          </div>
+        ` : "";
+
+        const closedBlock = !items.length && closedItems.length ? `
+          <div class="tv-activity-block">
+            <div class="tv-activity-title">Недавние решения</div>
+            <div class="tv-activity-list">
+              ${closedItems.map(item => {
+                try {
+                  return formatDealLine(state, item);
+                } catch (e) {
+                  console.error("[tv] deal render crash", e, item);
+                  return "";
+                }
+              }).join("")}
+            </div>
+          </div>
+          ` : "";
+
+          return `${allianceBlock}${brokenAllianceBlock}${activeBlock}${closedBlock}`;
+        }
+
+      function renderCrestProgress(state) {
+        const houses = safeList(state?.houses).slice(0, 5);
+
+        if (!houses.length){
+          return `
+            <div class="tv-activity-block">
+              <div class="tv-activity-title">Гербы домов</div>
+              <div class="tv-activity-item">Дома собирают элементы силы</div>
+              <div class="tv-activity-sub">Полный герб даст дому влияние, способность и преимущество в финале</div>
+            </div>
+          `;
+        }
+
+        const rows = houses.map(house => {
+            const resources = house?.resources || {};
+            return `
+              <div class="tv-activity-row">
+                <div class="tv-activity-item">${escapeHtml(pickText(house?.name) || "Дом")} — подготовка герба</div>
+                <div class="tv-activity-meta">влияние ${num(resources.influence)} • золото ${num(resources.gold)} • ключи ${num(resources.key)} • свитки ${num(resources.scroll)}</div>
+              </div>
+            `;
+          }).join("");
+
+          return `
+            <div class="tv-activity-block">
+              <div class="tv-activity-title">Гербы домов</div>
+              <div class="tv-activity-list">${rows}</div>
+              <div class="tv-activity-sub">Полный герб даст дому влияние, способность и преимущество в финале</div>
+            </div>
+          `;
+        }
+
+      function renderDuels(state) {
+        const active = safeList(state?.duels?.active_or_pending);
+        const challenged = safeList(state?.duels?.challenged);
+        const accepted = safeList(state?.duels?.accepted);
+        const recent = safeList(state?.duels?.recent);
+        const items = [...active, ...challenged, ...accepted, ...recent].slice(0, 5);
+
+        if (!items.length){
+          return `
+            <div class="tv-activity-block">
+              <div class="tv-activity-title">Дуэли домов</div>
+              <div class="tv-activity-item">Дома готовятся к вызовам</div>
+              <div class="tv-activity-list">
+                <div class="tv-activity-row"><div class="tv-activity-meta">— базовая ставка: 3 золота</div></div>
+                <div class="tv-activity-row"><div class="tv-activity-meta">— победитель забирает банк за вычетом комиссии</div></div>
+                <div class="tv-activity-row"><div class="tv-activity-meta">— отказ от вызова стоит влияния</div></div>
+              </div>
+            </div>
+          `;
+        }
+
+        const rows = items.map(duel => {
+          const challenger = pickText(duel?.challenger_house_name) || getHouseNameById(state, duel?.challenger_house_id);
+          const target = pickText(duel?.target_house_name) || getHouseNameById(state, duel?.target_house_id);
+          const bonus = duel?.stake_gold ? `${num(duel.stake_gold)} золота` : (pickText(duel?.live_bonus_label) || pickText(duel?.duel_format) || "ставка уточняется");
+          const status = pickText(duel?.status) || "ожидание";
+          return `
+            <div class="tv-activity-row">
+              <div class="tv-activity-item">${escapeHtml(challenger)} против ${escapeHtml(target)}</div>
+              <div class="tv-activity-meta">${escapeHtml(bonus)} • ${escapeHtml(status)}</div>
+            </div>
+          `;
+        }).join("");
+
+        return `
+          <div class="tv-activity-block">
+            <div class="tv-activity-title">Дуэли домов</div>
+            <div class="tv-activity-list">${rows}</div>
+            <div class="tv-activity-sub">Победа меняет расклад ресурсов и влияния</div>
+          </div>
+        `;
+      }
+
+      function renderUpgradeActivity(state) {
+        const houses = safeList(state?.houses)
+          .map(house => ({ house, power: getHousePower(house) }))
+          .sort((a, b) => b.power - a.power)
+          .slice(0, 5);
+
+        if (!houses.length){
+          return `
+            <div class="tv-activity-block">
+              <div class="tv-activity-title">Усиление домов</div>
+              <div class="tv-activity-item">Ресурсы превращаются в силу</div>
+              <div class="tv-activity-sub">Каждое решение влияет на финал</div>
+            </div>
+          `;
+        }
+
+        const rows = houses.map(({ house, power }) => `
+          <div class="tv-activity-row">
+            <div class="tv-activity-item">${escapeHtml(pickText(house?.name) || "Дом")} — сила ${num(power)}</div>
+          </div>
+        `).join("");
+
+          return `
+            <div class="tv-activity-block">
+              <div class="tv-activity-title">Усиление домов</div>
+              <div class="tv-activity-list">${rows}</div>
+              <div class="tv-activity-sub">Сила = золото + влияние + ресурсы</div>
+            </div>
+          `;
+        }
+
+      function renderIntrigueActivity(state) {
+        const houses = safeList(state?.houses)
+          .slice()
+          .sort((a, b) => Number(b?.resources?.influence || 0) - Number(a?.resources?.influence || 0))
+          .slice(0, 5);
+
+        if (!houses.length){
+          return `
+            <div class="tv-activity-block">
+              <div class="tv-activity-title">Интриги</div>
+              <div class="tv-activity-item">Мастера шёпота получают скрытые сведения</div>
+              <div class="tv-activity-list">
+                <div class="tv-activity-row"><div class="tv-activity-meta">— часть событий не выходит на общий экран</div></div>
+                <div class="tv-activity-row"><div class="tv-activity-meta">— слухи могут изменить решения домов</div></div>
+                <div class="tv-activity-row"><div class="tv-activity-meta">— влияние становится опаснее золота</div></div>
+              </div>
+            </div>
+          `;
+        }
+
+        const rows = houses.map(house => `
+          <div class="tv-activity-row">
+            <div class="tv-activity-item">${escapeHtml(pickText(house?.name) || "Дом")} — ${num(house?.resources?.influence)} влияния</div>
+          </div>
+        `).join("");
+
+        return `
+          <div class="tv-activity-block">
+            <div class="tv-activity-title">Интриги</div>
+            <div class="tv-activity-list">${rows}</div>
+            <div class="tv-activity-sub">Чем выше влияние, тем ближе дом к финалу</div>
+          </div>
+        `;
+      }
+    </script>
+  </body>
+  </html>

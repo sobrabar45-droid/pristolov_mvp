@@ -1,0 +1,24 @@
+acts:
+  - act_number: 1
+    name: "Сбор теней"
+    enabled_assignment_types:
+      - map_route
+      - quiz
+      - truth_lie
+      - treasury_choice
+      - right_of_move
+    event_tags:
+      - opening
+      - reconnaissance
+
+  - act_number: 2
+    name: "Первые союзы"
+    enabled_assignment_types:
+      - negotiation
+      - dossier_sort
+      - rumor
+      - exchange
+      - strategic_choice
+    event_tags:
+      - alliance
+      - leverage

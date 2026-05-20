@@ -1,0 +1,31 @@
+pools:
+  - pool_code: whisper_black_stair_pool
+    role_code: whisper_master
+    assignment_type: truth_lie
+    selection_policy: unique_per_house
+
+    tasks:
+      - task_code: whisper_tl_001
+        difficulty: 1
+        act_min: 1
+        act_max: 4
+
+        title: "Шёпот под лестницей"
+        prompt: "Определите, что из двух сообщений ближе к правде"
+        ui_template: "truth_lie"
+
+        content:
+          statements:
+            - code: s1
+              text: "Башня уже получила ключ"
+              truth: false
+            - code: s2
+              text: "На рынке появился посредник без знака Дома"
+              truth: true
+          correct_answer: s2
+
+        reward:
+          influence: 1
+
+        fail_effect:
+          influence: 0

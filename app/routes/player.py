@@ -1,0 +1,2289 @@
+from datetime import datetime, timezone
+from secrets import token_urlsafe
+import random
+import json
+from pathlib import Path
+
+from fastapi import APIRouter, Body, HTTPException
+from sqlalchemy.orm import Session, joinedload
+
+from app.database import SessionLocal
+from app.models.player import Player
+from app.models.house import House
+from app.models.game import Game
+from app.models.game_phase import GamePhase
+from app.models.game_assignment import GameAssignment
+from app.models.game_host_round import GameHostRound
+from app.models.game_expedition import GameExpedition
+from app.models.game_map_visit import GameMapVisit
+from app.models.game_deal import GameDeal
+from app.services.serialization_utils import dump_json as _dump_json, load_json_text as _load_json_text
+from app.services.map_service import load_locations_catalog
+from app.services.expedition_service import create_expedition as _create_expedition
+
+# Временный мост: используем уже существующую игровую логику ответов
+from app.services.resource_service import apply_house_effect as _apply_house_effect, build_house_resources_snapshot as _build_house_resources_snapshot
+from app.services.assignment_service import process_assignment_answer as _process_assignment_answer
+from app.services.host_round_service import open_next_question_for_host_round as _open_next_question_for_host_round
+
+router = APIRouter(prefix="/player", tags=["player"])
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+MAP_LOCATIONS_FILE = BASE_DIR / "game_templates" / "season1_core_v1" / "locations.yaml"
+
+EXPEDITION_LOCATION_OPTIONS = {
+    "old_market": "Старый рынок",
+    "craft_yard": "Ремесленный двор",
+    "archive": "Архив",
+    "guard_barracks": "Казармы стражи",
+    "alleys": "Переулки",
+    "guest_court": "Гостевой двор",
+}
+
+EXPEDITION_LOCATION_FALLBACKS = {
+    "craft_yard": {
+        "code": "craft_yard",
+        "name": "Ремесленный двор",
+        "risk_level": 22,
+        "preferred_roles": ["treasurer", "house_sworn"],
+        "outcomes": [
+            {"weight": 45, "type": "reward", "reward": {"wood": 1, "stone": 1}, "text": "Ремесленники помогли с материалами для Дома."},
+            {"weight": 35, "type": "reward", "reward": {"gold": 1}, "text": "Удачный подряд принёс дополнительное золото."},
+            {"weight": 20, "type": "penalty", "penalty": {"gold": -1}, "text": "Срыв работы стоил Дому лишних трат."},
+        ],
+    },
+    "guard_barracks": {
+        "code": "guard_barracks",
+        "name": "Казармы стражи",
+        "risk_level": 30,
+        "preferred_roles": ["lord_lady", "house_sworn"],
+        "outcomes": [
+            {"weight": 40, "type": "reward", "reward": {"influence": 1}, "text": "Стража признала силу вашего Дома."},
+            {"weight": 35, "type": "reward", "reward": {"iron": 1}, "text": "Удалось получить доступ к военным запасам."},
+            {"weight": 25, "type": "penalty", "penalty": {"influence": -1}, "text": "Разговор с гарнизоном обернулся потерей веса."},
+        ],
+    },
+    "guest_court": {
+        "code": "guest_court",
+        "name": "Гостевой двор",
+        "risk_level": 18,
+        "preferred_roles": ["diplomat", "whisper_master"],
+        "outcomes": [
+            {"weight": 45, "type": "reward", "reward": {"influence": 1, "gold": 1}, "text": "Гостевой двор открыл выгодную договорённость."},
+            {"weight": 30, "type": "reward", "reward": {"key": 1}, "text": "Через гостей удалось добыть важный ключ."},
+            {"weight": 25, "type": "empty", "text": "Вежливые разговоры не принесли заметной выгоды."},
+        ],
+    },
+}
+
+EXPEDITION_ROLE_OPTIONS = {
+    "lord_lady": "Лорд / Леди",
+    "maester": "Мейстер",
+    "diplomat": "Дипломат",
+    "treasurer": "Мастер над золотом",
+    "whisper_master": "Мастер шёпота",
+    "house_sworn": "Соратник Дома",
+}
+
+
+def _issue_player_token() -> str:
+    return token_urlsafe(24)
+
+
+def _resolve_player_by_token(db: Session, player_token: str):
+    if not player_token or not isinstance(player_token, str):
+        return None
+
+    player = (
+        db.query(Player)
+        .options(
+            joinedload(Player.house),
+            joinedload(Player.role),
+            joinedload(Player.game),
+        )
+        .filter(Player.player_token == player_token)
+        .first()
+    )
+    return player
+
+
+def _ensure_player_token(db: Session, player: Player) -> str:
+    if player.player_token:
+        return player.player_token
+
+    while True:
+        new_token = _issue_player_token()
+        exists = db.query(Player).filter(Player.player_token == new_token).first()
+        if not exists:
+            player.player_token = new_token
+            db.flush()
+            return new_token
+
+
+def _touch_last_seen(player: Player):
+    player.last_seen_at = datetime.now(timezone.utc)
+
+
+def _get_phase_label(phase_type: str | None) -> str | None:
+    phase_labels = {
+        "host_round": "Раунд ведущего",
+        "map": "Карта",
+        "diplomacy": "Дипломатия",
+        "crest": "Герб",
+        "upgrade": "Усиление",
+        "duel": "Дуэли",
+        "intrigue": "Интриги",
+        "free_play": "Свободная игра",
+        "intermission": "Перерыв",
+        "court": "Суд Домов",
+        "final": "Финал",
+    }
+    return phase_labels.get(phase_type, phase_type)
+
+
+def _load_expedition_locations_catalog() -> dict[str, dict]:
+    catalog = {}
+    try:
+        catalog = load_locations_catalog(MAP_LOCATIONS_FILE)
+    except Exception:
+        catalog = {}
+
+    merged = dict(catalog)
+    for code, payload in EXPEDITION_LOCATION_FALLBACKS.items():
+        if code not in merged:
+            merged[code] = payload
+
+    for code, name in EXPEDITION_LOCATION_OPTIONS.items():
+        if code not in merged:
+            merged[code] = {
+                "code": code,
+                "name": name,
+                "risk_level": 20,
+                "preferred_roles": [],
+                "outcomes": [
+                    {"weight": 100, "type": "empty", "text": "Экспедиция не нашла заметного преимущества."}
+                ],
+            }
+
+    return merged
+
+
+def _location_name_by_code(location_code: str | None) -> str | None:
+    if not location_code:
+        return None
+    catalog = _load_expedition_locations_catalog()
+    location = catalog.get(location_code, {})
+    raw_name = location.get("name") or EXPEDITION_LOCATION_OPTIONS.get(location_code) or location_code
+    return fix_encoding(raw_name)
+
+
+def _weighted_pick_outcome(outcomes: list[dict]) -> dict:
+    weighted_pool = []
+    total_weight = 0
+
+    for outcome in outcomes or []:
+        weight = outcome.get("weight", 0)
+        if not isinstance(weight, int) or weight <= 0:
+            continue
+        total_weight += weight
+        weighted_pool.append((total_weight, outcome))
+
+    if not weighted_pool:
+        return {"type": "empty", "text": "Экспедиция не принесла заметного результата."}
+
+    roll = random.randint(1, total_weight)
+    for threshold, outcome in weighted_pool:
+        if roll <= threshold:
+            return outcome
+
+    return weighted_pool[-1][1]
+
+
+def _normalize_resource_delta_map(raw: dict | None) -> dict[str, int]:
+    resource_keys = ["gold", "influence", "scroll", "key", "wood", "stone", "iron", "fire"]
+    normalized = {}
+    raw = raw or {}
+
+    for key in resource_keys:
+        value = raw.get(key, 0)
+        if isinstance(value, int) and value != 0:
+            normalized[key] = value
+
+    return normalized
+
+
+def _apply_house_resource_deltas(house: House, delta_map: dict[str, int]) -> dict[str, int]:
+    field_map = {
+        "gold": "resource_gold",
+        "influence": "resource_influence",
+        "scroll": "resource_scroll",
+        "key": "resource_key",
+        "wood": "resource_wood",
+        "stone": "resource_stone",
+        "iron": "resource_iron",
+        "fire": "resource_fire",
+    }
+
+    applied = {}
+    for key, delta in (delta_map or {}).items():
+        field_name = field_map.get(key)
+        if not field_name or not isinstance(delta, int):
+            continue
+
+        old_value = getattr(house, field_name, 0) or 0
+        new_value = old_value + delta
+        if new_value < 0:
+            new_value = 0
+        setattr(house, field_name, new_value)
+        applied[key] = new_value - old_value
+
+    return applied
+
+
+def _house_resources_snapshot(house: House) -> dict[str, int]:
+    return {
+        "gold": house.resource_gold or 0,
+        "influence": house.resource_influence or 0,
+        "scroll": house.resource_scroll or 0,
+        "key": house.resource_key or 0,
+        "wood": house.resource_wood or 0,
+        "stone": house.resource_stone or 0,
+        "iron": house.resource_iron or 0,
+        "fire": house.resource_fire or 0,
+    }
+
+
+def _has_active_phase_types(db: Session, game_id: int, phase_types: set[str]) -> bool:
+    return db.query(GamePhase.id).filter(
+        GamePhase.game_id == game_id,
+        GamePhase.status == "active",
+        GamePhase.phase_type.in_(list(phase_types)),
+    ).first() is not None
+
+
+def _rebalance_expedition_outcome(
+    location: dict,
+    reward: dict[str, int],
+    penalty: dict[str, int],
+) -> tuple[dict[str, int], dict[str, int]]:
+    reward = dict(reward or {})
+    penalty = dict(penalty or {})
+
+    positive_reward_keys = [key for key, value in reward.items() if isinstance(value, int) and value > 0]
+    gold_reward = reward.get("gold", 0)
+    risk_level = location.get("risk_level", 0)
+
+    if isinstance(gold_reward, int) and gold_reward > 1:
+        allow_strong_gold = bool(
+            len(positive_reward_keys) == 1
+            and risk_level >= 28
+        )
+        reward["gold"] = 2 if allow_strong_gold else 1
+
+    if isinstance(reward.get("influence"), int) and reward["influence"] > 1:
+        reward["influence"] = 1
+    if isinstance(reward.get("scroll"), int) and reward["scroll"] > 1:
+        reward["scroll"] = 1
+
+    if isinstance(penalty.get("gold"), int) and penalty["gold"] < -1:
+        penalty["gold"] = -1
+    if isinstance(penalty.get("influence"), int) and penalty["influence"] < -1:
+        penalty["influence"] = -1
+
+    return reward, penalty
+
+
+def _apply_location_pressure(
+    db: Session,
+    *,
+    game_id: int,
+    location_code: str,
+    reward: dict[str, int],
+    outcome_text: str | None,
+) -> tuple[dict[str, int], str | None]:
+    prior_resolved_count = (
+        db.query(GameExpedition)
+        .filter(
+            GameExpedition.game_id == game_id,
+            GameExpedition.status == "resolved",
+            GameExpedition.target_location_code == location_code,
+        )
+        .count()
+    )
+
+    reward = dict(reward or {})
+    outcome_text = outcome_text or ""
+
+    if prior_resolved_count == 1 and isinstance(reward.get("gold"), int):
+        reward["gold"] = min(reward["gold"], 1)
+    elif prior_resolved_count >= 2:
+        if isinstance(reward.get("gold"), int):
+            reward["gold"] = 0
+        if reward.get("gold") == 0:
+            reward.pop("gold", None)
+        if outcome_text:
+            outcome_text = fix_encoding(f"{outcome_text} Точка заметно истощена.")
+        else:
+            outcome_text = fix_encoding("Точка заметно истощена.")
+
+    return reward, outcome_text
+
+
+def _load_meta_json(raw_value):
+    if not raw_value:
+        return {}
+
+    if isinstance(raw_value, dict):
+        return raw_value
+
+    try:
+        parsed = json.loads(raw_value)
+    except Exception:
+        return {}
+
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def _text_quality_score(text: str) -> int:
+    if not isinstance(text, str):
+        return -10_000
+
+    cyrillic_count = sum(1 for ch in text if ("А" <= ch <= "я") or ch in "Ёё")
+    mojibake_markers = (
+        text.count("РЎ")
+        + text.count("Рђ")
+        + text.count("СЃ")
+        + text.count("Ð")
+        + text.count("Ñ")
+        + text.count("Ã")
+        + text.count("Â")
+        + text.count("�")
+    )
+    return cyrillic_count - (mojibake_markers * 4)
+
+
+def fix_encoding(text):
+    if not isinstance(text, str) or not text:
+        return text
+
+    candidates = [text]
+
+    for encoding in ("latin1", "cp1251"):
+        try:
+            candidates.append(text.encode(encoding).decode("utf-8"))
+        except Exception:
+            pass
+
+    return max(candidates, key=_text_quality_score)
+
+
+def _fix_text_map(value):
+    if isinstance(value, dict):
+        return {key: _fix_text_map(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_fix_text_map(item) for item in value]
+    if isinstance(value, str):
+        return fix_encoding(value)
+    return value
+
+
+def _house_resources_dict(house: House | None):
+    if not house:
+        return None
+
+    return {
+        "gold": house.resource_gold,
+        "influence": house.resource_influence,
+        "stone": house.resource_stone,
+        "wood": house.resource_wood,
+        "iron": house.resource_iron,
+        "scroll": house.resource_scroll,
+        "key": house.resource_key,
+        "fire": house.resource_fire,
+    }
+
+
+def _build_whisper_feed(db: Session, player: Player):
+    role_code = player.role.code if player and player.role else None
+    if role_code != "whisper_master":
+        return []
+
+    house_name = player.house.name if player and player.house else "ваш Дом"
+    feed = [
+        {
+            "title": "Слух с карты",
+            "text": f"Разведчики шепчут, что один из маршрутов рядом с {house_name} может скрывать редкую возможность.",
+            "kind": "map_secret",
+        },
+        {
+            "title": "Тень за переговорами",
+            "text": "Не все события выходят на общий экран. Следите за тем, кто слишком рано меняет тон переговоров.",
+            "kind": "soft_warning",
+        },
+    ]
+
+    if player and player.house_id and player.game_id:
+        active_expedition = _get_active_house_expedition(db, player.game_id, player.house_id)
+        if active_expedition:
+            vote_visits = _get_expedition_vote_visits(db, active_expedition)
+            chosen_locations = [visit.location_code for visit in vote_visits if visit.location_code]
+            unique_locations_count = len(set(chosen_locations))
+
+            if unique_locations_count > 1:
+                feed.append(
+                    {
+                        "title": "Слухи экспедиции",
+                        "text": "В вашем Доме нет согласия по маршруту",
+                        "kind": "map_secret",
+                    }
+                )
+            elif chosen_locations and unique_locations_count == 1:
+                feed.append(
+                    {
+                        "title": "Слухи экспедиции",
+                        "text": "Большинство склоняется к одному направлению",
+                        "kind": "map_secret",
+                    }
+                )
+
+    return feed
+
+
+def _get_active_house_expedition(db: Session, game_id: int, house_id: int):
+    return (
+        db.query(GameExpedition)
+        .filter(
+            GameExpedition.game_id == game_id,
+            GameExpedition.house_id == house_id,
+            GameExpedition.status.in_(["planned", "approved"]),
+        )
+        .order_by(GameExpedition.id.desc())
+        .first()
+    )
+
+
+def _get_expedition_vote_visits(db: Session, expedition: GameExpedition):
+    raw_visits = (
+        db.query(GameMapVisit)
+        .filter(
+            GameMapVisit.game_id == expedition.game_id,
+            GameMapVisit.house_id == expedition.house_id,
+            GameMapVisit.outcome_type == "expedition_vote",
+        )
+        .order_by(GameMapVisit.id.asc())
+        .all()
+    )
+
+    matched = []
+    for visit in raw_visits:
+        meta = _load_meta_json(getattr(visit, "meta_json", None))
+        if meta.get("expedition_id") == expedition.id:
+            matched.append(visit)
+
+    return matched
+
+
+def _get_expedition_plan_visit(db: Session, expedition: GameExpedition):
+    raw_visits = (
+        db.query(GameMapVisit)
+        .filter(
+            GameMapVisit.game_id == expedition.game_id,
+            GameMapVisit.house_id == expedition.house_id,
+            GameMapVisit.outcome_type == "expedition_plan",
+        )
+        .order_by(GameMapVisit.id.desc())
+        .all()
+    )
+
+    for visit in raw_visits:
+        meta = _load_meta_json(getattr(visit, "meta_json", None))
+        if meta.get("expedition_id") == expedition.id:
+            return visit
+
+    return None
+
+
+def _get_expedition_plan_meta(db: Session, expedition: GameExpedition) -> dict:
+    plan_visit = _get_expedition_plan_visit(db, expedition)
+    if not plan_visit:
+        return {"members_count": 0, "role_codes": []}
+
+    meta = _load_meta_json(getattr(plan_visit, "meta_json", None))
+    role_codes = meta.get("role_codes")
+    if not isinstance(role_codes, list):
+        role_codes = []
+
+    members_count = meta.get("members_count")
+    if not isinstance(members_count, int):
+        members_count = len(role_codes) if role_codes else 0
+
+    return {
+        "members_count": members_count,
+        "role_codes": [code for code in role_codes if code in EXPEDITION_ROLE_OPTIONS],
+    }
+
+
+def _normalize_expedition_role_codes(role_codes) -> list[str]:
+    if not isinstance(role_codes, list):
+        return []
+
+    normalized = []
+    for code in role_codes:
+        if not isinstance(code, str):
+            continue
+        if code not in EXPEDITION_ROLE_OPTIONS:
+            continue
+        if code in normalized:
+            continue
+        normalized.append(code)
+    return normalized
+
+
+def _build_active_house_expedition_payload(db: Session, expedition: GameExpedition | None, *, player_id: int | None = None):
+    if not expedition:
+        return None
+
+    plan_meta = _get_expedition_plan_meta(db, expedition)
+    visits = _get_expedition_vote_visits(db, expedition)
+    chosen_locations = [visit.location_code for visit in visits if visit.location_code]
+    unique_locations = sorted(set(chosen_locations))
+    player_vote = next((visit for visit in reversed(visits) if visit.triggered_by_player_id == player_id), None)
+
+    return {
+        "id": expedition.id,
+        "status": expedition.status,
+        "house_id": expedition.house_id,
+        "target_location_code": expedition.target_location_code,
+        "members_count": plan_meta["members_count"],
+        "role_codes": plan_meta["role_codes"],
+        "choices_count": len(visits),
+        "unique_locations_count": len(unique_locations),
+        "chosen_locations": unique_locations,
+        "player_vote_location": player_vote.location_code if player_vote else None,
+        "player_vote_location_name": EXPEDITION_LOCATION_OPTIONS.get(player_vote.location_code) if player_vote and player_vote.location_code else None,
+    }
+
+
+def _serialize_assignment(assignment: GameAssignment):
+    template_task = getattr(assignment, "template_task", None)
+    host_round = getattr(assignment, "host_round", None)
+    runtime_question = getattr(assignment, "host_round_question", None)
+
+    task_content = None
+    if template_task and getattr(template_task, "content_json", None):
+        task_content = template_task.content_json
+
+    question_content = None
+    if runtime_question and getattr(runtime_question, "question_template", None):
+        tpl = runtime_question.question_template
+        question_content = {
+            "id": tpl.id,
+            "question_code": tpl.question_code,
+            "title": tpl.title,
+            "prompt": tpl.prompt,
+            "ui_template": tpl.ui_template,
+            "answer_mode": tpl.answer_mode,
+            "role_code": tpl.role_code,
+            "content": _load_json_text(tpl.content_json),
+            "reward": _load_json_text(tpl.reward_json),
+            "fail_effect": _load_json_text(tpl.fail_effect_json),
+        }
+
+    result_payload = assignment.result_payload
+    answer_payload = assignment.answer_payload
+
+    return {
+        "id": assignment.id,
+        "status": assignment.status,
+        "delivery_mode": assignment.delivery_mode,
+        "role_code": assignment.role_code,
+        "answer_mode": assignment.answer_mode,
+        "auto_check": assignment.auto_check,
+        "is_correct": assignment.is_correct,
+        "result_applied": assignment.result_applied,
+        "triggered_by_host": assignment.triggered_by_host,
+        "created_at": assignment.created_at.isoformat() if assignment.created_at else None,
+        "template_task": {
+            "id": template_task.id,
+            "task_code": template_task.task_code,
+            "title": template_task.title,
+            "prompt": template_task.prompt,
+            "ui_template": template_task.ui_template,
+            "difficulty": template_task.difficulty,
+            "content_json": task_content,
+        } if template_task else None,
+        "host_round": {
+            "id": host_round.id,
+            "round_code": host_round.round_code,
+            "title": host_round.title,
+            "status": host_round.status,
+            "current_question_no": host_round.current_question_no,
+            "questions_total": host_round.questions_total,
+        } if host_round else None,
+        "host_round_question": {
+            "id": runtime_question.id,
+            "sequence_no": runtime_question.sequence_no,
+            "status": runtime_question.status,
+            "answers_open": runtime_question.answers_open,
+            "template": question_content,
+        } if runtime_question else None,
+        "answer_payload": answer_payload,
+        "result_payload": result_payload,
+    }
+
+
+def _format_deal_offer_text(offer, note: str | None = None) -> str:
+    if isinstance(offer, dict):
+        offer_type = str(offer.get("type") or "").strip()
+        resource_type = str(offer.get("resource_type") or "").strip()
+        resource_amount = offer.get("resource_amount")
+        crest_piece = str(offer.get("crest_piece") or "").strip()
+        text_value = offer.get("text")
+        text_value = fix_encoding(text_value.strip()) if isinstance(text_value, str) and text_value.strip() else ""
+
+        resource_labels = {
+            "gold": "золото",
+            "influence": "влияние",
+            "stone": "камень",
+            "wood": "дерево",
+            "iron": "железо",
+            "scroll": "свиток",
+            "key": "ключ",
+            "fire": "огонь",
+        }
+
+        if offer_type == "resource" and resource_type and isinstance(resource_amount, int) and resource_amount > 0:
+            base = f"Передача ресурса: {resource_labels.get(resource_type, resource_type)} × {resource_amount}"
+            return fix_encoding(f"{base}. Комментарий: {text_value}") if text_value else fix_encoding(base)
+
+        if offer_type == "crest_piece" and crest_piece:
+            base = f"Кусок герба: {crest_piece}"
+            return fix_encoding(f"{base}. Комментарий: {text_value}") if text_value else fix_encoding(base)
+
+        if offer_type == "open_agreement" and text_value:
+            return fix_encoding(f"Открытая договорённость: {text_value}")
+
+        if offer_type == "alliance":
+            return fix_encoding(text_value or "Союз домов")
+
+        if text_value:
+            return text_value
+    if isinstance(note, str) and note.strip():
+        return fix_encoding(note.strip())
+    return ""
+
+
+def _serialize_player_deal(deal: GameDeal) -> dict:
+    offer_data = deal.offer if isinstance(deal.offer, dict) else {}
+    alliance_bonus_applied_to = offer_data.get("alliance_bonus_applied_to") if isinstance(offer_data, dict) else []
+    if not isinstance(alliance_bonus_applied_to, list):
+        alliance_bonus_applied_to = []
+    if str(offer_data.get("type") or "").strip() == "alliance":
+        if len(alliance_bonus_applied_to) >= 2:
+            bonus_text = "+1 влияние обоим Домам"
+        elif len(alliance_bonus_applied_to) == 1:
+            bonus_text = "+1 влияние одному из Домов"
+        else:
+            bonus_text = "Бонус союза уже был использован"
+    else:
+        bonus_text = ""
+    return _fix_text_map({
+        "id": deal.id,
+        "from_house_id": deal.from_house_id,
+        "to_house_id": deal.to_house_id,
+        "status": deal.status,
+        "offer": offer_data,
+        "offer_text": _format_deal_offer_text(offer_data, deal.note),
+        "offer_type_label": {
+            "resource": "Передача ресурса",
+            "crest_piece": "Кусок герба",
+            "open_agreement": "Открытая договорённость",
+            "alliance": "Союз",
+        }.get(str(offer_data.get("type") or "").strip(), ""),
+        "from_house": {
+            "id": deal.from_house.id,
+            "name": deal.from_house.name,
+            "house_key": deal.from_house.house_key,
+        } if deal.from_house else None,
+        "to_house": {
+            "id": deal.to_house.id,
+            "name": deal.to_house.name,
+            "house_key": deal.to_house.house_key,
+        } if deal.to_house else None,
+        "created_at": deal.created_at.isoformat() if deal.created_at else None,
+        "responded_at": deal.responded_at.isoformat() if deal.responded_at else None,
+        "alliance_bonus": offer_data.get("alliance_bonus") if isinstance(offer_data, dict) else None,
+        "bonus_text": bonus_text,
+    })
+
+
+def _serialize_active_alliance(deal: GameDeal, viewer_house_id: int | None = None) -> dict:
+    offer_data = deal.offer if isinstance(deal.offer, dict) else {}
+    house_a = {
+        "id": deal.from_house.id,
+        "name": deal.from_house.name,
+        "house_key": deal.from_house.house_key,
+    } if deal.from_house else None
+    house_b = {
+        "id": deal.to_house.id,
+        "name": deal.to_house.name,
+        "house_key": deal.to_house.house_key,
+    } if deal.to_house else None
+    ally_house = None
+    if viewer_house_id:
+        if deal.from_house_id == viewer_house_id:
+            ally_house = house_b
+        elif deal.to_house_id == viewer_house_id:
+            ally_house = house_a
+
+    return _fix_text_map({
+        "id": deal.id,
+        "status": deal.status,
+        "house_a": house_a,
+        "house_b": house_b,
+        "ally_house": ally_house,
+        "bonus_text": _serialize_player_deal(deal).get("bonus_text"),
+        "activated_at": offer_data.get("activated_at") if isinstance(offer_data, dict) else None,
+    })
+
+
+def _get_active_alliances_for_house(db: Session, *, game_id: int, house_id: int) -> list[GameDeal]:
+    if not game_id or not house_id:
+        return []
+    return (
+        db.query(GameDeal)
+        .options(joinedload(GameDeal.from_house), joinedload(GameDeal.to_house))
+        .filter(
+            GameDeal.game_id == game_id,
+            GameDeal.status == "alliance_active",
+            (
+                (GameDeal.from_house_id == house_id)
+                | (GameDeal.to_house_id == house_id)
+            ),
+        )
+        .order_by(GameDeal.id.desc())
+        .all()
+    )
+
+
+def _get_treasurer_pending_deals(db: Session, player: Player) -> list[GameDeal]:
+    if not player or not player.house_id or not player.game_id:
+        return []
+
+    deals = (
+        db.query(GameDeal)
+        .options(
+            joinedload(GameDeal.from_house),
+            joinedload(GameDeal.to_house),
+        )
+        .filter(
+            GameDeal.game_id == player.game_id,
+            GameDeal.from_house_id == player.house_id,
+            GameDeal.status == "accepted_waiting_treasurer",
+        )
+        .order_by(GameDeal.id.desc())
+        .all()
+    )
+
+    return [
+        deal for deal in deals
+        if isinstance(deal.offer, dict) and str(deal.offer.get("type") or "").strip() == "resource"
+    ]
+
+
+def _find_alliance_conflict(
+    db: Session,
+    *,
+    game_id: int,
+    house_ids: list[int],
+    statuses: set[str],
+    exclude_deal_id: int | None = None,
+):
+    if not game_id or not house_ids or not statuses:
+        return None
+
+    query = (
+        db.query(GameDeal)
+        .filter(
+            GameDeal.game_id == game_id,
+            GameDeal.status.in_(list(statuses)),
+            (
+                GameDeal.from_house_id.in_(house_ids)
+                | GameDeal.to_house_id.in_(house_ids)
+            ),
+        )
+        .order_by(GameDeal.id.desc())
+    )
+    if exclude_deal_id:
+        query = query.filter(GameDeal.id != exclude_deal_id)
+
+    for deal in query.all():
+        offer = deal.offer if isinstance(deal.offer, dict) else {}
+        if str(offer.get("type") or "").strip() == "alliance":
+            return deal
+    return None
+
+
+def _get_houses_with_alliance_bonus_history(
+    db: Session,
+    *,
+    game_id: int,
+    house_ids: list[int],
+    exclude_deal_id: int | None = None,
+) -> set[int]:
+    if not game_id or not house_ids:
+        return set()
+
+    query = (
+        db.query(GameDeal)
+        .filter(
+            GameDeal.game_id == game_id,
+            GameDeal.status == "alliance_active",
+            (
+                GameDeal.from_house_id.in_(house_ids)
+                | GameDeal.to_house_id.in_(house_ids)
+            ),
+        )
+        .order_by(GameDeal.id.desc())
+    )
+    if exclude_deal_id:
+        query = query.filter(GameDeal.id != exclude_deal_id)
+
+    used_house_ids: set[int] = set()
+    for deal in query.all():
+        offer = deal.offer if isinstance(deal.offer, dict) else {}
+        if str(offer.get("type") or "").strip() != "alliance":
+            continue
+        applied_to = offer.get("alliance_bonus_applied_to")
+        if isinstance(applied_to, list):
+            used_house_ids.update(int(house_id) for house_id in applied_to if isinstance(house_id, int))
+            continue
+        if offer.get("alliance_bonus_applied") is True:
+            if deal.from_house_id in house_ids:
+                used_house_ids.add(deal.from_house_id)
+            if deal.to_house_id in house_ids:
+                used_house_ids.add(deal.to_house_id)
+    return used_house_ids
+
+
+@router.get("/me/{player_token}")
+def get_player_me(player_token: str):
+    db: Session = SessionLocal()
+
+    try:
+        player = _resolve_player_by_token(db, player_token)
+
+        if not player:
+            return {
+                "ok": False,
+                "message": "Игрок по токену не найден",
+            }
+
+        _touch_last_seen(player)
+        db.commit()
+        db.refresh(player)
+
+        active_phases = (
+            db.query(GamePhase)
+            .filter(
+                GamePhase.game_id == player.game_id,
+                GamePhase.status == "active",
+            )
+            .order_by(GamePhase.id.asc())
+            .all()
+        )
+
+        active_host_round = (
+            db.query(GameHostRound)
+            .filter(
+                GameHostRound.game_id == player.game_id,
+                GameHostRound.status.in_(["active", "completed_waiting_host"]),
+            )
+            .order_by(GameHostRound.id.desc())
+            .first()
+        )
+
+        active_assignments_count = (
+            db.query(GameAssignment)
+            .filter(
+                GameAssignment.player_id == player.id,
+                GameAssignment.status == "issued",
+            )
+            .count()
+        )
+        active_house_expedition = None
+        if player.house_id:
+            active_house_expedition = _build_active_house_expedition_payload(
+                db,
+                _get_active_house_expedition(db, player.game_id, player.house_id),
+                player_id=player.id,
+            )
+
+        incoming_deals = []
+        if player.house_id:
+            incoming_deals = (
+                db.query(GameDeal)
+                .options(
+                    joinedload(GameDeal.from_house),
+                    joinedload(GameDeal.to_house),
+                )
+                .filter(
+                    GameDeal.game_id == player.game_id,
+                    GameDeal.to_house_id == player.house_id,
+                    GameDeal.status.in_(["pending", "countered"]),
+                )
+                .order_by(GameDeal.id.desc())
+                .all()
+            )
+
+        available_deal_houses = []
+        if player.house_id:
+            other_houses = (
+                db.query(House)
+                .filter(
+                    House.game_id == player.game_id,
+                    House.id != player.house_id,
+                )
+                .order_by(House.id.asc())
+                .all()
+            )
+            available_deal_houses = [
+                {
+                    "id": house.id,
+                    "name": house.name,
+                    "house_key": house.house_key,
+                }
+                for house in other_houses
+            ]
+
+        treasurer_pending_deals = []
+        if player.role and player.role.code == "treasurer":
+            treasurer_pending_deals = _get_treasurer_pending_deals(db, player)
+
+        active_alliances = []
+        if player.role and player.role.code == "lord_lady" and player.house_id:
+            active_alliances = [
+                _serialize_active_alliance(deal, viewer_house_id=player.house_id)
+                for deal in _get_active_alliances_for_house(
+                    db,
+                    game_id=player.game_id,
+                    house_id=player.house_id,
+                )
+            ]
+
+        return {
+            "ok": True,
+            "player": {
+                "id": player.id,
+                "nickname": player.nickname,
+                "player_token": player.player_token,
+                "created_at": player.created_at.isoformat() if player.created_at else None,
+                "last_seen_at": player.last_seen_at.isoformat() if player.last_seen_at else None,
+            },
+            "game": {
+                "id": player.game.id if player.game else None,
+                "room_code": player.game.room_code if player.game else None,
+                "title": player.game.title if player.game else None,
+            },
+            "house": {
+                "id": player.house.id,
+                "house_key": player.house.house_key,
+                "name": player.house.name,
+                "motto": player.house.motto,
+                "invite_code": player.house.invite_code,
+                "resources": _house_resources_dict(player.house),
+            } if player.house else None,
+            "role": {
+                "id": player.role.id,
+                "code": player.role.code,
+                "name": player.role.name,
+            } if player.role else None,
+            "active_phases": [
+                {
+                    "id": phase.id,
+                    "phase_type": phase.phase_type,
+                    "phase_label": _get_phase_label(phase.phase_type),
+                    "status": phase.status,
+                    "opened_at": phase.opened_at.isoformat() if phase.opened_at else None,
+                }
+                for phase in active_phases
+            ],
+            "active_host_round": {
+                "id": active_host_round.id,
+                "round_code": active_host_round.round_code,
+                "title": active_host_round.title,
+                "status": active_host_round.status,
+                "current_question_no": active_host_round.current_question_no,
+                "questions_total": active_host_round.questions_total,
+                "answers_open": active_host_round.answers_open,
+            } if active_host_round else None,
+            "active_assignments_count": active_assignments_count,
+            "active_house_expedition": active_house_expedition,
+            "available_deal_houses": available_deal_houses,
+            "incoming_deals": [_serialize_player_deal(deal) for deal in incoming_deals],
+            "treasurer_pending_deals": [_serialize_player_deal(deal) for deal in treasurer_pending_deals],
+            "active_alliances": active_alliances,
+            "whisper_feed": _build_whisper_feed(db, player),
+        }
+
+    finally:
+        db.close()
+
+
+@router.get("/me/{player_token}/assignments")
+def get_player_assignments(player_token: str):
+    db: Session = SessionLocal()
+
+    try:
+        player = _resolve_player_by_token(db, player_token)
+
+        if not player:
+            return {
+                "ok": False,
+                "message": "Игрок по токену не найден",
+            }
+
+        _touch_last_seen(player)
+
+        assignments = (
+            db.query(GameAssignment)
+            .options(
+                joinedload(GameAssignment.template_task),
+                joinedload(GameAssignment.host_round),
+                joinedload(GameAssignment.host_round_question),
+            )
+            .filter(GameAssignment.player_id == player.id)
+            .order_by(GameAssignment.id.desc())
+            .all()
+        )
+
+        db.commit()
+
+        issued = [a for a in assignments if a.status == "issued"]
+        answered = [a for a in assignments if a.status in ["answered", "resolved", "applied"]]
+        expired = [a for a in assignments if a.status == "expired"]
+
+        return {
+            "ok": True,
+            "player": {
+                "id": player.id,
+                "nickname": player.nickname,
+                "role_code": player.role.code if player.role else None,
+                "role_name": player.role.name if player.role else None,
+            },
+            "counts": {
+                "all": len(assignments),
+                "issued": len(issued),
+                "answered": len(answered),
+                "expired": len(expired),
+            },
+            "assignments": {
+                "issued": [_serialize_assignment(a) for a in issued],
+                "answered": [_serialize_assignment(a) for a in answered],
+                "expired": [_serialize_assignment(a) for a in expired],
+            },
+        }
+
+    finally:
+        db.close()
+
+
+@router.post("/me/{player_token}/ensure-token")
+def ensure_token_for_player(player_token: str):
+    db: Session = SessionLocal()
+
+    try:
+        player = _resolve_player_by_token(db, player_token)
+
+        if not player:
+            return {
+                "ok": False,
+                "message": "Игрок по токену не найден",
+            }
+
+        token_value = _ensure_player_token(db, player)
+        _touch_last_seen(player)
+
+        db.commit()
+        db.refresh(player)
+
+        return {
+            "ok": True,
+            "player_id": player.id,
+            "player_token": token_value,
+        }
+
+    finally:
+        db.close()
+
+
+@router.post("/explore/{player_id}")
+def explore_map(player_id: int):
+    db: Session = SessionLocal()
+
+    try:
+        player = db.query(Player).filter(Player.id == player_id).first()
+        if not player:
+            raise HTTPException(status_code=404, detail="Игрок не найден")
+        if not player.house:
+            raise HTTPException(status_code=400, detail="У игрока не найден Дом")
+
+        existing_resolved = (
+            db.query(GameExpedition)
+            .filter(
+                GameExpedition.game_id == player.game_id,
+                GameExpedition.house_id == player.house_id,
+                GameExpedition.status == "resolved",
+            )
+            .order_by(GameExpedition.id.desc())
+            .first()
+        )
+
+        if existing_resolved:
+            return {
+                "ok": False,
+                "message": "Ваш Дом уже отправил экспедицию в этой фазе",
+            }
+
+        expedition = GameExpedition(
+            game_id=player.game_id,
+            house_id=player.house_id,
+            status="planned",
+            target_location_code="test_location",
+        )
+        setattr(expedition, "target_location_name", "Тестовая точка")
+
+        events_pool = [
+            {"text": "нашли золото", "effect": "gold", "value": 2},
+            {"text": "попали в засаду", "effect": "influence", "value": -1},
+            {"text": "нашли древний свиток", "effect": "scroll", "value": 1},
+            {"text": "ничего не нашли", "effect": "none", "value": 0},
+        ]
+        event = random.choice(events_pool)
+
+        if event["effect"] == "gold":
+            player.house.resource_gold += event["value"]
+        elif event["effect"] == "influence":
+            player.house.resource_influence = max(0, player.house.resource_influence + event["value"])
+        elif event["effect"] == "scroll":
+            player.house.resource_scroll += event["value"]
+
+        setattr(expedition, "result_text", event["text"])
+
+        db.add(expedition)
+        db.flush()
+
+        map_visit = GameMapVisit(
+            game_id=player.game_id,
+            house_id=player.house_id,
+            triggered_by_player_id=player.id,
+            location_code="test_location",
+            visit_no_for_house=(
+                db.query(GameMapVisit)
+                .filter(
+                    GameMapVisit.game_id == player.game_id,
+                    GameMapVisit.house_id == player.house_id,
+                )
+                .count()
+            ) + 1,
+            outcome_type=event["effect"],
+            outcome_text=event["text"],
+        )
+        db.add(map_visit)
+        db.commit()
+        db.refresh(expedition)
+
+        return {
+            "ok": True,
+            "message": "Экспедиция отправлена",
+            "expedition_id": expedition.id,
+            "status": expedition.status,
+            "house_id": expedition.house_id,
+            "event": event["text"],
+        }
+    finally:
+        db.close()
+
+
+@router.post("/expedition/create/{player_id}")
+def create_expedition(player_id: int, payload: dict = Body(default={})):
+    db: Session = SessionLocal()
+
+    try:
+        if payload is None:
+            payload = {}
+        if not isinstance(payload, dict):
+            raise HTTPException(status_code=400, detail="Тело запроса должно быть JSON-объектом")
+
+        player = (
+            db.query(Player)
+            .options(joinedload(Player.role), joinedload(Player.house))
+            .filter(Player.id == player_id)
+            .first()
+        )
+        if not player:
+            raise HTTPException(status_code=404, detail="Игрок не найден")
+        if not player.house:
+            raise HTTPException(status_code=400, detail="У игрока не найден Дом")
+        if not player.role or player.role.code != "lord_lady":
+            raise HTTPException(status_code=403, detail="Только Лорд / Леди может назначить экспедицию")
+
+        members_count = payload.get("members_count")
+        if not isinstance(members_count, int):
+            members_count = 0
+        role_codes = _normalize_expedition_role_codes(payload.get("role_codes"))
+
+        if role_codes and members_count != len(role_codes):
+            return {
+                "ok": False,
+                "message": "Количество участников должно совпадать с числом выбранных ролей",
+            }
+
+        if members_count not in {2, 3, 4, 5, 6}:
+            return {
+                "ok": False,
+                "message": "Выберите состав экспедиции от 2 до 6 участников",
+            }
+
+        expedition = _create_expedition(
+            db,
+            game_id=player.game_id,
+            house_id=player.house_id,
+        )
+        if isinstance(expedition, dict) and not expedition.get("ok", True):
+            existing_plan = {"members_count": members_count, "role_codes": role_codes}
+            if expedition.get("expedition_id"):
+                existing = (
+                    db.query(GameExpedition)
+                    .filter(GameExpedition.id == expedition["expedition_id"])
+                    .first()
+                )
+                if existing:
+                    existing_plan = _get_expedition_plan_meta(db, existing)
+            expedition["members_count"] = existing_plan["members_count"]
+            expedition["role_codes"] = existing_plan["role_codes"]
+            return _fix_text_map(expedition)
+
+        expedition.target_location_code = None
+        expedition.leader_player_id = player.id
+        db.flush()
+
+        plan_visit_no = (
+            db.query(GameMapVisit)
+            .filter(
+                GameMapVisit.game_id == player.game_id,
+                GameMapVisit.house_id == player.house_id,
+            )
+            .count()
+        ) + 1
+
+        db.add(
+            GameMapVisit(
+                game_id=player.game_id,
+                house_id=player.house_id,
+                triggered_by_player_id=player.id,
+                location_code="expedition_plan",
+                visit_no_for_house=plan_visit_no,
+                outcome_type="expedition_plan",
+                outcome_text="Состав экспедиции назначен",
+                meta_json=json.dumps(
+                    {
+                        "expedition_id": expedition.id,
+                        "members_count": members_count,
+                        "role_codes": role_codes,
+                    },
+                    ensure_ascii=False,
+                ),
+            )
+        )
+        db.commit()
+        db.refresh(expedition)
+
+        return _fix_text_map({
+            "ok": True,
+            "message": "Экспедиция назначена",
+            "expedition_id": expedition.id,
+            "members_count": members_count,
+            "role_codes": role_codes,
+        })
+    finally:
+        db.close()
+
+
+@router.post("/expedition/{expedition_id}/choose-location/{player_id}")
+def choose_expedition_location(expedition_id: int, player_id: int, payload: dict = Body(...)):
+    db: Session = SessionLocal()
+
+    try:
+        if not isinstance(payload, dict):
+            raise HTTPException(status_code=400, detail="Тело запроса должно быть JSON-объектом")
+
+        location_code = payload.get("location_code")
+        if location_code not in EXPEDITION_LOCATION_OPTIONS:
+            raise HTTPException(status_code=400, detail="Недопустимое направление экспедиции")
+
+        player = (
+            db.query(Player)
+            .options(joinedload(Player.house), joinedload(Player.role))
+            .filter(Player.id == player_id)
+            .first()
+        )
+        if not player:
+            raise HTTPException(status_code=404, detail="Игрок не найден")
+
+        expedition = (
+            db.query(GameExpedition)
+            .filter(GameExpedition.id == expedition_id)
+            .first()
+        )
+        if not expedition:
+            raise HTTPException(status_code=404, detail="Экспедиция не найдена")
+        if expedition.house_id != player.house_id or expedition.game_id != player.game_id:
+            raise HTTPException(status_code=403, detail="Игрок не относится к этой экспедиции")
+        if expedition.status not in {"planned", "approved"}:
+            raise HTTPException(status_code=400, detail="Экспедиция уже закрыта")
+
+        plan_meta = _get_expedition_plan_meta(db, expedition)
+        role_codes = plan_meta.get("role_codes") or []
+        if role_codes and (not player.role or player.role.code not in role_codes):
+            raise HTTPException(status_code=403, detail="Игрок не входит в состав экспедиции")
+
+        existing_vote = next(
+            (
+                visit
+                for visit in reversed(_get_expedition_vote_visits(db, expedition))
+                if visit.triggered_by_player_id == player.id
+            ),
+            None,
+        )
+
+        location_name = _location_name_by_code(location_code) or EXPEDITION_LOCATION_OPTIONS[location_code]
+
+        vote_meta = json.dumps(
+            {
+                "expedition_id": expedition.id,
+                "location_name": location_name,
+            },
+            ensure_ascii=False,
+        )
+
+        if existing_vote:
+            existing_vote.location_code = location_code
+            existing_vote.outcome_text = "Выбор направления"
+            existing_vote.meta_json = vote_meta
+        else:
+            house_vote_no = (
+                db.query(GameMapVisit)
+                .filter(
+                    GameMapVisit.game_id == player.game_id,
+                    GameMapVisit.house_id == player.house_id,
+                )
+                .count()
+            ) + 1
+
+            db.add(
+                GameMapVisit(
+                    game_id=player.game_id,
+                    house_id=player.house_id,
+                    triggered_by_player_id=player.id,
+                    location_code=location_code,
+                    visit_no_for_house=house_vote_no,
+                    outcome_type="expedition_vote",
+                    outcome_text="Выбор направления",
+                    meta_json=vote_meta,
+                )
+            )
+
+        db.commit()
+        db.refresh(expedition)
+
+        summary = _build_active_house_expedition_payload(db, expedition, player_id=player.id)
+        return _fix_text_map({
+            "ok": True,
+            "message": "Выбор направления сохранён",
+            "expedition_id": expedition.id,
+            "location_code": location_code,
+            "location_name": location_name,
+            "choices_count": summary["choices_count"] if summary else 0,
+            "unique_locations_count": summary["unique_locations_count"] if summary else 0,
+        })
+    finally:
+        db.close()
+
+
+@router.post("/expedition/{expedition_id}/resolve/{player_id}")
+def resolve_expedition(expedition_id: int, player_id: int):
+    db: Session = SessionLocal()
+
+    try:
+        player = (
+            db.query(Player)
+            .options(joinedload(Player.role), joinedload(Player.house))
+            .filter(Player.id == player_id)
+            .first()
+        )
+        if not player:
+            raise HTTPException(status_code=404, detail="Игрок не найден")
+        if not player.role or player.role.code != "lord_lady":
+            raise HTTPException(status_code=403, detail="Только Лорд / Леди может завершить экспедицию")
+
+        expedition = (
+            db.query(GameExpedition)
+            .options(joinedload(GameExpedition.house))
+            .filter(GameExpedition.id == expedition_id)
+            .first()
+        )
+        if not expedition:
+            raise HTTPException(status_code=404, detail="Экспедиция не найдена")
+        if expedition.house_id != player.house_id or expedition.game_id != player.game_id:
+            raise HTTPException(status_code=403, detail="Это не экспедиция вашего Дома")
+        if expedition.status not in {"planned", "approved"}:
+            raise HTTPException(status_code=400, detail="Экспедиция уже завершена")
+
+        vote_visits = _get_expedition_vote_visits(db, expedition)
+        plan_meta = _get_expedition_plan_meta(db, expedition)
+        members_count = plan_meta.get("members_count") or 0
+        role_codes = plan_meta.get("role_codes") or []
+        lord_vote = next(
+            (
+                visit
+                for visit in reversed(vote_visits)
+                if visit.triggered_by_player_id == player.id and visit.location_code
+            ),
+            None,
+        )
+
+        if "lord_lady" in role_codes and not lord_vote:
+            return _fix_text_map({
+                "ok": False,
+                "message": "Сначала Лорд должен выбрать маршрут экспедиции",
+            })
+
+        if members_count > 0 and len(vote_visits) < members_count:
+            return _fix_text_map({
+                "ok": False,
+                "message": "Экспедиция ещё не собрала назначенный состав",
+            })
+
+        vote_counts = {}
+        location_names = {}
+        for visit in vote_visits:
+            if not visit.location_code:
+                continue
+            meta = _load_meta_json(getattr(visit, "meta_json", None))
+            vote_counts[visit.location_code] = vote_counts.get(visit.location_code, 0) + 1
+            location_names[visit.location_code] = meta.get("location_name") or _location_name_by_code(visit.location_code) or visit.location_code
+
+        chosen_locations = list(vote_counts.keys())
+        unique_locations_count = len(chosen_locations)
+        vote_counts_display = [
+            {
+                "location_code": location_code,
+                "location_name": location_names.get(location_code) or location_code,
+                "count": count,
+            }
+            for location_code, count in sorted(vote_counts.items(), key=lambda item: (-item[1], item[0]))
+        ]
+
+        success = bool(vote_counts_display) and unique_locations_count == 1
+        reward = {}
+        penalty = {}
+        resources_after = _house_resources_snapshot(expedition.house) if expedition.house else {}
+        location_name = None
+        outcome_text = None
+        role_bonus = False
+        preferred_roles = []
+
+        if success:
+            chosen_location_code = vote_counts_display[0]["location_code"]
+            location_name = vote_counts_display[0]["location_name"]
+            catalog = _load_expedition_locations_catalog()
+            location = catalog.get(chosen_location_code)
+            if not location:
+                raise HTTPException(status_code=400, detail="Локация экспедиции не найдена в каталоге")
+
+            outcome = _weighted_pick_outcome(location.get("outcomes", []))
+            outcome_text = fix_encoding(outcome.get("text") or "Экспедиция достигла цели.")
+            reward = _normalize_resource_delta_map(outcome.get("reward"))
+            penalty = _normalize_resource_delta_map(outcome.get("penalty"))
+            reward, penalty = _rebalance_expedition_outcome(location, reward, penalty)
+            preferred_roles = list(location.get("preferred_roles") or [])
+            preferred_roles_set = set(preferred_roles)
+
+            if preferred_roles_set and set(role_codes).intersection(preferred_roles_set):
+                if reward:
+                    if "gold" in reward:
+                        reward["gold"] += 1
+                    elif "influence" in reward:
+                        reward["influence"] += 1
+                    elif "scroll" in reward:
+                        reward["scroll"] += 1
+                    else:
+                        reward["gold"] = 1
+                else:
+                    reward["gold"] = 1
+
+                if "gold" in penalty and penalty["gold"] < 0:
+                    penalty["gold"] = min(0, penalty["gold"] + 1)
+                    if penalty["gold"] == 0:
+                        penalty.pop("gold", None)
+                if "influence" in penalty and penalty["influence"] < 0:
+                    penalty["influence"] = min(0, penalty["influence"] + 1)
+                    if penalty["influence"] == 0:
+                        penalty.pop("influence", None)
+
+                role_bonus = True
+
+            reward, penalty = _rebalance_expedition_outcome(location, reward, penalty)
+
+            reward, outcome_text = _apply_location_pressure(
+                db,
+                game_id=expedition.game_id,
+                location_code=chosen_location_code,
+                reward=reward,
+                outcome_text=outcome_text,
+            )
+
+            applied_reward = _apply_house_resource_deltas(expedition.house, reward) if expedition.house else {}
+            applied_penalty = _apply_house_resource_deltas(expedition.house, penalty) if expedition.house else {}
+            reward = {key: value for key, value in applied_reward.items() if value > 0}
+            penalty = {key: value for key, value in applied_penalty.items() if value < 0}
+            resources_after = _house_resources_snapshot(expedition.house) if expedition.house else {}
+
+            expedition.status = "resolved"
+            expedition.target_location_code = chosen_location_code
+            result_message = fix_encoding(f"Дом дошёл до точки: {location_name}")
+            result_type = "map_success"
+        else:
+            expedition.status = "resolved"
+            expedition.target_location_code = None
+            if expedition.house:
+                resources_after = _house_resources_snapshot(expedition.house)
+            result_message = fix_encoding("Экспедиция разошлась по разным дорогам и не достигла цели")
+            outcome_text = result_message
+            result_type = "map_fail"
+
+        result_visit_no = (
+            db.query(GameMapVisit)
+            .filter(
+                GameMapVisit.game_id == expedition.game_id,
+                GameMapVisit.house_id == expedition.house_id,
+            )
+            .count()
+        ) + 1
+
+        db.add(
+            GameMapVisit(
+                game_id=expedition.game_id,
+                house_id=expedition.house_id,
+                triggered_by_player_id=player.id,
+                location_code=expedition.target_location_code or "mixed_route",
+                visit_no_for_house=result_visit_no,
+                outcome_type=result_type,
+                outcome_text=outcome_text or result_message,
+                meta_json=json.dumps(
+                    {
+                        "expedition_id": expedition.id,
+                        "members_count": members_count,
+                        "role_codes": role_codes,
+                        "preferred_roles": preferred_roles,
+                        "chosen_locations": chosen_locations,
+                        "vote_counts_display": vote_counts_display,
+                        "success": success,
+                        "location_code": expedition.target_location_code,
+                        "location_name": location_name,
+                        "outcome_type": result_type,
+                        "role_bonus": role_bonus,
+                        "reward": reward,
+                        "penalty": penalty,
+                    },
+                    ensure_ascii=False,
+                ),
+            )
+        )
+
+        db.commit()
+
+        return _fix_text_map({
+            "ok": True,
+            "success": success,
+            "message": result_message,
+            "location_name": location_name,
+            "outcome_text": outcome_text,
+            "members_count": members_count,
+            "role_codes": role_codes,
+            "preferred_roles": preferred_roles,
+            "reward": reward,
+            "penalty": penalty,
+            "role_bonus": role_bonus,
+            "vote_counts": vote_counts_display,
+            "chosen_locations": chosen_locations,
+            "resources_after": resources_after,
+        })
+    finally:
+        db.close()
+
+
+@router.post("/deals/create/{player_id}")
+def create_player_deal(player_id: int, payload: dict = Body(default={})):
+    db: Session = SessionLocal()
+
+    try:
+        if payload is None:
+            payload = {}
+        if not isinstance(payload, dict):
+            return {
+                "ok": False,
+                "message": "Тело запроса должно быть JSON-объектом",
+            }
+
+        player = (
+            db.query(Player)
+            .options(joinedload(Player.role), joinedload(Player.house), joinedload(Player.game))
+            .filter(Player.id == player_id)
+            .first()
+        )
+        if not player:
+            return {
+                "ok": False,
+                "message": "Игрок не найден",
+            }
+        if not player.house:
+            return {
+                "ok": False,
+                "message": "У игрока не найден Дом",
+            }
+        if not player.role or player.role.code != "diplomat":
+            return {
+                "ok": False,
+                "message": "Фиксировать договорённости может только Дипломат",
+            }
+        if not _has_active_phase_types(db, player.game_id, {"diplomacy", "free_play"}):
+            return {
+                "ok": False,
+                "message": "Договорённости можно фиксировать только на этапе дипломатии",
+            }
+
+        target_house_id = payload.get("target_house_id")
+        deal_type = str(payload.get("deal_type") or "").strip()
+        resource_type = str(payload.get("resource_type") or "").strip()
+        crest_piece = fix_encoding(str(payload.get("crest_piece") or "").strip())
+        offer_text = fix_encoding(str(payload.get("offer_text") or "").strip())
+        resource_amount_raw = payload.get("resource_amount")
+
+        try:
+            resource_amount = int(resource_amount_raw) if resource_amount_raw not in (None, "") else None
+        except Exception:
+            resource_amount = None
+
+        if not isinstance(target_house_id, int):
+            return {
+                "ok": False,
+                "message": "Выберите Дом для договорённости",
+            }
+        if not deal_type:
+            return {
+                "ok": False,
+                "message": "Выберите тип договорённости",
+            }
+        if deal_type == "resource":
+            if not resource_type:
+                return {
+                    "ok": False,
+                    "message": "Выберите ресурс",
+                }
+            if resource_amount is None or resource_amount <= 0:
+                return {
+                    "ok": False,
+                    "message": "Укажите количество ресурса",
+                }
+        elif deal_type == "crest_piece":
+            if not crest_piece:
+                return {
+                    "ok": False,
+                    "message": "Опишите кусок герба",
+                }
+        elif deal_type == "open_agreement":
+            if not offer_text:
+                return {
+                    "ok": False,
+                    "message": "Опишите суть договорённости",
+                }
+        elif deal_type == "alliance":
+            offer_text = offer_text or "Союз домов"
+        else:
+            return {
+                "ok": False,
+                "message": "Неизвестный тип договорённости",
+            }
+        if target_house_id == player.house_id:
+            return {
+                "ok": False,
+                "message": "Нельзя заключить сделку с собственным Домом",
+            }
+
+        target_house = (
+            db.query(House)
+            .filter(
+                House.game_id == player.game_id,
+                House.id == target_house_id,
+            )
+            .first()
+        )
+        if not target_house:
+            return {
+                "ok": False,
+                "message": "Дом для договорённости не найден",
+            }
+
+        if deal_type == "alliance":
+            house_ids = [player.house_id, target_house_id]
+            active_alliance = _find_alliance_conflict(
+                db,
+                game_id=player.game_id,
+                house_ids=house_ids,
+                statuses={"alliance_active"},
+            )
+            if active_alliance:
+                return {
+                    "ok": False,
+                    "message": "Один Дом может иметь только один активный союз",
+                }
+
+            pending_or_active_alliance = _find_alliance_conflict(
+                db,
+                game_id=player.game_id,
+                house_ids=house_ids,
+                statuses={"pending", "alliance_active"},
+            )
+            if pending_or_active_alliance:
+                return {
+                    "ok": False,
+                    "message": "У одного из Домов уже есть активный или ожидающий союз",
+                }
+
+        offer_payload = {
+            "type": deal_type,
+            "resource_type": resource_type or None,
+            "resource_amount": resource_amount,
+            "crest_piece": crest_piece or None,
+            "text": offer_text,
+        }
+        human_offer_text = _format_deal_offer_text(offer_payload, None)
+
+        deal = GameDeal(
+            game_id=player.game_id,
+            from_house_id=player.house_id,
+            to_house_id=target_house_id,
+            status="pending",
+            offer=offer_payload,
+            note=human_offer_text,
+        )
+        db.add(deal)
+        db.commit()
+        db.refresh(deal)
+
+        return _fix_text_map({
+            "ok": True,
+            "message": "Договорённость зафиксирована",
+            "deal": _serialize_player_deal(deal),
+        })
+    finally:
+        db.close()
+
+
+@router.post("/deals/respond/{player_id}")
+def respond_player_deal(player_id: int, payload: dict = Body(default={})):
+    db: Session = SessionLocal()
+
+    try:
+        if payload is None:
+            payload = {}
+        if not isinstance(payload, dict):
+            return {
+                "ok": False,
+                "message": "Тело запроса должно быть JSON-объектом",
+            }
+
+        player = (
+            db.query(Player)
+            .options(joinedload(Player.house), joinedload(Player.role))
+            .filter(Player.id == player_id)
+            .first()
+        )
+
+        if not player:
+            return {
+                "ok": False,
+                "message": "Игрок не найден",
+            }
+
+        if not player.house_id:
+            return {
+                "ok": False,
+                "message": "У игрока не найден Дом",
+            }
+
+        deal_id = payload.get("deal_id")
+        action = str(payload.get("action") or "").strip().lower()
+
+        if not deal_id:
+            return {
+                "ok": False,
+                "message": "Не указана сделка",
+            }
+
+        if action not in {"accept", "reject"}:
+            return {
+                "ok": False,
+                "message": "Нужно выбрать действие по сделке",
+            }
+
+        deal = (
+            db.query(GameDeal)
+            .options(joinedload(GameDeal.from_house), joinedload(GameDeal.to_house))
+            .filter(
+                GameDeal.id == deal_id,
+                GameDeal.game_id == player.game_id,
+            )
+            .first()
+        )
+
+        if not deal:
+            return {
+                "ok": False,
+                "message": "Сделка не найдена",
+            }
+
+        if deal.to_house_id != player.house_id:
+            return {
+                "ok": False,
+                "message": "Вы не можете отвечать на эту договорённость",
+            }
+
+        offer_type = ""
+        if isinstance(deal.offer, dict):
+            offer_type = str(deal.offer.get("type") or "").strip()
+
+        if action == "accept":
+            if offer_type == "resource":
+                deal.status = "accepted_waiting_treasurer"
+                message = "Сделка принята. Ожидает подтверждения Мастера над золотом"
+            elif offer_type == "alliance":
+                house_ids = [deal.from_house_id, deal.to_house_id]
+                active_alliance = _find_alliance_conflict(
+                    db,
+                    game_id=player.game_id,
+                    house_ids=house_ids,
+                    statuses={"alliance_active"},
+                    exclude_deal_id=deal.id,
+                )
+                if active_alliance:
+                    return _fix_text_map({
+                        "ok": False,
+                        "message": "Один Дом может иметь только один активный союз",
+                    })
+
+                deal.status = "alliance_active"
+                offer = dict(deal.offer) if isinstance(deal.offer, dict) else {}
+                existing_applied_to = offer.get("alliance_bonus_applied_to")
+                applied_to: list[int] = (
+                    [house_id for house_id in existing_applied_to if isinstance(house_id, int)]
+                    if isinstance(existing_applied_to, list)
+                    else []
+                )
+                if offer.get("alliance_bonus_applied") and not applied_to:
+                    applied_to = [house_id for house_id in house_ids if isinstance(house_id, int)]
+                if not offer.get("alliance_bonus_applied"):
+                    prior_bonus_houses = _get_houses_with_alliance_bonus_history(
+                        db,
+                        game_id=player.game_id,
+                        house_ids=house_ids,
+                        exclude_deal_id=deal.id,
+                    )
+                    if deal.from_house and deal.from_house_id not in prior_bonus_houses:
+                        _apply_house_resource_deltas(deal.from_house, {"influence": 1})
+                        applied_to.append(deal.from_house_id)
+                    if deal.to_house and deal.to_house_id not in prior_bonus_houses:
+                        _apply_house_resource_deltas(deal.to_house, {"influence": 1})
+                        applied_to.append(deal.to_house_id)
+                    offer["alliance_bonus_applied"] = True
+                offer["alliance_bonus_applied_to"] = applied_to
+                offer["activated_at"] = datetime.utcnow().isoformat()
+                offer["alliance_bonus"] = {"influence": 1}
+                if len(applied_to) >= 2:
+                    offer["bonus_text"] = "+1 влияние обоим Домам"
+                elif len(applied_to) == 1:
+                    offer["bonus_text"] = "+1 влияние одному из Домов"
+                else:
+                    offer["bonus_text"] = "Бонус союза уже был использован"
+                deal.offer = offer
+                message = "Союз заключён"
+            else:
+                deal.status = "accepted"
+                message = "Ответ по договорённости сохранён"
+        else:
+            deal.status = "rejected"
+            message = "Ответ по договорённости сохранён"
+        deal.responded_at = datetime.utcnow()
+        db.add(deal)
+        db.commit()
+        db.refresh(deal)
+
+        return _fix_text_map({
+            "ok": True,
+            "message": message,
+            "deal": _serialize_player_deal(deal),
+        })
+    finally:
+        db.close()
+
+
+@router.post("/alliances/break/{player_id}")
+def break_alliance(player_id: int, payload: dict = Body(default={})):
+    db: Session = SessionLocal()
+
+    try:
+        if payload is None:
+            payload = {}
+        if not isinstance(payload, dict):
+            return {
+                "ok": False,
+                "message": "Тело запроса должно быть JSON-объектом",
+            }
+
+        player = (
+            db.query(Player)
+            .options(joinedload(Player.house), joinedload(Player.role))
+            .filter(Player.id == player_id)
+            .first()
+        )
+        if not player:
+            return {"ok": False, "message": "Игрок не найден"}
+        if not player.role or player.role.code != "lord_lady":
+            return {"ok": False, "message": "Разорвать союз может только Лорд / Леди"}
+        if not player.house_id:
+            return {"ok": False, "message": "У игрока не найден Дом"}
+
+        deal_id = payload.get("deal_id")
+        mode = str(payload.get("mode") or "").strip()
+        if mode not in {"peaceful_break", "betrayal"}:
+            return {"ok": False, "message": "Выберите способ разрыва союза"}
+
+        deal = (
+            db.query(GameDeal)
+            .options(joinedload(GameDeal.from_house), joinedload(GameDeal.to_house))
+            .filter(GameDeal.id == deal_id, GameDeal.game_id == player.game_id)
+            .first()
+        )
+        if not deal:
+            return {"ok": False, "message": "Сделка не найдена"}
+        if deal.status != "alliance_active":
+            return {"ok": False, "message": "Этот союз уже не активен"}
+        if player.house_id not in {deal.from_house_id, deal.to_house_id}:
+            return {"ok": False, "message": "Вы не можете разорвать чужой союз"}
+
+        breaker_house = deal.from_house if deal.from_house_id == player.house_id else deal.to_house
+        other_house = deal.to_house if deal.from_house_id == player.house_id else deal.from_house
+        offer = dict(deal.offer) if isinstance(deal.offer, dict) else {}
+        offer["break_mode"] = mode
+        offer["broken_at"] = datetime.utcnow().isoformat()
+        offer["broken_by_house_id"] = breaker_house.id if breaker_house else player.house_id
+        offer["other_house_id"] = other_house.id if other_house else None
+
+        if mode == "peaceful_break":
+            deal.status = "alliance_broken"
+            offer["break_text"] = "Союз разорван по решению Дома"
+            message = offer["break_text"]
+        else:
+            deal.status = "alliance_betrayed"
+            if breaker_house:
+                _apply_house_resource_deltas(breaker_house, {"gold": 1, "influence": -1})
+            if other_house:
+                _apply_house_resource_deltas(other_house, {"influence": 1})
+            offer["betrayal_effect"] = {
+                "breaker": {"gold": 1, "influence": -1},
+                "other": {"influence": 1},
+            }
+            offer["break_text"] = "Союз предан. Предатель получает золото, но теряет влияние. Второй Дом получает влияние."
+            message = offer["break_text"]
+
+        deal.offer = offer
+        deal.responded_at = datetime.utcnow()
+        db.add(deal)
+        db.commit()
+        db.refresh(deal)
+
+        return _fix_text_map({
+            "ok": True,
+            "message": message,
+            "deal": _serialize_player_deal(deal),
+            "active_alliances": [
+                _serialize_active_alliance(item, viewer_house_id=player.house_id)
+                for item in _get_active_alliances_for_house(
+                    db,
+                    game_id=player.game_id,
+                    house_id=player.house_id,
+                )
+            ],
+            "breaker_house_resources": _house_resources_snapshot(breaker_house) if breaker_house else {},
+            "other_house_resources": _house_resources_snapshot(other_house) if other_house else {},
+        })
+    finally:
+        db.close()
+
+
+@router.post("/deals/treasurer-confirm/{player_id}")
+def treasurer_confirm_deal(player_id: int, payload: dict = Body(default={})):
+    db: Session = SessionLocal()
+
+    try:
+        if payload is None:
+            payload = {}
+        if not isinstance(payload, dict):
+            return {
+                "ok": False,
+                "message": "Тело запроса должно быть JSON-объектом",
+            }
+
+        player = (
+            db.query(Player)
+            .options(joinedload(Player.house), joinedload(Player.role))
+            .filter(Player.id == player_id)
+            .first()
+        )
+
+        if not player:
+            return {
+                "ok": False,
+                "message": "Игрок не найден",
+            }
+        if not player.house:
+            return {
+                "ok": False,
+                "message": "У игрока не найден Дом",
+            }
+        if not player.role or player.role.code != "treasurer":
+            return {
+                "ok": False,
+                "message": "Подтверждать сделку может только Мастер над золотом",
+            }
+
+        deal_id = payload.get("deal_id")
+        action = str(payload.get("action") or "").strip().lower()
+
+        if not deal_id:
+            return {
+                "ok": False,
+                "message": "Не указана сделка",
+            }
+        if action not in {"confirm", "reject"}:
+            return {
+                "ok": False,
+                "message": "Нужно выбрать действие по сделке",
+            }
+
+        deal = (
+            db.query(GameDeal)
+            .options(joinedload(GameDeal.from_house), joinedload(GameDeal.to_house))
+            .filter(
+                GameDeal.id == deal_id,
+                GameDeal.game_id == player.game_id,
+            )
+            .first()
+        )
+
+        if not deal:
+            return {
+                "ok": False,
+                "message": "Сделка не найдена",
+            }
+        if deal.from_house_id != player.house_id:
+            return {
+                "ok": False,
+                "message": "Вы не можете подтверждать эту сделку",
+            }
+        if deal.status != "accepted_waiting_treasurer":
+            return {
+                "ok": False,
+                "message": "Сделка не ожидает подтверждения Мастера над золотом",
+            }
+
+        offer = deal.offer if isinstance(deal.offer, dict) else {}
+        if str(offer.get("type") or "").strip() != "resource":
+            return {
+                "ok": False,
+                "message": "Подтверждение требуется только для ресурсной сделки",
+            }
+
+        if action == "reject":
+            deal.status = "treasurer_rejected"
+            deal.responded_at = datetime.utcnow()
+            db.add(deal)
+            db.commit()
+            db.refresh(deal)
+            return _fix_text_map({
+                "ok": True,
+                "message": "Мастер над золотом отклонил сделку",
+                "deal": _serialize_player_deal(deal),
+            })
+
+        resource_type = str(offer.get("resource_type") or "").strip()
+        resource_amount = offer.get("resource_amount")
+        if resource_type not in {"gold", "influence", "stone", "wood", "iron", "scroll", "key", "fire"}:
+            return {
+                "ok": False,
+                "message": "В сделке указан некорректный ресурс",
+            }
+        if not isinstance(resource_amount, int) or resource_amount <= 0:
+            return {
+                "ok": False,
+                "message": "В сделке указано некорректное количество ресурса",
+            }
+        if not deal.from_house or not deal.to_house:
+            return {
+                "ok": False,
+                "message": "У сделки не найден Дом-отправитель или Дом-получатель",
+            }
+
+        from_before = _house_resources_snapshot(deal.from_house)
+        if (from_before.get(resource_type) or 0) < resource_amount:
+            return {
+                "ok": False,
+                "message": "Недостаточно ресурса для подтверждения сделки",
+            }
+
+        from_delta = _apply_house_resource_deltas(deal.from_house, {resource_type: -resource_amount})
+        to_delta = _apply_house_resource_deltas(deal.to_house, {resource_type: resource_amount})
+
+        deal.status = "completed"
+        deal.responded_at = datetime.utcnow()
+        db.add(deal)
+        db.commit()
+        db.refresh(deal)
+
+        return _fix_text_map({
+            "ok": True,
+            "message": "Сделка подтверждена и исполнена",
+            "deal": _serialize_player_deal(deal),
+            "from_house_resources": _house_resources_snapshot(deal.from_house),
+            "to_house_resources": _house_resources_snapshot(deal.to_house),
+            "transferred": {
+                "resource_type": resource_type,
+                "resource_amount": resource_amount,
+                "from_delta": from_delta,
+                "to_delta": to_delta,
+            },
+        })
+    finally:
+        db.close()
+
+
+@router.post("/assignments/{assignment_id}/answer")
+def answer_assignment(
+    assignment_id: int,
+    payload: dict = Body(...),
+):
+    db: Session = SessionLocal()
+
+    try:
+        if not isinstance(payload, dict):
+            return {
+                "ok": False,
+                "message": "Тело запроса должно быть JSON-объектом",
+            }
+
+        player_token = payload.get("player_token")
+        answer_payload = payload.get("answer_payload")
+
+        if not player_token:
+            return {
+                "ok": False,
+                "message": 'Поле "player_token" обязательно',
+            }
+
+        if answer_payload is None:
+            return {
+                "ok": False,
+                "message": 'Поле "answer_payload" обязательно',
+            }
+
+        player = _resolve_player_by_token(db, player_token)
+
+        if not player:
+            return {
+                "ok": False,
+                "message": "Игрок по токену не найден",
+            }
+
+        assignment = (
+            db.query(GameAssignment)
+            .options(
+                joinedload(GameAssignment.player),
+                joinedload(GameAssignment.template_task),
+                joinedload(GameAssignment.host_round),
+                joinedload(GameAssignment.host_round_question),
+            )
+            .filter(GameAssignment.id == assignment_id)
+            .first()
+        )
+
+        if not assignment:
+            return {
+                "ok": False,
+                "message": "Assignment не найден",
+                "assignment_id": assignment_id,
+            }
+
+        if assignment.player_id != player.id:
+            return {
+                "ok": False,
+                "message": "Этот assignment выдан другому игроку",
+                "assignment_id": assignment_id,
+                "player_id": player.id,
+            }
+
+        result = _process_assignment_answer(
+            db=db,
+            assignment=assignment,
+            payload=answer_payload,
+            load_json_text_fn=_load_json_text,
+            dump_json_fn=_dump_json,
+            apply_house_effect_fn=_apply_house_effect,
+            build_house_resources_snapshot_fn=_build_house_resources_snapshot,
+            open_next_question_for_host_round_fn=_open_next_question_for_host_round,
+        )
+        _touch_last_seen(player)
+
+        db.commit()
+        db.refresh(assignment)
+
+        return {
+            "ok": True,
+            "message": "Ответ игрока принят",
+            "player": {
+                "id": player.id,
+                "nickname": player.nickname,
+            },
+            "assignment": _serialize_assignment(result["assignment"]),
+            "result_payload": result["result_payload"],
+            "house_resources_after": result["house_resources_after"],
+        }
+
+    except ValueError as e:
+        db.rollback()
+        return {
+            "ok": False,
+            "message": str(e),
+            "assignment_id": assignment_id,
+        }
+    except Exception as e:
+        db.rollback()
+        return {
+            "ok": False,
+            "message": "Ошибка при обработке ответа игрока",
+            "details": str(e),
+            "assignment_id": assignment_id,
+        }
+    finally:
+        db.close()

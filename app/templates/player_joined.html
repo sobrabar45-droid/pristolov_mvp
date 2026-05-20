@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Игрок добавлен</title>
+</head>
+<body>
+    <h1>Игрок успешно добавлен</h1>
+
+    <p><strong>Имя:</strong> {{ player.nickname }}</p>
+    <p><strong>Игра:</strong> {{ game.title }}</p>
+    <p><strong>Код комнаты:</strong> {{ game.room_code }}</p>
+    <p><strong>Дом:</strong> {{ house.name }}</p>
+
+    <p><a href="/game/{{ game.room_code }}">Назад к игре</a></p>
+    <p><a href="/join">Ко входу</a></p>
+</body>
+</html>

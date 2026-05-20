@@ -1,0 +1,76 @@
+round_questions:
+  - round_code: act1_truth_lie_01
+    question_code: act1_truth_lie_01_q1
+    sequence_no: 1
+    role_code: whisper_master
+    title: "Слух первый"
+    prompt: "Что ближе к правде?"
+    ui_template: truth_lie
+    answer_mode: single_choice
+    auto_check: true
+    manual_check_allowed: false
+    allowed_house_keys: []
+    content:
+      time_limit_sec: 30
+      statements:
+        - code: s1
+          text: "Башня уже получила ключ"
+          truth: false
+        - code: s2
+          text: "На рынке появился посредник без знака Дома"
+          truth: true
+      correct_answer: s2
+    reward:
+      influence: 1
+    fail_effect:
+      influence: 0
+
+  - round_code: act1_truth_lie_01
+    question_code: act1_truth_lie_01_q2
+    sequence_no: 2
+    role_code: whisper_master
+    title: "Слух второй"
+    prompt: "Что ближе к правде?"
+    ui_template: truth_lie
+    answer_mode: single_choice
+    auto_check: true
+    manual_check_allowed: false
+    allowed_house_keys: []
+    content:
+      statements:
+        - code: s1
+          text: "Дом Волка уже заключил тайный союз с Домом Меча"
+          truth: false
+        - code: s2
+          text: "У одной из делегаций пропал доступ к закрытому знаку"
+          truth: true
+      correct_answer: s2
+    reward:
+      influence: 1
+    fail_effect:
+      influence: 0
+
+  - round_code: act1_truth_lie_01
+    question_code: act1_truth_lie_01_q3
+    sequence_no: 3
+    role_code: whisper_master
+    title: "Слух третий"
+    prompt: "Что ближе к правде?"
+    ui_template: truth_lie
+    answer_mode: single_choice
+    auto_check: true
+    manual_check_allowed: false
+    allowed_house_keys: []
+    content:
+      statements:
+        - code: s1
+          text: "Казна уже вскрыта и золото выведено из игры"
+          truth: false
+        - code: s2
+          text: "Один из слухов был специально запущен, чтобы отвлечь дипломатов"
+          truth: true
+      correct_answer: s2
+    reward:
+      influence: 1
+    fail_effect:
+      influence: 0

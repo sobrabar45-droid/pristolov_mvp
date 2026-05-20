@@ -1,0 +1,1501 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>приСтолов — TV экран</title>
+  <style>
+    :root {
+      --bg: #090807;
+      --bg-deep: #050403;
+      --panel: rgba(28, 22, 17, 0.92);
+      --line: rgba(216, 178, 96, 0.22);
+      --line-soft: rgba(216, 178, 96, 0.10);
+      --gold: #ddb669;
+      --gold-strong: #f1d08a;
+      --gold-soft: #af8a43;
+      --silver: #c9ced7;
+      --bronze: #c98954;
+      --text: #f4ebd8;
+      --muted: #b6a996;
+      --muted-2: #8f8577;
+      --ok: #7fb18b;
+      --shadow: 0 16px 42px rgba(0, 0, 0, 0.42);
+      --radius: 20px;
+      --radius-sm: 14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(128, 89, 36, 0.18), transparent 28%),
+        radial-gradient(circle at 0% 100%, rgba(76, 52, 20, 0.12), transparent 26%),
+        linear-gradient(180deg, #13100d 0%, #090807 56%, #050403 100%);
+      color: var(--text);
+      font-family: "Segoe UI", "Inter", Arial, sans-serif;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(221,182,105,0.03) 0%, transparent 12%, transparent 88%, rgba(221,182,105,0.03) 100%),
+        radial-gradient(circle at 18% 12%, rgba(221,182,105,0.05), transparent 20%),
+        radial-gradient(circle at 82% 18%, rgba(221,182,105,0.04), transparent 22%);
+      opacity: .95;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.014) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.014) 1px, transparent 1px);
+      background-size: 160px 160px;
+      mix-blend-mode: soft-light;
+      opacity: .18;
+    }
+
+    .screen {
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      grid-template-rows: 96px 1fr 66px;
+      gap: 10px;
+      padding: 10px 14px 10px;
+    }
+
+    .panel {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      border-radius: var(--radius);
+      background:
+        linear-gradient(180deg, rgba(32,25,19,0.96) 0%, rgba(18,14,11,0.98) 100%);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      isolation: isolate;
+    }
+
+    .panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at top center, rgba(221,182,105,0.08), transparent 36%);
+      opacity: .75;
+    }
+
+    .panel::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border-radius: inherit;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1.28fr 1.04fr 1.08fr;
+      gap: 10px;
+      min-height: 0;
+    }
+
+    .topbox {
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .eyebrow {
+      color: var(--gold);
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      font-size: 11px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .title-main {
+      font-size: 28px;
+      line-height: 1.02;
+      font-weight: 900;
+      text-shadow: 0 0 22px rgba(221,182,105,0.08);
+    }
+
+    .subline {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .phase-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(221,182,105,0.08);
+      border: 1px solid rgba(221,182,105,0.22);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 11px 15px;
+      font-size: 15px;
+      font-weight: 800;
+      max-width: 100%;
+      box-shadow: inset 0 0 18px rgba(221,182,105,0.06);
+    }
+
+    .phase-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--gold);
+      box-shadow: 0 0 16px rgba(221,182,105,0.8);
+      flex: 0 0 auto;
+      animation: pulseDot 2.6s ease-in-out infinite;
+    }
+
+    @keyframes pulseDot {
+      0%,100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.22); opacity: .75; }
+    }
+
+    .timer-wrap { width: 100%; text-align: center; }
+    .timer-label {
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .timer-value {
+      font-size: 42px;
+      font-weight: 900;
+      line-height: 1;
+      color: var(--gold-strong);
+      text-shadow: 0 0 18px rgba(221,182,105,0.18);
+      font-variant-numeric: tabular-nums;
+    }
+    .timer-note { margin-top: 5px; font-size: 12px; color: var(--muted); }
+
+    .leader-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .leader-card {
+      position: relative;
+      padding: 10px 12px;
+      border-radius: 15px;
+      min-width: 0;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(221,182,105,0.15);
+      overflow: hidden;
+    }
+
+    .leader-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(221,182,105,0.06), transparent 40%);
+      pointer-events: none;
+    }
+
+    .leader-label {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      margin-bottom: 5px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .leader-house {
+      font-size: 20px;
+      font-weight: 900;
+      line-height: 1.02;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      position: relative;
+      z-index: 1;
+    }
+
+    .leader-score {
+      margin-top: 4px;
+      color: var(--gold);
+      font-size: 15px;
+      font-weight: 800;
+      position: relative;
+      z-index: 1;
+    }
+
+    .content {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 1.2fr 1.07fr 0.93fr;
+      gap: 10px;
+    }
+
+    .houses-panel, .center-panel, .side-panel {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .section-head {
+      padding: 12px 14px 9px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: .16em;
+      color: var(--gold);
+      text-transform: uppercase;
+    }
+
+    .section-meta {
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .houses-grid {
+      padding: 0 12px 12px;
+      flex: 1 1 auto;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .house-card {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      border-radius: 15px;
+      padding: 7px 9px 7px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      grid-template-rows: auto auto auto;
+      gap: 5px 7px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.02));
+      border: 1px solid rgba(221,182,105,0.12);
+      border-left: 4px solid var(--gold-soft);
+    }
+
+    .house-card.top-1 {
+      border-color: rgba(241,208,138,0.38);
+      box-shadow:
+        inset 0 0 0 1px rgba(241,208,138,0.10),
+        0 0 0 1px rgba(241,208,138,0.06),
+        0 0 28px rgba(221,182,105,0.10);
+      background:
+        radial-gradient(circle at top left, rgba(241,208,138,0.12), transparent 36%),
+        linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+    }
+
+    .house-card.top-2 {
+      border-color: rgba(201,206,215,0.28);
+      box-shadow: inset 0 0 0 1px rgba(201,206,215,0.06);
+    }
+
+    .house-card.top-3 {
+      border-color: rgba(201,137,84,0.30);
+      box-shadow: inset 0 0 0 1px rgba(201,137,84,0.05);
+    }
+
+    .house-rank {
+      grid-row: 1 / span 3;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid rgba(221,182,105,0.34);
+      display: grid;
+      place-items: center;
+      color: var(--gold);
+      font-size: 12px;
+      font-weight: 900;
+      margin-top: 1px;
+      background: rgba(0,0,0,0.12);
+      align-self: start;
+    }
+
+    .top-1 .house-rank { color: #20170b; background: var(--gold-strong); border-color: rgba(241,208,138,0.70); }
+    .top-2 .house-rank { color: #1c1d20; background: var(--silver); border-color: rgba(201,206,215,0.70); }
+    .top-3 .house-rank { color: #1f140d; background: var(--bronze); border-color: rgba(201,137,84,0.70); }
+
+    .house-main {
+      min-width: 0;
+      overflow: hidden;
+      grid-column: 2;
+      grid-row: 1;
+      align-self: center;
+    }
+
+    .house-name {
+      font-size: 13px;
+      font-weight: 900;
+      line-height: 1.03;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .house-tagline {
+      margin-top: 2px;
+      color: var(--muted-2);
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .house-status {
+      grid-column: 3;
+      grid-row: 1;
+      align-self: start;
+      justify-self: end;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(221,182,105,0.14);
+      background: rgba(255,255,255,0.03);
+      font-size: 9px;
+      font-weight: 800;
+      color: var(--muted);
+      white-space: nowrap;
+      max-width: 110px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .top-1 .house-status { color: var(--gold-strong); border-color: rgba(241,208,138,0.25); }
+    .top-2 .house-status { color: var(--silver); border-color: rgba(201,206,215,0.20); }
+    .top-3 .house-status { color: var(--bronze); border-color: rgba(201,137,84,0.20); }
+
+    .house-power {
+      grid-column: 2 / 4;
+      grid-row: 2;
+      display: grid;
+      grid-template-columns: 1fr .95fr;
+      gap: 5px;
+      min-width: 0;
+    }
+
+    .metric-main, .metric-side {
+      border-radius: 11px;
+      border: 1px solid rgba(255,255,255,0.05);
+      background: rgba(255,255,255,0.025);
+      min-width: 0;
+      padding: 5px 7px;
+    }
+
+    .metric-label {
+      color: var(--muted);
+      font-size: 8px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+      line-height: 1;
+    }
+
+    .metric-value {
+      font-size: 19px;
+      line-height: .96;
+      font-weight: 900;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .metric-main .metric-value {
+      color: #f7dfaa;
+      text-shadow: 0 0 16px rgba(221,182,105,0.10);
+    }
+
+    .metric-side .metric-value {
+      font-size: 16px;
+      color: var(--gold);
+    }
+
+    .metric-sub {
+      margin-top: 2px;
+      color: var(--muted-2);
+      font-size: 9px;
+      line-height: 1.05;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .resource-strip {
+      grid-column: 2 / 4;
+      grid-row: 3;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .res-chip {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 2px;
+      padding: 3px 2px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.025);
+      border: 1px solid rgba(255,255,255,0.045);
+      font-size: 9px;
+      line-height: 1;
+    }
+
+    .res-key {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      white-space: nowrap;
+    }
+
+    .res-val {
+      color: var(--text);
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .res-chip.rare {
+      border-color: rgba(221,182,105,0.16);
+      background: rgba(221,182,105,0.05);
+    }
+
+    .center-body {
+      padding: 10px 14px 14px;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: 1.04fr .78fr;
+      gap: 10px;
+    }
+
+    .phase-stage {
+      position: relative;
+      border-radius: 18px;
+      border: 1px solid rgba(221,182,105,0.18);
+      background:
+        radial-gradient(circle at center, rgba(221,182,105,0.12), transparent 50%),
+        linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.012));
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 20px 16px;
+      overflow: hidden;
+    }
+
+    .phase-stage::before,
+    .phase-stage::after {
+      content: "";
+      position: absolute;
+      width: 250px;
+      height: 250px;
+      border-radius: 50%;
+      border: 1px solid rgba(221,182,105,0.06);
+      pointer-events: none;
+      animation: slowBreath 6.5s ease-in-out infinite;
+    }
+
+    .phase-stage::after {
+      transform: scale(1.28);
+      animation-delay: -2.4s;
+    }
+
+    @keyframes slowBreath {
+      0%,100% { transform: scale(1); opacity: .72; }
+      50% { transform: scale(1.1); opacity: .28; }
+    }
+
+    .phase-stage-inner {
+      position: relative;
+      z-index: 1;
+      max-width: 100%;
+    }
+
+    .phase-name {
+      font-size: clamp(40px, 4.25vw, 70px);
+      line-height: .94;
+      font-weight: 900;
+      letter-spacing: .07em;
+      color: #f7dfaa;
+      text-transform: uppercase;
+      text-shadow: 0 0 24px rgba(221,182,105,0.16);
+      word-break: break-word;
+    }
+
+    .phase-sub {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.28;
+      max-width: 94%;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .phase-badges {
+      margin-top: 16px;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .phase-badge {
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--text);
+      border: 1px solid rgba(221,182,105,0.16);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .insight-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      min-height: 0;
+    }
+
+    .insight-card {
+      position: relative;
+      border-radius: 16px;
+      border: 1px solid rgba(221,182,105,0.14);
+      background: rgba(255,255,255,0.03);
+      padding: 12px;
+      overflow: hidden;
+    }
+
+    .insight-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(221,182,105,0.05), transparent 44%);
+      pointer-events: none;
+    }
+
+    .insight-label {
+      position: relative;
+      z-index: 1;
+      font-size: 11px;
+      color: var(--gold);
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      margin-bottom: 7px;
+      font-weight: 900;
+    }
+
+    .insight-title {
+      position: relative;
+      z-index: 1;
+      font-size: 18px;
+      font-weight: 900;
+      line-height: 1.12;
+      margin-bottom: 6px;
+    }
+
+    .insight-text {
+      position: relative;
+      z-index: 1;
+      font-size: 13px;
+      line-height: 1.34;
+      color: var(--muted);
+    }
+
+    .side-body {
+      padding: 0 12px 12px;
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      gap: 10px;
+      min-height: 0;
+    }
+
+    .mini-panel {
+      min-height: 0;
+      border-radius: 16px;
+      border: 1px solid rgba(221,182,105,0.14);
+      background: rgba(255,255,255,0.03);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .mini-head {
+      padding: 10px 12px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid rgba(221,182,105,0.08);
+    }
+
+    .mini-title {
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      color: var(--gold);
+    }
+
+    .mini-count {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .feed {
+      padding: 8px 10px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .feed-item {
+      min-width: 0;
+      padding: 8px 9px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.025);
+      border: 1px solid rgba(255,255,255,0.04);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feed-item::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(90deg, rgba(255,255,255,0.02), transparent 35%);
+      opacity: .5;
+    }
+
+    .feed-item.pending { border-left: 3px solid #b99247; }
+    .feed-item.counter { border-left: 3px solid #8b63c5; }
+    .feed-item.closed { border-left: 3px solid #668f70; }
+    .feed-item.major {
+      box-shadow: inset 0 0 0 1px rgba(221,182,105,0.08);
+      background: rgba(221,182,105,0.05);
+    }
+
+    .feed-title {
+      position: relative;
+      z-index: 1;
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.22;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .feed-meta {
+      position: relative;
+      z-index: 1;
+      margin-top: 3px;
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .feed-text {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .feed-amount {
+      flex: 0 0 auto;
+      font-weight: 900;
+      color: var(--gold);
+      white-space: nowrap;
+    }
+
+    .empty {
+      display: grid;
+      place-items: center;
+      flex: 1;
+      color: rgba(182, 169, 150, 0.76);
+      font-size: 13px;
+      text-align: center;
+      padding: 12px;
+    }
+
+    .ticker {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(34, 27, 21, 0.96), rgba(20, 16, 12, 0.98));
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+      min-width: 0;
+    }
+
+    .ticker-label {
+      flex: 0 0 auto;
+      align-self: stretch;
+      display: flex;
+      align-items: center;
+      padding: 0 18px;
+      background: rgba(221,182,105,0.10);
+      color: var(--gold);
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .16em;
+      border-right: 1px solid rgba(221,182,105,0.18);
+    }
+
+    .ticker-window {
+      position: relative;
+      flex: 1 1 auto;
+      min-width: 0;
+      height: 100%;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+    }
+
+    .ticker-track {
+      white-space: nowrap;
+      display: inline-block;
+      padding-left: 100%;
+      will-change: transform;
+      animation: tickerMove 42s linear infinite;
+      color: var(--text);
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .ticker-track span { margin-right: 34px; color: var(--text); }
+    .ticker-track .sep { color: var(--gold-soft); margin-right: 34px; }
+
+    @keyframes tickerMove {
+      from { transform: translateX(0); }
+      to { transform: translateX(-100%); }
+    }
+
+    @media (max-width: 1600px) {
+      .screen { grid-template-rows: 88px 1fr 62px; }
+      .title-main { font-size: 25px; }
+      .timer-value { font-size: 36px; }
+      .leader-house { font-size: 18px; }
+      .phase-sub { font-size: 15px; }
+      .insight-title { font-size: 16px; }
+      .feed-title { font-size: 12px; }
+      .ticker-track { font-size: 15px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="screen">
+    <header class="topbar">
+      <section class="panel topbox">
+        <div style="min-width:0;">
+          <div class="eyebrow">Железный Стол • Зал Дворов</div>
+          <div class="title-main" id="roundTitle">Игра идёт</div>
+          <div class="subline" id="phaseLine">Ожидание данных двора</div>
+        </div>
+        <div style="max-width:48%; min-width:210px;">
+          <div class="phase-pill">
+            <span class="phase-dot"></span>
+            <span id="phasePillText">Подготовка двора</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel topbox">
+        <div class="timer-wrap">
+          <div class="timer-label">Время фазы</div>
+          <div class="timer-value" id="timerValue">—:—</div>
+          <div class="timer-note" id="timerNote">ожидание сигнала распорядителя</div>
+        </div>
+      </section>
+
+      <section class="panel topbox">
+        <div class="leader-row">
+          <div class="leader-card">
+            <div class="leader-label">Лидер по золоту</div>
+            <div class="leader-house" id="leaderGoldHouse">—</div>
+            <div class="leader-score" id="leaderGoldScore">0 золота</div>
+          </div>
+          <div class="leader-card">
+            <div class="leader-label">Лидер по влиянию</div>
+            <div class="leader-house" id="leaderInfluenceHouse">—</div>
+            <div class="leader-score" id="leaderInfluenceScore">0 влияния</div>
+          </div>
+        </div>
+      </section>
+    </header>
+
+    <main class="content">
+      <section class="panel houses-panel">
+        <div class="section-head">
+          <div class="section-title">Домы вечера</div>
+          <div class="section-meta" id="housesCount">0 из 10 активны</div>
+        </div>
+        <div class="houses-grid" id="housesGrid"></div>
+      </section>
+
+      <section class="panel center-panel">
+        <div class="section-head">
+          <div class="section-title">Сердце двора</div>
+          <div class="section-meta" id="centerMeta">Барная политика в движении</div>
+        </div>
+        <div class="center-body">
+          <div class="phase-stage">
+            <div class="phase-stage-inner">
+              <div class="phase-name" id="phaseName">ДИПЛОМАТИЯ</div>
+              <div class="phase-sub" id="phaseSub">Дипломаты у стойки. Сделки рождаются не в тишине, а в присутствии зала.</div>
+              <div class="phase-badges" id="phaseBadges"></div>
+            </div>
+          </div>
+          <div class="insight-grid">
+            <div class="insight-card">
+              <div class="insight-label">В политическом воздухе</div>
+              <div class="insight-title" id="airTitle">Двор прислушивается</div>
+              <div class="insight-text" id="airText">Пока громче всего звучат переговоры и осторожные обмены у стойки.</div>
+            </div>
+            <div class="insight-card">
+              <div class="insight-label">Последний перелом</div>
+              <div class="insight-title" id="turnTitle">Новый ход ещё впереди</div>
+              <div class="insight-text" id="turnText">Ждите следующего объявления ведущего — баланс сил ещё можно резко сместить.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel side-panel">
+        <div class="section-head">
+          <div class="section-title">Живой двор</div>
+          <div class="section-meta" id="sideMeta">Сделки и события</div>
+        </div>
+        <div class="side-body">
+          <section class="mini-panel">
+            <div class="mini-head">
+              <div class="mini-title">Активные переговоры</div>
+              <div class="mini-count" id="dealsCount">0</div>
+            </div>
+            <div class="feed" id="dealsFeed"></div>
+          </section>
+          <section class="mini-panel">
+            <div class="mini-head">
+              <div class="mini-title">Недавние сдвиги</div>
+              <div class="mini-count" id="eventsCount">0</div>
+            </div>
+            <div class="feed" id="eventsFeed"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <footer class="ticker">
+      <div class="ticker-label">Лента двора</div>
+      <div class="ticker-window">
+        <div class="ticker-track" id="tickerTrack">
+          <span>Двор собирает слухи и золото.</span><span class="sep">✦</span>
+          <span>Только подтверждённая сделка становится историей.</span><span class="sep">✦</span>
+          <span>По залу официально работает дипломат.</span><span class="sep">✦</span>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    const ROOM_CODE = "{{ room_code }}";
+    const TV_STATE_URL = `/dev/game-master/${ROOM_CODE}/tv-state`;
+
+    const HOUSE_ICONS = {
+      wolf: "🐺",
+      tower: "🗼",
+      sun: "☀️",
+      sword: "🗡️",
+      scroll: "📜",
+      seal: "🪪",
+      key: "🗝️",
+      fire: "🔥",
+      raven: "🐦",
+      cup: "🏆"
+    };
+
+    const HOUSE_COLORS = {
+      wolf: "#60646d",
+      tower: "#3d5274",
+      sun: "#b98a2c",
+      sword: "#8b3e41",
+      scroll: "#355d47",
+      seal: "#68448b",
+      key: "#9a6435",
+      fire: "#b95c2c",
+      raven: "#4d5258",
+      cup: "#2f6d5f"
+    };
+
+    const HOUSE_STYLES = {
+      wolf: "манёвр и хитрость",
+      tower: "устойчивость и защита",
+      sun: "влияние и внимание",
+      sword: "давление и конфликт",
+      scroll: "логика и знание",
+      seal: "союзы и право",
+      key: "доступ и редкость",
+      fire: "риск и рывок",
+      raven: "разведка и слухи",
+      cup: "экономика и достаток"
+    };
+
+    const RESOURCE_LAYOUT = [
+      ["stone", "Км"],
+      ["wood", "Др"],
+      ["iron", "Жл"],
+      ["scroll", "Св"],
+      ["key", "Кл"],
+      ["fire", "Ог"]
+    ];
+
+    const phaseState = {
+      endsAt: null,
+      openedAt: null,
+      fallbackLabel: "ожидание сигнала распорядителя"
+    };
+
+    function normArray(value) { return Array.isArray(value) ? value : []; }
+    function num(value) {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+    function prettify(text) {
+      return String(text || "")
+        .replace(/[_-]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .replace(/^./, s => s.toUpperCase());
+    }
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function pickText(value) {
+      if (value == null) return "";
+      if (typeof value === "string") return value;
+      if (typeof value === "number" || typeof value === "boolean") return String(value);
+      if (Array.isArray(value)) return value.map(pickText).filter(Boolean).join(" · ");
+      if (typeof value === "object") {
+        const candidates = [
+          value.name, value.title, value.label, value.text, value.summary,
+          value.house_name, value.room_name, value.display_name, value.value
+        ].map(pickText).filter(Boolean);
+        if (candidates.length) return candidates[0];
+      }
+      return "";
+    }
+
+    function safeName(house) {
+      return pickText(house?.name) || pickText(house?.title) || prettify(house?.house_key || house?.key || "Дом без имени");
+    }
+
+    function houseKey(house) {
+      return String(house?.house_key || house?.key || "").toLowerCase();
+    }
+
+    function houseValue(house, key) {
+      return num(house?.[`resource_${key}`] ?? house?.[key] ?? 0);
+    }
+
+    function totalResources(house) {
+      return ["stone","wood","iron","scroll","key","fire"].reduce((sum, key) => sum + houseValue(house, key), 0);
+    }
+
+    function byPriority(items) {
+      return [...items].sort((a, b) => {
+        const aInfluence = houseValue(a, "influence");
+        const bInfluence = houseValue(b, "influence");
+        if (bInfluence !== aInfluence) return bInfluence - aInfluence;
+        const aGold = houseValue(a, "gold");
+        const bGold = houseValue(b, "gold");
+        if (bGold !== aGold) return bGold - aGold;
+        const aRes = totalResources(a);
+        const bRes = totalResources(b);
+        if (bRes !== aRes) return bRes - aRes;
+        return safeName(a).localeCompare(safeName(b), "ru");
+      });
+    }
+
+    function phaseCodeToTitle(code) {
+      const map = {
+        diplomacy: "ДИПЛОМАТИЯ",
+        intermission: "АНТРАКТ",
+        host_round: "РАУНД ВЕДУЩЕГО",
+        market: "РЫНОК",
+        trial: "СУД ДОМОВ",
+        herald: "ГЛАС ДВОРА",
+        feast: "ПИР",
+        final: "ФИНАЛ",
+        game_phase: "ИГРОВАЯ ФАЗА"
+      };
+      return map[String(code || "").toLowerCase()] || prettify(String(code || "Игровая фаза"));
+    }
+
+    function phaseText(code) {
+      const map = {
+        diplomacy: "Дипломаты у стойки. Сделки рождаются не в тишине, а в присутствии зала.",
+        intermission: "Двор переводит дыхание. Но именно в паузах чаще всего рождаются самые опасные договорённости.",
+        host_round: "Слово за ведущим. Сейчас зал слушает, считает и готовится к новому рывку.",
+        market: "Ресурсы и редкости снова в цене. Те, кто считает ходы наперёд, укрепляют силу Дома.",
+        trial: "На кону честь, влияние и зрелище. Суд Домов решает больше, чем один поединок.",
+        herald: "Глашатай двора меняет напряжение зала. Следующее объявление может поднять или обрушить Дом.",
+        feast: "Пир кормит не только стол, но и амбиции. Золото и аппетит снова работают вместе.",
+        final: "Железный Стол уже близко. Любая ошибка теперь слышна на весь зал.",
+        game_phase: "Двор в движении. Расклад сил меняется быстрее, чем успевают договориться союзники."
+      };
+      return map[String(code || "").toLowerCase()] || "Двор в движении. Расклад сил меняется быстрее, чем успевают договориться союзники.";
+    }
+
+    function getPhaseList(data) {
+      const raw = normArray(data.active_phases || data.tv_summary?.active_phases || []);
+      return raw.map(item => {
+        if (typeof item === "string") return { phase_code: item, title: phaseCodeToTitle(item) };
+        return {
+          ...item,
+          phase_code: item.phase_code || item.code || item.slug || "",
+          title: item.title || phaseCodeToTitle(item.phase_code || item.code || item.slug || "")
+        };
+      });
+    }
+
+    function getMainPhase(phases, activeRound) {
+      if (activeRound?.phase_code) return activeRound.phase_code;
+      if (phases.length) return phases[0].phase_code;
+      return "intermission";
+    }
+
+    function getLeader(leadersBlock, houses, type) {
+      const direct = leadersBlock?.[type];
+      if (direct) return direct;
+      const sorted = [...houses].sort((a, b) => houseValue(b, type) - houseValue(a, type));
+      const house = sorted[0];
+      if (!house) return null;
+      return { house_name: safeName(house), value: houseValue(house, type), house_key: houseKey(house) };
+    }
+
+    function leaderIcon(entry) {
+      const key = String(entry?.house_key || "").toLowerCase();
+      return HOUSE_ICONS[key] || "♜";
+    }
+
+    function getHouseStatus(index, sorted) {
+      if (index === 0) return "главный Дом";
+      if (index === 1) return "главный преследователь";
+      if (index === 2) return "держит темп";
+      const current = sorted[index];
+      const prev = sorted[index - 1];
+      if (!current || !prev) return "в игре";
+      const diff = houseValue(prev, "influence") - houseValue(current, "influence");
+      if (diff <= 1) return "рядом с верхом";
+      if (totalResources(current) >= totalResources(prev)) return "копит силу";
+      return "в игре";
+    }
+
+    function renderHouses(houses) {
+      const grid = document.getElementById("housesGrid");
+      const count = document.getElementById("housesCount");
+      const sorted = byPriority(houses).slice(0, 10);
+      count.textContent = `${sorted.length} из 10 активны`;
+
+      if (!sorted.length) {
+        grid.innerHTML = `<div class="empty" style="grid-column:1 / -1; grid-row:1 / -1;">Домы пока не вышли в игру</div>`;
+        return;
+      }
+
+      grid.innerHTML = sorted.map((house, index) => {
+        const key = houseKey(house);
+        const icon = HOUSE_ICONS[key] || "♜";
+        const border = HOUSE_COLORS[key] || "#af8a43";
+        const styleText = HOUSE_STYLES[key] || "дом в борьбе";
+        const influence = houseValue(house, "influence");
+        const gold = houseValue(house, "gold");
+        const status = getHouseStatus(index, sorted);
+        const topClass = index < 3 ? `top-${index + 1}` : "";
+        const resourceChips = RESOURCE_LAYOUT.map(([keyName, label]) => {
+          const rare = keyName === "key" || keyName === "fire" ? "rare" : "";
+          return `<div class="res-chip ${rare}"><span class="res-key">${label}</span><span class="res-val">${houseValue(house, keyName)}</span></div>`;
+        }).join("");
+
+        return `
+          <article class="house-card ${topClass}" style="border-left-color:${border};">
+            <div class="house-rank">${index + 1}</div>
+            <div class="house-main">
+              <div class="house-name">${escapeHtml(icon)} ${escapeHtml(safeName(house))}</div>
+              <div class="house-tagline">${escapeHtml(styleText)}</div>
+            </div>
+            <div class="house-status">${index < 3 ? "✦" : "•"} ${escapeHtml(status)}</div>
+
+            <div class="house-power">
+              <div class="metric-main">
+                <div class="metric-label">влияние</div>
+                <div class="metric-value">${influence}</div>
+                <div class="metric-sub">${influence > 0 ? "вес в политике" : "ожидает рывка"}</div>
+              </div>
+              <div class="metric-side">
+                <div class="metric-label">золото</div>
+                <div class="metric-value">${gold}</div>
+                <div class="metric-sub">${totalResources(house)} в запасе</div>
+              </div>
+            </div>
+
+            <div class="resource-strip">${resourceChips}</div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function renderLeaders(leadersBlock, houses) {
+      const goldLeader = getLeader(leadersBlock, houses, "gold");
+      const influenceLeader = getLeader(leadersBlock, houses, "influence");
+
+      document.getElementById("leaderGoldHouse").textContent =
+        `${leaderIcon(goldLeader)} ${pickText(goldLeader?.house_name) || pickText(goldLeader?.name) || "—"}`;
+      document.getElementById("leaderGoldScore").textContent =
+        `${num(goldLeader?.value ?? goldLeader?.gold ?? 0)} золота`;
+
+      document.getElementById("leaderInfluenceHouse").textContent =
+        `${leaderIcon(influenceLeader)} ${pickText(influenceLeader?.house_name) || pickText(influenceLeader?.name) || "—"}`;
+      document.getElementById("leaderInfluenceScore").textContent =
+        `${num(influenceLeader?.value ?? influenceLeader?.influence ?? 0)} влияния`;
+    }
+
+    function renderTop(phases, activeRound) {
+      const phaseNames = phases.map(p => p.title).filter(Boolean);
+      const phaseLine = phaseNames.length ? phaseNames.join(" • ") : "В ожидании фазы";
+      const mainPhaseCode = getMainPhase(phases, activeRound);
+      const mainPhaseTitle = phaseCodeToTitle(mainPhaseCode);
+      const roundTitle = pickText(activeRound?.title) || pickText(activeRound?.name) || mainPhaseTitle;
+
+      document.getElementById("roundTitle").textContent = roundTitle;
+      document.getElementById("phaseLine").textContent = phaseLine;
+      document.getElementById("phasePillText").textContent = phaseLine;
+      document.getElementById("phaseName").textContent = mainPhaseTitle;
+      document.getElementById("phaseSub").textContent = phaseText(mainPhaseCode);
+      document.getElementById("centerMeta").textContent = activeRound?.title ? `Раунд: ${pickText(activeRound.title)}` : "Барная политика в движении";
+
+      const badges = document.getElementById("phaseBadges");
+      badges.innerHTML = phases.slice(0, 4).map(p => `<span class="phase-badge">${escapeHtml(p.title)}</span>`).join("");
+      if (!badges.innerHTML) badges.innerHTML = `<span class="phase-badge">Ожидание следующего хода</span>`;
+    }
+
+    function sideName(item, prefix) {
+      const direct = pickText(item?.[`${prefix}_house_name`]) || pickText(item?.[`${prefix}_house`]) || pickText(item?.[`house_${prefix}_name`]);
+      if (direct) return direct;
+      const nested = item?.[prefix] || item?.[`${prefix}_house_obj`] || item?.[`${prefix}_house_data`];
+      return pickText(nested?.name) || pickText(nested?.title) || pickText(nested?.house_name) || pickText(nested) || "";
+    }
+
+    function offerToText(offer) {
+      if (!offer) return "";
+      if (typeof offer === "string") return offer;
+      if (Array.isArray(offer)) return offer.map(offerToText).filter(Boolean).join(" · ");
+      if (typeof offer === "object") {
+        const translated = [];
+        const names = {
+          gold: "золото", influence: "влияние", stone: "камень", wood: "дерево",
+          iron: "железо", scroll: "свиток", key: "ключ", fire: "огонь"
+        };
+        for (const [key, value] of Object.entries(offer)) {
+          if (value == null || value === 0 || value === "0") continue;
+          if (typeof value === "object") {
+            const nested = offerToText(value);
+            if (nested) translated.push(nested);
+            continue;
+          }
+          translated.push(`${value} ${names[key] || prettify(key)}`);
+        }
+        return translated.join(" • ");
+      }
+      return String(offer);
+    }
+
+    function extractAmountText(item) {
+      const text = `${pickText(item?.offer_text)} ${pickText(item?.text)} ${pickText(item?.summary)} ${offerToText(item?.offer)}`.toLowerCase();
+      const match = text.match(/(\d+)\s*(золота|золото|gold)/i);
+      if (match) return `${match[1]} золота`;
+      return "";
+    }
+
+    function humanDeal(item) {
+      const from = sideName(item, "from") || pickText(item?.author_house_name) || "Неизвестный Дом";
+      const to = sideName(item, "to") || sideName(item, "target") || "другой Дом";
+      const text = pickText(item?.offer_text) || pickText(item?.text) || pickText(item?.summary) || pickText(item?.offer_label) || offerToText(item?.offer) || "идёт обмен ресурсами";
+      return { title: `${from} → ${to}`, meta: text, amount: extractAmountText(item) };
+    }
+
+    function humanEvent(item) {
+      const status = String(item.status || item.result || item.event_type || "событие");
+      if (item.offer_text || item.from_house_name || item.to_house_name || item.offer || item.from_house || item.to_house) {
+        const deal = humanDeal(item);
+        return { title: deal.title, meta: `${prettify(status)} • ${deal.meta}`, amount: deal.amount };
+      }
+      const title = pickText(item.title) || pickText(item.label) || pickText(item.name) || prettify(status);
+      const meta = pickText(item.description) || pickText(item.text) || pickText(item.summary) || "перемена в расстановке сил";
+      return { title, meta, amount: "" };
+    }
+
+    function isMajor(item, info) {
+      const amount = info.amount || "";
+      const match = amount.match(/(\d+)/);
+      return match ? Number(match[1]) >= 2 : false;
+    }
+
+    function renderFeed(containerId, items, kind, emptyText, maxCount = 4) {
+      const container = document.getElementById(containerId);
+      const prepared = items.slice(0, maxCount);
+
+      if (!prepared.length) {
+        container.innerHTML = `<div class="empty">${escapeHtml(emptyText)}</div>`;
+        return;
+      }
+
+      container.innerHTML = prepared.map(item => {
+        const info = kind === "event" ? humanEvent(item) : humanDeal(item);
+        const cls =
+          item.status === "accepted" || item.status === "closed" ? "closed" :
+          (kind === "counter" ? "counter" : "pending");
+        const major = isMajor(item, info) ? "major" : "";
+        return `
+          <article class="feed-item ${cls} ${major}">
+            <div class="feed-title">${escapeHtml(info.title)}</div>
+            <div class="feed-meta">
+              <span class="feed-text">${escapeHtml(info.meta)}</span>
+              ${info.amount ? `<span class="feed-amount">${escapeHtml(info.amount)}</span>` : ""}
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function buildPoliticalAir(houses, pending, counters, closed) {
+      const sorted = byPriority(houses);
+      const leader = sorted[0];
+      const runner = sorted[1];
+
+      if (pending.length + counters.length >= 4) {
+        return {
+          title: "У стойки решают быстрее слов",
+          text: "Двор уже не ждёт. Чем плотнее дипломатическое окно, тем сильнее дрожит расстановка Домов."
+        };
+      }
+
+      if (leader && runner) {
+        const diff = houseValue(leader, "influence") - houseValue(runner, "influence");
+        return {
+          title: `${safeName(leader)} держит верх`,
+          text: diff <= 1
+            ? `${safeName(runner)} почти на одной высоте. Один сильный ход — и таблица перевернётся.`
+            : `${safeName(runner)} остаётся ближе всех к вершине. Остальным нужен рывок или редкий ресурс.`
+        };
+      }
+
+      return {
+        title: "Двор прислушивается",
+        text: "Пока громче всего звучат переговоры и осторожные обмены у стойки."
+      };
+    }
+
+    function buildTurn(closed, counters, pending) {
+      const item = closed[0] || counters[0] || pending[0];
+      if (!item) {
+        return {
+          title: "Новый ход ещё впереди",
+          text: "Ждите следующего объявления ведущего — баланс сил ещё можно резко сместить."
+        };
+      }
+      const deal = humanDeal(item);
+      const from = sideName(item, "from") || "Один Дом";
+      const amountTail = deal.amount ? ` ${deal.amount}.` : "";
+      return {
+        title: `${from} изменил ход партии`,
+        text: `${deal.title}. ${deal.meta}.${amountTail}`
+      };
+    }
+
+    function renderInsights(houses, pending, counters, closed) {
+      const air = buildPoliticalAir(houses, pending, counters, closed);
+      const turn = buildTurn(closed, counters, pending);
+
+      document.getElementById("airTitle").textContent = air.title;
+      document.getElementById("airText").textContent = air.text;
+      document.getElementById("turnTitle").textContent = turn.title;
+      document.getElementById("turnText").textContent = turn.text;
+    }
+
+    function renderTicker(houses, leadersBlock, pending, counters, closed, phases) {
+      const ticker = document.getElementById("tickerTrack");
+      const goldLeader = getLeader(leadersBlock, houses, "gold");
+      const influenceLeader = getLeader(leadersBlock, houses, "influence");
+      const sorted = byPriority(houses);
+
+      const parts = [];
+      if (phases.length) parts.push(`Активные фазы: ${phases.map(p => p.title).join(" • ")}`);
+      if (sorted[0]) parts.push(`Главный Дом сейчас: ${safeName(sorted[0])}`);
+      if (goldLeader) parts.push(`По золоту впереди ${pickText(goldLeader.house_name) || pickText(goldLeader.name)} — ${num(goldLeader.value ?? goldLeader.gold ?? 0)}`);
+      if (influenceLeader) parts.push(`По влиянию ведёт ${pickText(influenceLeader.house_name) || pickText(influenceLeader.name)} — ${num(influenceLeader.value ?? influenceLeader.influence ?? 0)}`);
+      if (pending.length) parts.push(`Открытых переговоров: ${pending.length}`);
+      if (counters.length) parts.push(`Встречных предложений: ${counters.length}`);
+      if (closed.length) parts.push(`Недавних подтверждений: ${closed.length}`);
+
+      if (!parts.length) {
+        parts.push(
+          "Двор собирает слухи и золото",
+          "Только подтверждённая сделка становится историей",
+          "По залу официально работает дипломат"
+        );
+      }
+
+      const doubled = [...parts, ...parts];
+      ticker.innerHTML = doubled.map((part, idx) => {
+        const sep = idx < doubled.length - 1 ? '<span class="sep">✦</span>' : '';
+        return `<span>${escapeHtml(part)}</span>${sep}`;
+      }).join("");
+    }
+
+    function formatDuration(ms) {
+      if (!Number.isFinite(ms) || ms <= 0) return "00:00";
+      const total = Math.floor(ms / 1000);
+      const minutes = Math.floor(total / 60);
+      const seconds = total % 60;
+      return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+    }
+
+    function updateTimer() {
+      const value = document.getElementById("timerValue");
+      const note = document.getElementById("timerNote");
+
+      if (phaseState.endsAt) {
+        const diff = phaseState.endsAt - Date.now();
+        value.textContent = formatDuration(diff);
+        note.textContent = diff > 0 ? "до смены фазы" : "ожидается новое распоряжение";
+        return;
+      }
+
+      if (phaseState.openedAt) {
+        const dt = new Date(phaseState.openedAt);
+        if (!Number.isNaN(dt.getTime())) {
+          value.textContent = dt.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+          note.textContent = "фаза открыта с";
+          return;
+        }
+      }
+
+      value.textContent = "—:—";
+      note.textContent = phaseState.fallbackLabel;
+    }
+
+    function syncTimerSource(activeRound, phasesRaw) {
+      const fromRound = activeRound?.phase_ends_at || activeRound?.ends_at || null;
+      const phaseWithTimer = normArray(phasesRaw).find(p => p?.phase_ends_at || p?.ends_at || p?.opened_at);
+      const endsAt = fromRound || phaseWithTimer?.phase_ends_at || phaseWithTimer?.ends_at || null;
+      const openedAt = activeRound?.opened_at || phaseWithTimer?.opened_at || null;
+
+      phaseState.endsAt = endsAt ? new Date(endsAt).getTime() : null;
+      phaseState.openedAt = openedAt || null;
+      phaseState.fallbackLabel = "ожидание сигнала распорядителя";
+      updateTimer();
+    }
+
+    async function fetchTvState() {
+      try {
+        const response = await fetch(TV_STATE_URL, { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+
+        const phasesRaw = normArray(data.active_phases || data.tv_summary?.active_phases || []);
+        const phases = getPhaseList(data);
+        const activeRound = data.active_host_round || data.tv_summary?.active_host_round || null;
+        const houses = normArray(data.houses || data.tv_summary?.houses || []);
+        const dealsBlock = data.deals || {};
+        const pending = normArray(dealsBlock.pending);
+        const counters = normArray(dealsBlock.countered);
+        const closed = normArray(dealsBlock.recent_closed);
+        const recentEvents = normArray(data.events || data.recent_events || data.tv_summary?.recent_events || []);
+        const leaders = data.leaders || data.tv_summary?.leaders || {};
+
+        renderTop(phases, activeRound);
+        renderLeaders(leaders, houses);
+        renderHouses(houses);
+        renderInsights(houses, pending, counters, closed);
+        renderFeed("dealsFeed", [...pending, ...counters], "deal", "Пока переговоры не вспыхнули", 4);
+        renderFeed("eventsFeed", recentEvents.length ? recentEvents : closed, recentEvents.length ? "event" : "closed", "Пока двор ждёт первого громкого сдвига", 4);
+        document.getElementById("dealsCount").textContent = String(pending.length + counters.length);
+        document.getElementById("eventsCount").textContent = String((recentEvents.length ? recentEvents : closed).length);
+        document.getElementById("sideMeta").textContent = `${pending.length + counters.length} переговоров • ${(recentEvents.length ? recentEvents : closed).length} событий`;
+        renderTicker(houses, leaders, pending, counters, closed, phases);
+        syncTimerSource(activeRound, phasesRaw);
+      } catch (error) {
+        console.error("TV state fetch failed:", error);
+        document.getElementById("phaseLine").textContent = "Нет связи с двором";
+        document.getElementById("timerValue").textContent = "—:—";
+        document.getElementById("timerNote").textContent = "проверь tv-state и room_code";
+        document.getElementById("dealsFeed").innerHTML = `<div class="empty">Не удалось получить state экрана</div>`;
+        document.getElementById("eventsFeed").innerHTML = `<div class="empty">Проверь серверный маршрут и JSON</div>`;
+      }
+    }
+
+    setInterval(updateTimer, 1000);
+    fetchTvState();
+    setInterval(fetchTvState, 10000);
+  </script>
+</body>
+</html>

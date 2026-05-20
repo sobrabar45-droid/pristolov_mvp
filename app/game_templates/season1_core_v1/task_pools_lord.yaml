@@ -1,0 +1,27 @@
+pools:
+  - pool_code: lord_right_of_move_pool
+    role_code: lord_lady
+    assignment_type: right_of_move
+    selection_policy: act_based
+    tasks:
+      - task_code: lord_001
+        difficulty: 1
+        act_min: 1
+        act_max: 1
+        title: "Право хода"
+        prompt: "Куда Дом направит первое усилие?"
+        ui_template: "strategic_choice"
+        content:
+          options:
+            - code: diplomacy_focus
+              text: "Открыть дипломатическую линию"
+              effect:
+                unlock_pool: diplomat_offer_pool
+            - code: whisper_focus
+              text: "Усилить шёпот"
+              effect:
+                unlock_pool: whisper_black_stair_pool
+            - code: treasury_focus
+              text: "Укрепить казну"
+              effect:
+                unlock_pool: treasurer_market_pool

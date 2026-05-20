@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ game.title }}</title>
+</head>
+<body>
+    <h1>{{ game.title }}</h1>
+
+    <p><strong>Код комнаты:</strong> {{ game.room_code }}</p>
+    <p><strong>Статус:</strong> {{ game.status }}</p>
+
+    <h2>Дома</h2>
+
+    <ul>
+        {% for house in houses %}
+            <li style="margin-bottom: 16px;">
+                <strong>{{ house.name }}</strong>
+                {% if house.motto %} — {{ house.motto }}{% endif %}
+                {% if house.color %} (цвет: {{ house.color }}){% endif %}
+                <br>
+                <strong>Представителей дома:</strong> {{ house.team_size }}
+                <br>
+                {% if house.team_size < 5 %}
+                    <em>Малый состав: допускается совмещение нескольких ключевых ролей одним игроком.</em>
+                {% elif house.team_size == 5 %}
+                    <em>Полный ключевой состав: можно распределить основные роли по одной на человека.</em>
+                {% else %}
+                    <em>Расширенный состав: лишние участники могут быть Соратниками Дома.</em>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+
+    <h2>Вступить в дом</h2>
+
+    <form method="post" action="/game/{{ game.room_code }}/join-house">
+        <div style="margin-bottom: 12px;">
+            <label for="nickname">Имя игрока:</label>
+            <input type="text" id="nickname" name="nickname" required>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+            <label for="house_id">Выбери дом:</label>
+            <select id="house_id" name="house_id" required>
+                {% for house in houses %}
+                    <option value="{{ house.id }}">
+                        {{ house.name }} ({{ house.team_size }} чел.)
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit">Вступить</button>
+    </form>
+
+    {% if error %}
+        <p style="color: red; margin-top: 16px;">{{ error }}</p>
+    {% endif %}
+
+    <p><a href="/game/{{ game.room_code }}/roster">Посмотреть состав игры</a></p>
+    <p><a href="/join">Вернуться ко входу</a></p>
+</body>
+</html>

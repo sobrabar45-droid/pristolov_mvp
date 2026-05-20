@@ -1,0 +1,177 @@
+{
+  "scenario": {
+    "code": "season1_mvp_live_v1",
+    "name": "Сезон 1 — MVP live-прогон",
+    "description": "Укороченный боевой сценарий для живого MVP-прогона без лишних dev/test и промежуточных этапов.",
+    "version": 1,
+    "status": "active",
+    "metadata": {
+      "mode": "stage_based",
+      "variant": "mvp_live"
+    }
+  },
+  "rounds": [
+    {
+      "round_code": "stage_intro",
+      "title": "Открытие вечера",
+      "order_no": 10,
+      "act_number": 10,
+      "round_type": "intro",
+      "round_kind": "intro",
+      "check_mode": "auto",
+      "questions_total": 1,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Ведущий вводит игроков в вечер и собирает внимание зала.",
+      "outro_text": null,
+      "questions": [
+        {
+          "question_code": "intro_q1",
+          "sequence_no": 1,
+          "role_code": "lord_lady",
+          "title": "Готовность",
+          "prompt": "Подтвердите готовность Дома.",
+          "ui_template": "text",
+          "answer_mode": "text",
+          "auto_check": true,
+          "manual_check_allowed": false,
+          "allowed_house_keys": [],
+          "content": {
+            "time_limit_sec": 15
+          },
+          "reward": {},
+          "fail_effect": {}
+        }
+      ]
+    },
+    {
+      "round_code": "season1_opening_questions",
+      "title": "Открывающие вопросы",
+      "order_no": 20,
+      "act_number": 20,
+      "round_type": "host_round_series",
+      "round_kind": "host_round_series",
+      "check_mode": "auto",
+      "questions_total": 12,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Реальные стартовые вопросы, чтобы сразу втянуть зал в игру.",
+      "outro_text": null,
+      "questions": []
+    },
+    {
+      "round_code": "stage_map_entry",
+      "title": "Открытие карты",
+      "order_no": 30,
+      "act_number": 30,
+      "round_type": "system_stage",
+      "round_kind": "system_stage",
+      "check_mode": "auto",
+      "questions_total": 1,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Открывается карта и стартуют экспедиции.",
+      "outro_text": null,
+      "questions": []
+    },
+    {
+      "round_code": "stage_diplomacy_1",
+      "title": "Дипломатия 1",
+      "order_no": 40,
+      "act_number": 40,
+      "round_type": "system_stage",
+      "round_kind": "system_stage",
+      "check_mode": "auto",
+      "questions_total": 1,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Первое окно переговоров, сделок и союзов.",
+      "outro_text": null,
+      "questions": []
+    },
+    {
+      "round_code": "stage_free_play",
+      "title": "Свободная игра",
+      "order_no": 50,
+      "act_number": 50,
+      "round_type": "system_stage",
+      "round_kind": "system_stage",
+      "check_mode": "auto",
+      "questions_total": 1,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Карта, сделки и скрытые решения работают одновременно.",
+      "outro_text": null,
+      "questions": []
+    },
+    {
+      "round_code": "stage_duels",
+      "title": "Дуэли домов",
+      "order_no": 60,
+      "act_number": 60,
+      "round_type": "system_stage",
+      "round_kind": "system_stage",
+      "check_mode": "auto",
+      "questions_total": 1,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Дома переходят к открытым вызовам и дуэлям.",
+      "outro_text": null,
+      "questions": []
+    },
+    {
+      "round_code": "stage_court",
+      "title": "Суд домов",
+      "order_no": 70,
+      "act_number": 70,
+      "round_type": "host_round_series",
+      "round_kind": "host_round_series",
+      "check_mode": "auto",
+      "questions_total": 1,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Короткая кульминация и публичная позиция Домов.",
+      "outro_text": null,
+      "questions": [
+        {
+          "question_code": "court_q1",
+          "sequence_no": 1,
+          "role_code": "lord_lady",
+          "title": "Позиция дома",
+          "prompt": "Объявите позицию Дома.",
+          "ui_template": "text",
+          "answer_mode": "text",
+          "auto_check": true,
+          "manual_check_allowed": false,
+          "allowed_house_keys": [],
+          "content": {
+            "time_limit_sec": 30
+          },
+          "reward": {},
+          "fail_effect": {}
+        }
+      ]
+    }
+  ]
+}

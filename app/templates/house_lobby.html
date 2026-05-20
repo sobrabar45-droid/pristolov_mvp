@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дом — лобби ролей</title>
+    <style>
+        :root {
+            --bg: #0f1115;
+            --panel: #1a1d24;
+            --panel-2: #222733;
+            --text: #f4f7fb;
+            --muted: #a9b2c3;
+            --line: rgba(255,255,255,0.08);
+            --gold: #d4a94f;
+            --green: #4ea56b;
+            --red: #b45353;
+            --blue: #4c8bf5;
+            --chip: rgba(255,255,255,0.06);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        }
+
+        .page {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 14px;
+            display: grid;
+            gap: 14px;
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 14px;
+        }
+
+        .hero {
+            display: grid;
+            gap: 10px;
+        }
+
+        .eyebrow {
+            color: var(--gold);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .title {
+            font-size: 28px;
+            font-weight: 900;
+            line-height: 1.05;
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .stat {
+            background: var(--panel-2);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 12px;
+        }
+
+        .stat-label {
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+
+        .stat-value {
+            font-size: 22px;
+            font-weight: 800;
+        }
+
+        .error-box {
+            background: rgba(180, 83, 83, 0.12);
+            border: 1px solid rgba(180, 83, 83, 0.35);
+            color: #ffd2d2;
+            border-radius: 14px;
+            padding: 12px;
+            font-size: 14px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .role-status-list,
+        .players-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .role-status-item,
+        .player-card {
+            background: var(--panel-2);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 12px;
+        }
+
+        .row-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .name {
+            font-size: 17px;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .chip {
+            background: var(--chip);
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .chip.gold { color: var(--gold); }
+        .chip.green { color: #9ae6b4; }
+        .chip.red { color: #ffc2c2; }
+        .chip.blue { color: #cfe0ff; }
+
+        .actions {
+            display: grid;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .action-link,
+        .back-link {
+            display: block;
+            width: 100%;
+            text-align: center;
+            text-decoration: none;
+            color: white;
+            background: var(--blue);
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .action-link.alt {
+            background: #374151;
+        }
+
+        .action-link.red {
+            background: var(--red);
+        }
+
+        .empty {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .sub {
+            margin-top: 6px;
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        @media (max-width: 560px) {
+            .title {
+                font-size: 24px;
+            }
+
+            .meta-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+
+    {% if error %}
+        <div class="error-box">{{ error }}</div>
+    {% endif %}
+
+    {% if house %}
+    <section class="card hero">
+        <div class="eyebrow">Дом и состав</div>
+        <div class="title">{{ house.name }}</div>
+        <div class="muted">
+            Игра: {{ game.title if game else "—" }}<br>
+            Верительная грамота: <strong>{{ house.invite_code }}</strong><br>
+            Девиз: {{ house.motto or "—" }}
+        </div>
+
+        <div class="meta-grid">
+            <div class="stat">
+                <div class="stat-label">Глава Дома</div>
+                <div class="stat-value">{{ leader.nickname if leader else "—" }}</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Места в делегации</div>
+                <div class="stat-value">{{ occupied_slots }}/{{ house.team_size_declared }}</div>
+                <div class="sub">Свободно: {{ remaining_slots }}</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="section-title">Ключевые роли</div>
+        <div class="role-status-list">
+            {% for item in house_roles_status %}
+                <div class="role-status-item">
+                    <div class="row-top">
+                        <div class="name">{{ item.name }}</div>
+                        {% if item.is_seeded %}
+                            {% if item.assigned_player %}
+                                <span class="chip green">назначено</span>
+                            {% else %}
+                                <span class="chip gold">вакантно</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="chip red">не загружено</span>
+                        {% endif %}
+                    </div>
+
+                    {% if item.assigned_player %}
+                        <div class="sub">Игрок: {{ item.assigned_player.nickname }}</div>
+                    {% else %}
+                        <div class="sub">Пока никто не назначен</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="section-title">Состав Дома</div>
+        <div class="players-list">
+            {% for player in players %}
+                <div class="player-card">
+                    <div class="row-top">
+                        <div class="name">{{ player.nickname }}</div>
+
+                        {% if leader and player.id == leader.id %}
+                            <span class="chip gold">глава дома</span>
+                        {% elif current_role_by_player_id[player.id] %}
+                            <span class="chip blue">{{ current_role_by_player_id[player.id].name }}</span>
+                        {% else %}
+                            <span class="chip">без роли</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="chips">
+                        <span class="chip">player_id: {{ player.id }}</span>
+                        {% if player.player_token %}
+                            <span class="chip">токен выдан</span>
+                        {% else %}
+                            <span class="chip red">без токена</span>
+                        {% endif %}
+                    </div>
+
+                    {% if leader and player.id != leader.id %}
+                        <div class="actions">
+                            {% if current_role_by_player_id[player.id] %}
+                                <a class="action-link red"
+                                   href="/house/{{ house.invite_code }}/clear-role/{{ player.id }}">
+                                    Снять роль
+                                </a>
+                            {% endif %}
+
+                            {% set links = available_role_links_by_player_id[player.id] %}
+                            {% if links %}
+                                {% for role_link in links %}
+                                    <a class="action-link alt"
+                                       href="/house/{{ house.invite_code }}/assign-role/{{ player.id }}/{{ role_link.role_code }}">
+                                        Назначить: {{ role_link.role_name }}
+                                    </a>
+                                {% endfor %}
+                            {% else %}
+                                <div class="empty">Свободных ролей для назначения сейчас нет</div>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <div class="sub">Главная роль закреплена автоматически</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <a class="back-link" href="/house/{{ house.invite_code }}">
+        Обновить лобби
+    </a>
+    {% endif %}
+
+</div>
+</body>
+</html>

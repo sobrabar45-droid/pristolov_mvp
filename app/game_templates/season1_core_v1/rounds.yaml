@@ -1,0 +1,15 @@
+rounds:
+  - round_code: act1_truth_lie_01
+    title: "Шёпот и слухи"
+    act_number: 1
+    round_kind: truth_lie_series
+    check_mode: auto
+    questions_total: 3
+    time_limit_sec: 30
+    is_host_led: true
+    bar_window_opens: false
+    scoring_mode: per_question_sum
+    question_transition_mode: auto
+    round_transition_mode: manual
+    intro_text: "Сейчас проверим, кто в зале лучше чувствует правду и ложь."
+    outro_text: "Слухи разошлись по залу. Но не все дома уловили правильный след."

@@ -1,0 +1,89 @@
+{
+  "duel": [
+    {
+      "when": {
+        "all": [
+          "duel_active_without_winner",
+          { "not": "duel_winner_known" }
+        ]
+      },
+      "type": "human_duel_resolution",
+      "action": "human",
+      "label": "Зафиксировать исход дуэли",
+      "status": "Идёт сцена \"{duel_title}\" — сначала зафиксируйте исход",
+      "blocking": true
+    },
+    {
+      "when": "duel_winner_known",
+      "type": "human_duel_announce",
+      "action": "human",
+      "label": "Озвучить итог дуэли",
+      "status": "Победитель определён — объявите итог и двигайтесь дальше",
+      "blocking": false
+    }
+  ],
+  "host_round": [
+    {
+      "when": "host_round_active_with_open_question",
+      "type": "close_runtime_question",
+      "action": "close_runtime_question",
+      "label": "Закрыть текущий вопрос",
+      "status": "Открыт вопрос {current_question_no}/{questions_total} — сначала закрой его",
+      "blocking": false
+    },
+    {
+      "when": "host_round_active_without_question",
+      "type": "open_next_question",
+      "action": "open_next_question",
+      "label": "Открыть следующий вопрос",
+      "status": "Раунд активен: следующий шаг — открыть вопрос {next_question_no}/{questions_total}",
+      "blocking": false
+    },
+    {
+      "when": "host_round_completed_waiting_host",
+      "type": "finish_host_round",
+      "action": "finish_host_round",
+      "label": "Подтвердить завершение раунда",
+      "status": "Серия завершена — подтверди окончание раунда",
+      "blocking": false
+    }
+  ],
+  "map": [
+    {
+      "when": "always",
+      "type": "human_map_resolution",
+      "action": "human",
+      "label": "Утвердить экспедицию",
+      "status": "Проверь маршрут и состав экспедиции, затем переведи игру дальше",
+      "blocking": false
+    }
+  ],
+  "diplomacy": [
+    {
+      "when": "diplomacy_has_pending_deals",
+      "type": "human_diplomacy_wait",
+      "action": "human",
+      "label": "Дождаться решений по сделкам",
+      "status": "Есть незавершённые сделки — сначала завершите их",
+      "blocking": true
+    },
+    {
+      "when": "always",
+      "type": "advance_phase_fsm",
+      "action": "phase_fsm",
+      "label": "Завершить дипломатию",
+      "status": "Можно закрывать окно дипломатии",
+      "blocking": false
+    }
+  ],
+  "default": [
+    {
+      "when": "always",
+      "type": "advance_phase_fsm",
+      "action": "phase_fsm",
+      "label": "Перейти дальше",
+      "status": "Можно двигать игру дальше",
+      "blocking": false
+    }
+  ]
+}

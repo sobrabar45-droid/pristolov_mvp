@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Создать делегацию</title>
+</head>
+<body>
+    <h1>Создание делегации</h1>
+
+    <p>Этот путь проходит глава Дома. Он заявляет делегацию, получает признанный Дом и верительную грамоту.</p>
+
+    <form method="post" action="/delegation/start">
+        <div style="margin-bottom: 12px;">
+            <label for="game_code">Код игры:</label>
+            <input type="text" id="game_code" name="game_code" value="LIVE01" required>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+            <label for="leader_nickname">Имя главы делегации:</label>
+            <input type="text" id="leader_nickname" name="leader_nickname" required>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+            <label for="team_size_declared">Сколько человек представляет ваш Дом?</label>
+            <select id="team_size_declared" name="team_size_declared" required>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5" selected>5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+            </select>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+            <strong>Как ваша делегация вступает в игру?</strong><br>
+
+            <label>
+                <input
+                    type="radio"
+                    name="entry_mode"
+                    value="quiz"
+                    id="entry_mode_quiz"
+                >
+                Вдумчиво определить путь Дома (+1 золото на старт)
+            </label>
+            <br>
+
+            <label>
+                <input
+                    type="radio"
+                    name="entry_mode"
+                    value="random"
+                    id="entry_mode_random"
+                    checked
+                >
+                Вверить Дом судьбе (+1 к событийности)
+            </label>
+        </div>
+
+        <div id="ritual_block" style="display: none;">
+            <h2>Ритуал определения</h2>
+
+            <div style="margin-bottom: 12px;">
+                <label for="answer_priority">Что для вашей делегации важнее всего?</label>
+                <select id="answer_priority" name="answer_priority">
+                    <option value="power">Сила и воля</option>
+                    <option value="diplomacy">Союзы и влияние</option>
+                    <option value="wealth">Выгода и богатство</option>
+                    <option value="knowledge">Знание и расчёт</option>
+                    <option value="shadow">Тайна и скрытое действие</option>
+                    <option value="risk">Риск и дерзкий ход</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <label for="answer_conflict">Как вы решаете конфликт?</label>
+                <select id="answer_conflict" name="answer_conflict">
+                    <option value="direct">Давим прямо</option>
+                    <option value="negotiate">Договариваемся</option>
+                    <option value="calculate">Считаем выгоду</option>
+                    <option value="secret">Работаем скрытно</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <label for="answer_style">Какой путь вам ближе?</label>
+                <select id="answer_style" name="answer_style">
+                    <option value="dominance">Доминирование</option>
+                    <option value="alliances">Союзы</option>
+                    <option value="knowledge">Знание</option>
+                    <option value="risk">Риск</option>
+                </select>
+            </div>
+        </div>
+
+        <button type="submit">Заявить делегацию</button>
+    </form>
+
+    {% if error %}
+        <p style="color: red; margin-top: 16px;">{{ error }}</p>
+    {% endif %}
+
+    <p><a href="/delegation/join">У меня уже есть верительная грамота</a></p>
+
+    <script>
+        function toggleRitualBlock() {
+            const quizRadio = document.getElementById("entry_mode_quiz");
+            const ritualBlock = document.getElementById("ritual_block");
+
+            if (!quizRadio || !ritualBlock) {
+                return;
+            }
+
+            if (quizRadio.checked) {
+                ritualBlock.style.display = "block";
+            } else {
+                ritualBlock.style.display = "none";
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const quizRadio = document.getElementById("entry_mode_quiz");
+            const randomRadio = document.getElementById("entry_mode_random");
+
+            if (quizRadio) {
+                quizRadio.addEventListener("change", toggleRitualBlock);
+            }
+
+            if (randomRadio) {
+                randomRadio.addEventListener("change", toggleRitualBlock);
+            }
+
+            toggleRitualBlock();
+        });
+    </script>
+</body>
+</html>

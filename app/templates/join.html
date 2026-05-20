@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Вход в игру | приСтолов</title>
+</head>
+<body>
+    <h1>Вход в игру приСтолов</h1>
+
+    <form method="post" action="/join">
+        <label for="room_code">Код комнаты:</label>
+        <input type="text" id="room_code" name="room_code" placeholder="Например: IRON01" required>
+        <button type="submit">Войти</button>
+    </form>
+
+    {% if error %}
+        <p style="color: red; margin-top: 16px;">{{ error }}</p>
+    {% endif %}
+</body>
+</html>

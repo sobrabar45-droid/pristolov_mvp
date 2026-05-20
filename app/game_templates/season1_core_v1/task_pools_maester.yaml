@@ -1,0 +1,57 @@
+pools:
+  - pool_code: maester_archive_pool
+    role_code: maester
+    assignment_type: quiz
+    selection_policy: unique_per_house
+
+    tasks:
+      - task_code: maester_q_001
+        difficulty: 1
+        allowed_house_keys: ["wolf", "tower", "sun", "sword", "scroll"]
+        act_min: 1
+        act_max: 2
+
+        title: "Хроника распада"
+        prompt: "Выберите верную последовательность событий"
+        ui_template: "timeline"
+
+        content:
+          items:
+            - "Печать сорвана"
+            - "Казна опечатана"
+            - "Слух вышел в зал"
+            - "Посол исчез"
+          correct_answer:
+            - "Печать сорвана"
+            - "Посол исчез"
+            - "Слух вышел в зал"
+            - "Казна опечатана"
+
+        reward:
+          scroll: 1
+
+        fail_effect:
+          scroll: 0
+
+      - task_code: maester_q_002
+        difficulty: 2
+        allowed_house_keys: ["raven", "scroll", "seal", "key", "cup"]
+        act_min: 1
+        act_max: 3
+
+        title: "Разбор досье"
+        prompt: "Разложите сведения по категориям"
+        ui_template: "group_assignment"
+
+        content:
+          groups:
+            - "Факт"
+            - "Слух"
+            - "Ложь"
+          cards:
+            - "Хранитель видел сделку у стойки"
+            - "Меч уже поклялся Волку"
+            - "Печать вскрыта"
+
+        reward:
+          influence: 1

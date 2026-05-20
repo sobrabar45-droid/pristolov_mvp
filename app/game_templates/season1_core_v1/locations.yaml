@@ -1,0 +1,144 @@
+locations:
+  - code: old_market
+    name: Старый рынок
+    type: trade
+    difficulty: 1
+    risk_level: 25
+    repeat_penalty: 8
+    preferred_roles:
+      - treasurer
+      - diplomat
+    summary: Шумная торговая точка с быстрыми сделками и скрытыми рисками.
+    outcomes:
+      - weight: 50
+        type: reward
+        reward:
+          gold: 2
+        text: Удачная сделка принесла прибыль.
+      - weight: 30
+        type: reward
+        reward:
+          gold: 1
+          influence: 1
+        text: Вы не только заработали, но и укрепили позиции.
+      - weight: 20
+        type: penalty
+        penalty:
+          gold: -1
+        text: Вас обманули перекупщики.
+
+  - code: archive
+    name: Архив
+    type: knowledge
+    difficulty: 1
+    risk_level: 12
+    repeat_penalty: 7
+    preferred_roles:
+      - maester
+    summary: Тихая точка знаний, документов и ценных следов.
+    outcomes:
+      - weight: 55
+        type: reward
+        reward:
+          scroll: 1
+        text: В архивах нашёлся полезный свиток.
+      - weight: 25
+        type: reward
+        reward:
+          influence: 1
+        text: Найденные сведения усилили вес Дома.
+      - weight: 20
+        type: empty
+        text: Полезных сведений добыть не удалось.
+
+  - code: alleys
+    name: Переулки
+    type: shadow
+    difficulty: 2
+    risk_level: 45
+    repeat_penalty: 10
+    preferred_roles:
+      - whisper_master
+      - house_sworn
+    summary: Узкие улицы, слухи, разнобой и скрытые встречи.
+    outcomes:
+      - weight: 40
+        type: reward
+        reward:
+          influence: 1
+        text: Экспедиция ухватила полезный слух раньше других.
+      - weight: 30
+        type: reward
+        reward:
+          key: 1
+        text: Среди теней найден полезный ключ.
+      - weight: 30
+        type: penalty
+        penalty:
+          gold: -1
+        text: Шумная суета в переулках обошлась дороже, чем ожидалось.
+
+  - code: watchtower
+    name: Дозорная башня
+    type: control
+    difficulty: 1
+    risk_level: 18
+    repeat_penalty: 7
+    preferred_roles:
+      - maester
+      - lord_lady
+    summary: Контрольная точка, где важнее обзор, чем добыча.
+    outcomes:
+      - weight: 35
+        type: reward
+        reward:
+          influence: 1
+        text: Ваш Дом укрепил присутствие в глазах наблюдателей.
+      - weight: 25
+        type: reward
+        reward:
+          scroll: 1
+        text: Башня дала полезное знание на будущее.
+      - weight: 20
+        type: empty
+        text: Обзор оказался полезным, но без ощутимого результата.
+      - weight: 20
+        type: hidden
+        reward:
+          access_tag: hidden_cove_access
+        text: С башни вы заметили скрытый путь к бухте, которой нет на обычной карте.
+
+  - code: hidden_cove
+    name: Скрытая бухта
+    type: secret
+    difficulty: 2
+    risk_level: 28
+    repeat_penalty: 9
+    preferred_roles:
+      - diplomat
+      - whisper_master
+    requires_any_tag:
+      - hidden_cove_access
+    summary: Тайная прибрежная точка, доступная только тем, кто нашёл путь.
+    outcomes:
+      - weight: 45
+        type: reward
+        reward:
+          gold: 2
+        text: В бухте удалось перехватить ценный груз.
+      - weight: 25
+        type: reward
+        reward:
+          key: 1
+        text: Среди тайников найден полезный ключ.
+      - weight: 15
+        type: reward
+        reward:
+          gold: 1
+          influence: 1
+        text: Удачная вылазка усилила и казну, и положение Дома.
+      - weight: 15
+        type: penalty
+        penalty:
+          gold: -1
+        text: Тайная бухта оказалась опаснее, чем казалась издалека.

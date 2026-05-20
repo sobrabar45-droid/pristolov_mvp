@@ -1,0 +1,54 @@
+roles:
+  - code: lord_lady
+    name: "Лорд / Леди"
+    ui_track: "lord"
+    assignment_types:
+      - strategic_choice
+      - right_of_move
+      - sanction
+      - alliance_decision
+
+  - code: diplomat
+    name: "Дипломат"
+    ui_track: "diplomat"
+    assignment_types:
+      - map_route
+      - negotiation
+      - embassy_offer
+      - trade_contact
+
+  - code: maester
+    name: "Мейстер"
+    ui_track: "maester"
+    assignment_types:
+      - quiz
+      - timeline
+      - matrix
+      - dossier_sort
+      - fill_table
+
+  - code: whisper_master
+    name: "Мастер шепота"
+    ui_track: "whisper"
+    assignment_types:
+      - truth_lie
+      - rumor
+      - hidden_signal
+      - blackmail
+
+  - code: treasurer
+    name: "Мастер над золотом"
+    ui_track: "treasurer"
+    assignment_types:
+      - treasury_choice
+      - exchange
+      - investment
+      - risk_trade
+
+  - code: house_sworn
+    name: "Соратник Дома"
+    ui_track: "sworn"
+    assignment_types:
+      - support_task
+      - heraldic_step
+      - field_action

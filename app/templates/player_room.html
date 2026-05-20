@@ -1,0 +1,1857 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Игрок — приСтолов</title>
+    <style>
+        :root {
+            --bg: #0f1115;
+            --panel: #1a1d24;
+            --panel-2: #222733;
+            --text: #f4f7fb;
+            --muted: #a9b2c3;
+            --line: rgba(255,255,255,0.08);
+            --gold: #d4a94f;
+            --green: #4ea56b;
+            --blue: #4c8bf5;
+            --red: #b45353;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        }
+
+        .page {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 14px;
+            display: grid;
+            gap: 14px;
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 14px;
+        }
+
+        .eyebrow {
+            color: var(--gold);
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            margin-bottom: 8px;
+        }
+
+        .title {
+            font-size: 26px;
+            font-weight: 900;
+            line-height: 1.05;
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .chip {
+            background: var(--panel-2);
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .chip.gold { color: var(--gold); }
+        .chip.green { color: #9ae6b4; }
+        .chip.blue { color: #cfe0ff; }
+        .chip.red { color: #ffc2c2; }
+
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .stat {
+            background: var(--panel-2);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 12px;
+        }
+
+        .stat-label {
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 800;
+        }
+
+        .role-box {
+            background: linear-gradient(180deg, rgba(76,139,245,0.14), rgba(76,139,245,0.05));
+            border: 1px solid rgba(76,139,245,0.24);
+            border-radius: 16px;
+            padding: 14px;
+        }
+
+        .role-name {
+            font-size: 22px;
+            font-weight: 900;
+            margin-bottom: 8px;
+        }
+
+        .action-box {
+            background: linear-gradient(180deg, rgba(78,165,107,0.14), rgba(78,165,107,0.05));
+            border: 1px solid rgba(78,165,107,0.24);
+            border-radius: 16px;
+            padding: 14px;
+        }
+
+        .warning-box {
+            background: linear-gradient(180deg, rgba(180,83,83,0.14), rgba(180,83,83,0.05));
+            border: 1px solid rgba(180,83,83,0.24);
+            border-radius: 16px;
+            padding: 14px;
+        }
+
+        .explore-result {
+            margin-top: 10px;
+            border-radius: 14px;
+            padding: 12px;
+            border: 1px solid var(--line);
+            background: var(--panel-2);
+        }
+
+        .explore-result.ok {
+            background: linear-gradient(180deg, rgba(78,165,107,0.14), rgba(78,165,107,0.05));
+            border-color: rgba(78,165,107,0.24);
+        }
+
+        .explore-result.error {
+            background: linear-gradient(180deg, rgba(180,83,83,0.14), rgba(180,83,83,0.05));
+            border-color: rgba(180,83,83,0.24);
+        }
+
+        .explore-result-title {
+            font-size: 16px;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+
+        .explore-result-text {
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.45;
+        }
+
+        .explore-result-extra {
+            margin-top: 8px;
+            color: var(--text);
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .explore-result-list {
+            display: grid;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .explore-result-row {
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.45;
+        }
+
+        .expedition-choice-grid {
+            display: grid;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .expedition-inline-actions {
+            display: grid;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .big-text {
+            font-size: 20px;
+            font-weight: 800;
+            line-height: 1.25;
+            margin-bottom: 8px;
+        }
+
+        .resources {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .resource {
+            background: var(--panel-2);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 12px;
+        }
+
+        .resource-label {
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+
+        .resource-value {
+            font-size: 22px;
+            font-weight: 900;
+        }
+
+        .whisper-feed {
+            display: grid;
+            gap: 10px;
+        }
+
+        .whisper-card {
+            background: linear-gradient(180deg, rgba(126,95,201,0.16), rgba(126,95,201,0.05));
+            border: 1px solid rgba(126,95,201,0.24);
+            border-radius: 14px;
+            padding: 12px;
+        }
+
+        .whisper-title {
+            font-size: 16px;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+
+        .field {
+            display: grid;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .field-label {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .field-control {
+            width: 100%;
+            background: var(--panel-2);
+            color: var(--text);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 12px;
+            font: inherit;
+        }
+
+        textarea.field-control {
+            min-height: 110px;
+            resize: vertical;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            text-align: center;
+            text-decoration: none;
+            background: var(--blue);
+            color: #fff;
+            border-radius: 12px;
+            padding: 13px 14px;
+            font-size: 15px;
+            font-weight: 800;
+            border: none;
+        }
+
+        @media (max-width: 560px) {
+            .title {
+                font-size: 22px;
+            }
+
+            .meta-grid,
+            .resources {
+                grid-template-columns: 1fr;
+            }
+
+            .role-name {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+
+    {% if error %}
+        <section class="warning-box">
+            <div class="big-text">Ошибка</div>
+            <div class="muted">{{ error }}</div>
+        </section>
+    {% endif %}
+
+    {% if player and house %}
+    <section class="card">
+        <div class="eyebrow">Игрок</div>
+        <div class="title">{{ player.nickname }}</div>
+        <div class="muted">
+            {{ house.name }}{% if role %} · {{ role.name }}{% else %} · роль ещё не назначена{% endif %}
+        </div>
+
+        <div class="chips">
+            <span class="chip gold">Грамота: {{ house.invite_code }}</span>
+            <span class="chip">Игроков в доме: {{ players_count }}</span>
+            {% if is_leader %}
+                <span class="chip blue">Глава дома</span>
+            {% endif %}
+        </div>
+    </section>
+
+    {% if is_leader %}
+    <a class="btn" href="/house/{{ house.invite_code }}">
+        Открыть экран Дома
+    </a>
+    {% endif %}
+
+    <section class="card">
+        <div class="eyebrow">Состояние игры</div>
+        <div class="meta-grid">
+            <div class="stat">
+                <div class="stat-label">Текущая фаза</div>
+                <div class="stat-value" id="playerActivePhaseValue">
+                    {% if active_phase_label %}
+                        {{ active_phase_label }}
+                    {% else %}
+                        Нет активной фазы
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">Текущий раунд</div>
+                <div class="stat-value" id="playerActiveRoundValue">
+                    {% if active_host_round %}
+                        {{ active_host_round.title }}
+                    {% else %}
+                        Нет активного раунда
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {% if active_host_round %}
+        <div class="chips">
+            <span class="chip">Вопрос: {{ active_host_round.current_question_no }}/{{ active_host_round.questions_total }}</span>
+            {% if active_host_round.answers_open %}
+                <span class="chip green">Ответы открыты</span>
+            {% else %}
+                <span class="chip red">Ответы сейчас закрыты</span>
+            {% endif %}
+        </div>
+        {% endif %}
+    </section>
+
+    <section class="role-box">
+        <div class="eyebrow">Роль и зона ответственности</div>
+
+        {% if role %}
+            <div class="role-name">{{ role.name }}</div>
+
+            {% if role.code == "lord_lady" %}
+                <div class="big-text">Вы принимаете ключевые решения Дома.</div>
+                <div class="muted">
+                    Следите за составом, ролями и тем, чтобы у Дома был чёткий план на текущую фазу.
+                    Ваш следующий важный шаг — управлять людьми и подтверждать стратегию Дома.
+                </div>
+
+            {% elif role.code == "diplomat" %}
+                <div class="big-text">Вы отвечаете за переговоры и сделки.</div>
+                <div class="muted">
+                    Во время дипломатических окон именно вы представляете Дом во внешних договорённостях.
+                    Следите за фазой и будьте готовы к переговорам.
+                </div>
+
+            {% elif role.code == "maester" %}
+                <div class="big-text">Вы отвечаете за знания, логику и ответы.</div>
+                <div class="muted">
+                    Ваша зона — интеллектуальные задания, анализ вопросов и точность решений.
+                    В следующих версиях здесь появятся ваши персональные игровые задания.
+                </div>
+
+            {% elif role.code == "treasurer" %}
+                <div class="big-text">Вы отвечаете за золото и ресурсные решения.</div>
+                <div class="muted">
+                    Следите за ресурсами Дома и за тем, когда выгодно усиливать позиции через экономику.
+                    Ваш фокус — не тратить ресурс без смысла.
+                </div>
+
+            {% elif role.code == "whisper_master" %}
+                <div class="big-text">Вы отвечаете за скрытые действия и тонкие ходы.</div>
+                <div class="muted">
+                    Ваша зона — слухи, интриги и скрытая информация.
+                    В следующих версиях здесь появятся тайные задачи и специальные действия.
+                </div>
+
+            {% elif role.code == "house_sworn" %}
+                <div class="big-text">Вы — соратник Дома.</div>
+                <div class="muted">
+                    Ваша задача — выполнять поручения Дома и исследовать возможности.
+                </div>
+
+        {% endif %}
+        {% else %}
+            <div class="big-text">Вам ещё не назначили роль.</div>
+            <div class="muted">
+                Сейчас вы в составе Дома, но без закреплённой игровой функции.
+                Подождите, пока глава Дома назначит вам роль в лобби.
+            </div>
+        {% endif %}
+    </section>
+
+    <section class="card" id="expeditionSection" style="display:none;">
+        <div class="eyebrow">Экспедиция Дома</div>
+        <div id="expeditionControls" class="muted">Подготовка экспедиции...</div>
+        <div id="expeditionResultBox"></div>
+    </section>
+
+    <section class="card" id="dealSection" style="display:none;">
+        <div class="eyebrow">Зафиксировать договорённость</div>
+        <div id="dealControls" class="muted">Подготовка формы договорённости...</div>
+        <div id="dealResultBox"></div>
+    </section>
+
+    <section class="card" id="treasurerDealsSection" style="display:none;">
+        <div class="eyebrow">Подтверждение сделок</div>
+        <div id="treasurerDealsControls" class="muted">Подготовка списка сделок...</div>
+        <div id="treasurerDealResultBox"></div>
+    </section>
+
+    <section class="card" id="alliancesSection" style="display:none;">
+        <div class="eyebrow">Союзы Дома</div>
+        <div id="alliancesControls" class="muted">Подготовка союзов...</div>
+        <div id="alliancesResultBox"></div>
+    </section>
+
+    <section class="action-box">
+        <div class="eyebrow">Что делать сейчас</div>
+
+        {% if not role %}
+            <div class="big-text">Ожидайте назначения роли.</div>
+            <div class="muted">
+                После назначения здесь начнут появляться ваши игровые подсказки и действия.
+            </div>
+
+        {% elif active_assignments_count and active_assignments_count > 0 %}
+            <div class="big-text">У вас есть активное задание.</div>
+            <div class="muted">
+                Следующий шаг — открыть задания игрока и выполнить своё действие.
+            </div>
+
+        {% elif active_phase_label == "Дипломатия" and role.code == "diplomat" %}
+            <div class="big-text">Сейчас ваше окно для переговоров.</div>
+            <div class="muted">
+                Будьте готовы представлять Дом во внешних контактах.
+            </div>
+
+        {% elif role.code == "lord_lady" %}
+            <div class="big-text">Проверьте, что все роли Дома распределены.</div>
+            <div class="muted">
+                Сильный Дом начинается с правильного состава и понятной координации.
+            </div>
+
+        {% elif role.code == "maester" %}
+            <div class="big-text">Следите за текущим раундом и вопросами.</div>
+            <div class="muted">
+                Ваша ценность — точность, логика и своевременный ответ.
+            </div>
+
+        {% elif role.code == "treasurer" %}
+            <div class="big-text">Следите за ресурсами и моментом для усиления.</div>
+            <div class="muted">
+                Не тратьте ресурс без выгоды для Дома.
+            </div>
+
+        {% elif role.code == "whisper_master" %}
+            <div class="big-text">Держите внимание на скрытых возможностях.</div>
+            <div class="muted">
+                В дальнейшем здесь появятся ваши тайные действия.
+            </div>
+
+        {% else %}
+            <div class="big-text">Ожидайте следующего игрового сигнала.</div>
+            <div class="muted">
+                Здесь будут появляться задания и действия, когда система начнёт выдавать их вашей роли.
+            </div>
+        {% endif %}
+    </section>
+
+    <section class="card">
+        <div class="eyebrow">Активные задания</div>
+        <div id="assignmentsContainer" class="muted">Загрузка заданий...</div>
+    </section>
+
+    <section class="card">
+        <div class="eyebrow">Ресурсы дома</div>
+        <div class="resources">
+            <div class="resource">
+                <div class="resource-label">Золото</div>
+                <div class="resource-value" id="houseGoldValue">{{ house.resource_gold }}</div>
+            </div>
+            <div class="resource">
+                <div class="resource-label">Влияние</div>
+                <div class="resource-value" id="houseInfluenceValue">{{ house.resource_influence }}</div>
+            </div>
+            <div class="resource">
+                <div class="resource-label">Свитки</div>
+                <div class="resource-value" id="houseScrollValue">{{ house.resource_scroll }}</div>
+            </div>
+            <div class="resource">
+                <div class="resource-label">Ключи</div>
+                <div class="resource-value" id="houseKeyValue">{{ house.resource_key }}</div>
+            </div>
+        </div>
+    </section>
+
+    <a class="btn" href="/house/{{ house.invite_code }}/player/{{ player.id }}">
+        Обновить экран игрока
+    </a>
+    {% endif %}
+
+</div>
+<script>
+window.PLAYER_ID = {{ player.id if player else 'null' }};
+const playerToken = "{{ player.player_token if player else '' }}";
+window.dealDraft = window.dealDraft || {
+  targetHouseId: "",
+  dealType: "",
+  resourceType: "",
+  resourceAmount: "",
+  crestPiece: "",
+  offerText: ""
+};
+let dealSubmitBusy = false;
+let isUserEditingDeal = false;
+let lastUserInteractionAt = 0;
+const PHASE_LABELS = {
+  host_round: "Раунд ведущего",
+  map: "Карта",
+  diplomacy: "Дипломатия",
+  crest: "Герб",
+  upgrade: "Усиление",
+  duel: "Дуэли",
+  intrigue: "Интриги",
+  free_play: "Свободная игра",
+  intermission: "Перерыв",
+  final: "Финал"
+};
+const EXPEDITION_LOCATIONS = [
+  { code: "old_market", label: "Старый рынок" },
+  { code: "craft_yard", label: "Ремесленный двор" },
+  { code: "archive", label: "Архив" },
+  { code: "guard_barracks", label: "Казармы стражи" },
+  { code: "alleys", label: "Переулки" },
+  { code: "guest_court", label: "Гостевой двор" }
+];
+const RESOURCE_LABELS = {
+  gold: "золота",
+  influence: "влияния",
+  scroll: "свитков",
+  key: "ключей",
+  wood: "дерева",
+  stone: "камня",
+  iron: "железа",
+  fire: "огня"
+};
+const DEAL_RESOURCE_OPTIONS = [
+  { code: "gold", label: "Золото" },
+  { code: "influence", label: "Влияние" },
+  { code: "stone", label: "Камень" },
+  { code: "wood", label: "Дерево" },
+  { code: "iron", label: "Железо" },
+  { code: "scroll", label: "Свиток" },
+  { code: "key", label: "Ключ" },
+  { code: "fire", label: "Огонь" }
+];
+const DEAL_TYPE_LABELS = {
+  resource: "Передача ресурса",
+  crest_piece: "Кусок герба",
+  open_agreement: "Открытая договорённость",
+  alliance: "Союз"
+};
+const EXPEDITION_ROLE_LABELS = {
+  lord_lady: "Лорд / Леди",
+  maester: "Мейстер",
+  diplomat: "Дипломат",
+  treasurer: "Мастер над золотом",
+  whisper_master: "Мастер шёпота",
+  house_sworn: "Соратник Дома"
+};
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function fixEncoding(text) {
+  if (typeof text !== "string" || !text) {
+    return text || "";
+  }
+
+  try {
+    return decodeURIComponent(escape(text));
+  } catch (e) {
+    return text;
+  }
+}
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.textContent = value;
+  }
+}
+
+function getPhaseLabel(phase) {
+  if (!phase) {
+    return "Нет активной фазы";
+  }
+
+  return phase.phase_label || PHASE_LABELS[phase.phase_type] || phase.phase_type || "Нет активной фазы";
+}
+
+function getActivePhaseTypes(data) {
+  if (Array.isArray(data?.active_phase_types)) return data.active_phase_types;
+  if (Array.isArray(data?.active_phases)) {
+    return data.active_phases.map(p => p?.phase_type).filter(Boolean);
+  }
+  if (data?.current_phase) return [data.current_phase];
+  return [];
+}
+
+function hasActivePhase(data, phaseTypes) {
+  const active = getActivePhaseTypes(data);
+  return phaseTypes.some(type => active.includes(type));
+}
+
+function updatePlayerStateHeader(data) {
+  const activePhase = Array.isArray(data?.active_phases) && data.active_phases.length ? data.active_phases[0] : null;
+  const resources = data?.house?.resources || {};
+
+  setText("playerActivePhaseValue", getPhaseLabel(activePhase));
+  setText("playerActiveRoundValue", data?.active_host_round?.title || "Нет активного раунда");
+  setText("houseGoldValue", resources.gold ?? 0);
+  setText("houseInfluenceValue", resources.influence ?? 0);
+  setText("houseScrollValue", resources.scroll ?? 0);
+  setText("houseKeyValue", resources.key ?? 0);
+}
+
+function formatDeltaLines(deltaMap, prefix) {
+  return Object.entries(deltaMap || {})
+    .filter(([, value]) => Number(value) !== 0)
+    .map(([key, value]) => `${prefix}${Math.abs(Number(value))} ${RESOURCE_LABELS[key] || key}`);
+}
+
+function renderVoteCountsHtml(voteCounts) {
+  if (!Array.isArray(voteCounts) || !voteCounts.length) {
+    return "";
+  }
+
+  return `
+    <div class="explore-result-list">
+      <div class="explore-result-row"><strong>Результат выбора:</strong></div>
+      ${voteCounts.map(item => `
+        <div class="explore-result-row">${escapeHtml(fixEncoding(item.location_name || item.location_code || "Неизвестная точка"))} — ${escapeHtml(item.count ?? 0)}</div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function formatRoleNames(roleCodes) {
+  return (roleCodes || [])
+    .map(code => EXPEDITION_ROLE_LABELS[code] || code)
+    .join(", ");
+}
+
+function getExpeditionDraftKey() {
+  return `expeditionDraft:${playerToken || window.PLAYER_ID || "unknown"}`;
+}
+
+function saveExpeditionDraft() {
+  const membersCountEl = document.getElementById("expeditionMembersCount");
+  if (!membersCountEl) {
+    return;
+  }
+
+  const roleCodes = Array.from(document.querySelectorAll('input[name="expeditionRoleCode"]:checked'))
+    .map(input => input.value);
+
+  localStorage.setItem(
+    getExpeditionDraftKey(),
+    JSON.stringify({
+      members_count: String(membersCountEl.value || ""),
+      role_codes: roleCodes,
+    })
+  );
+}
+
+function clearExpeditionDraft() {
+  localStorage.removeItem(getExpeditionDraftKey());
+}
+
+function restoreExpeditionDraft() {
+  const membersCountEl = document.getElementById("expeditionMembersCount");
+  const roleCheckboxes = Array.from(document.querySelectorAll('input[name="expeditionRoleCode"]'));
+
+  if (!membersCountEl || !roleCheckboxes.length) {
+    return;
+  }
+
+  let draft = {};
+  try {
+    draft = JSON.parse(localStorage.getItem(getExpeditionDraftKey()) || "{}");
+  } catch (e) {
+    draft = {};
+  }
+
+  if (draft?.members_count) {
+    membersCountEl.value = String(draft.members_count);
+  }
+
+  const roleCodes = Array.isArray(draft?.role_codes) ? draft.role_codes : [];
+  roleCheckboxes.forEach(input => {
+    input.checked = roleCodes.includes(input.value);
+  });
+
+  membersCountEl.addEventListener("change", saveExpeditionDraft);
+  roleCheckboxes.forEach(input => {
+    input.addEventListener("change", saveExpeditionDraft);
+  });
+}
+
+function ensureWhisperFeedContainer() {
+  let container = document.getElementById("whisperFeedContainer");
+  if (container) return container;
+
+  const assignmentsContainer = document.getElementById("assignmentsContainer");
+  const assignmentsCard = assignmentsContainer ? assignmentsContainer.closest(".card") : null;
+  if (!assignmentsCard) return null;
+
+  const card = document.createElement("section");
+  card.className = "card";
+  card.innerHTML = `
+    <div class="eyebrow">Сведения Мастера шёпота</div>
+    <div id="whisperFeedContainer" class="muted">Загрузка скрытых сведений...</div>
+  `;
+  assignmentsCard.insertAdjacentElement("afterend", card);
+  return document.getElementById("whisperFeedContainer");
+}
+
+async function loadPlayerState() {
+  if (!playerToken) return;
+  if (window.playerIsEditingAnswer === true) return;
+
+  const now = Date.now();
+  const isEditingNow = isUserEditingDeal && (now - lastUserInteractionAt < 5000);
+  if (isEditingNow) {
+    return;
+  }
+
+  isUserEditingDeal = false;
+
+  try {
+    const res = await fetch(`/player/me/${playerToken}`);
+    const data = await res.json();
+    window.latestPlayerState = data;
+    updatePlayerStateHeader(data);
+    renderWhisperFeed(data);
+    saveDealDraftFromForm();
+    renderDealControls(data);
+    renderTreasurerDealControls(data);
+    renderAllianceControls(data);
+    renderExpeditionControls(data);
+    restoreExpeditionDraft();
+  } catch (e) {
+    console.error("player state load error", e);
+  }
+}
+
+function renderWhisperFeed(data) {
+  const feed = data?.whisper_feed || [];
+  if (!feed.length) {
+    const existing = document.getElementById("whisperFeedContainer");
+    if (existing) {
+      const card = existing.closest(".card");
+      if (card) card.remove();
+    }
+    return;
+  }
+
+  const container = ensureWhisperFeedContainer();
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="whisper-feed">
+      ${feed.map(item => `
+        <article class="whisper-card">
+          <div class="whisper-title">${item.title || "Скрытое сообщение"}</div>
+          <div class="muted">${item.text || ""}</div>
+        </article>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderExpeditionResult(ok, title, text, detailsHtml = "") {
+  const resultEl = document.getElementById("expeditionResultBox");
+  if (!resultEl) return;
+
+  resultEl.innerHTML = `
+    <div class="explore-result ${ok ? "ok" : "error"}">
+      <div class="explore-result-title">${escapeHtml(fixEncoding(title))}</div>
+      <div class="explore-result-text">${escapeHtml(fixEncoding(text))}</div>
+      ${detailsHtml ? `<div class="explore-result-extra">${detailsHtml}</div>` : ""}
+    </div>
+  `;
+}
+
+function clearExpeditionResult() {
+  const resultEl = document.getElementById("expeditionResultBox");
+  if (resultEl) {
+    resultEl.innerHTML = "";
+  }
+}
+
+function renderDealResult(ok, title, text) {
+  const resultEl = document.getElementById("dealResultBox");
+  if (!resultEl) return;
+
+  resultEl.innerHTML = `
+    <div class="explore-result ${ok ? "ok" : "error"}">
+      <div class="explore-result-title">${escapeHtml(fixEncoding(title))}</div>
+      <div class="explore-result-text">${escapeHtml(fixEncoding(text))}</div>
+    </div>
+  `;
+}
+
+function clearDealResult() {
+  const resultEl = document.getElementById("dealResultBox");
+  if (resultEl) {
+    resultEl.innerHTML = "";
+  }
+}
+
+function renderAllianceControls(data) {
+  const section = document.getElementById("alliancesSection");
+  const controls = document.getElementById("alliancesControls");
+  if (!section || !controls) return;
+
+  const roleCode = data?.role?.code || null;
+  const alliances = Array.isArray(data?.active_alliances) ? data.active_alliances : [];
+
+  if (roleCode !== "lord_lady") {
+    section.style.display = "none";
+    controls.innerHTML = "";
+    clearAllianceResult();
+    return;
+  }
+
+  section.style.display = "";
+
+  if (!alliances.length) {
+    controls.innerHTML = `<div class="muted">У Дома нет активного союза</div>`;
+    return;
+  }
+
+  controls.innerHTML = `
+    <div class="action-box">
+      ${alliances.map(alliance => `
+        <div class="warning-box">
+          <div class="big-text">Союз с ${escapeHtml(fixEncoding(alliance?.ally_house?.name || "другим Домом"))}</div>
+          <div class="muted" style="margin-top:8px;">${escapeHtml(fixEncoding(alliance?.bonus_text || "Союз активен"))}</div>
+          <div class="expedition-inline-actions" style="margin-top:12px;">
+            <button type="button" class="btn" onclick="breakAlliance(${alliance.id}, 'peaceful_break')">Мирно разорвать</button>
+            <button type="button" class="btn" onclick="breakAlliance(${alliance.id}, 'betrayal')">Предать союз</button>
+          </div>
+          <div class="muted" style="margin-top:10px;">Мирный разрыв: без штрафов и бонусов</div>
+          <div class="muted" style="margin-top:6px;">Предательство: +1 золото, -1 влияние вам, +1 влияние второму Дому</div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderTreasurerDealControls(data) {
+  const section = document.getElementById("treasurerDealsSection");
+  const controls = document.getElementById("treasurerDealsControls");
+  if (!section || !controls) return;
+
+  const roleCode = data?.role?.code || null;
+  const deals = Array.isArray(data?.treasurer_pending_deals) ? data.treasurer_pending_deals : [];
+
+  if (roleCode !== "treasurer") {
+    section.style.display = "none";
+    controls.innerHTML = "";
+    clearTreasurerDealResult();
+    return;
+  }
+
+  section.style.display = "";
+
+  if (!deals.length) {
+    controls.innerHTML = `
+      <div class="action-box">
+        <div class="big-text">Подтверждение сделок</div>
+        <div class="muted">Проверьте, может ли Дом исполнить обещание.</div>
+        <div class="muted" style="margin-top:10px;">Нет сделок на подтверждение</div>
+      </div>
+    `;
+    return;
+  }
+
+  controls.innerHTML = `
+    <div class="action-box">
+      <div class="big-text">Подтверждение сделок</div>
+      <div class="muted">Проверьте, может ли Дом исполнить обещание.</div>
+      <div class="expedition-inline-actions">
+        ${deals.map(deal => `
+          <div class="warning-box">
+            <div class="muted">Кому: ${escapeHtml(fixEncoding(deal?.to_house?.name || `Дом #${deal?.to_house_id || "?"}`))}</div>
+            <div class="muted" style="margin-top:6px;">Что передаём: ${escapeHtml(fixEncoding(deal?.offer_text || "Без описания"))}</div>
+            ${deal?.offer?.text ? `<div class="muted" style="margin-top:6px;">Комментарий: ${escapeHtml(fixEncoding(deal.offer.text))}</div>` : ""}
+            <div class="expedition-inline-actions">
+              <button type="button" class="btn" onclick="treasurerConfirmDeal(${deal.id}, 'confirm')">Подтвердить</button>
+              <button type="button" class="btn" onclick="treasurerConfirmDeal(${deal.id}, 'reject')">Отклонить</button>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function saveDealDraftFromForm() {
+  const targetEl = document.getElementById("dealTargetHouse");
+  const typeEl = document.getElementById("dealType");
+  const resourceTypeEl = document.getElementById("dealResourceType");
+  const resourceAmountEl = document.getElementById("dealResourceAmount");
+  const crestPieceEl = document.getElementById("dealCrestPiece");
+  const textEl = document.getElementById("dealOfferText");
+
+  if (targetEl) window.dealDraft.targetHouseId = targetEl.value;
+  if (typeEl) window.dealDraft.dealType = typeEl.value;
+  if (resourceTypeEl) window.dealDraft.resourceType = resourceTypeEl.value;
+  if (resourceAmountEl) window.dealDraft.resourceAmount = resourceAmountEl.value;
+  if (crestPieceEl) window.dealDraft.crestPiece = crestPieceEl.value;
+  if (textEl) window.dealDraft.offerText = textEl.value;
+}
+
+function markDealEditing() {
+  isUserEditingDeal = true;
+  lastUserInteractionAt = Date.now();
+}
+
+function renderDealControls(data) {
+  const section = document.getElementById("dealSection");
+  const controls = document.getElementById("dealControls");
+  if (!section || !controls) return;
+
+  const roleCode = data?.role?.code || null;
+  const houses = Array.isArray(data?.available_deal_houses) ? data.available_deal_houses : [];
+  const incoming = Array.isArray(data?.incoming_deals) ? data.incoming_deals : [];
+  const activePhaseTypes = getActivePhaseTypes(data);
+  const canDeal = roleCode === "diplomat" && hasActivePhase(data, ["diplomacy", "free_play"]);
+  const dealType = window.dealDraft.dealType || "";
+
+  if (roleCode !== "diplomat") {
+    section.style.display = "none";
+    controls.innerHTML = "";
+    clearDealResult();
+    return;
+  }
+
+  if (!canDeal) {
+    section.style.display = "";
+    controls.innerHTML = `
+      <div class="action-box">
+        <div class="big-text">Зафиксировать договорённость</div>
+        <div class="muted">Фиксация договорённостей откроется на этапе дипломатии</div>
+      </div>
+    `;
+    return;
+  }
+
+  section.style.display = "";
+  controls.innerHTML = `
+    <div class="action-box">
+      ${incoming.length ? `
+        <div class="big-text">Вам поступило предложение</div>
+        <div class="expedition-inline-actions">
+          ${incoming.map(deal => `
+              <div class="warning-box">
+                <div class="muted">От: ${escapeHtml(fixEncoding(deal?.from_house?.name || `Дом #${deal?.from_house_id || "?"}`))}</div>
+                ${deal?.offer_type_label ? `<div class="muted" style="margin-top:6px;">Тип: ${escapeHtml(fixEncoding(deal.offer_type_label))}</div>` : ""}
+                <div class="big-text" style="font-size:16px;margin-top:8px;">${escapeHtml(fixEncoding(deal?.offer_text || "Без описания"))}</div>
+                ${deal?.status === "accepted_waiting_treasurer"
+                  ? `<div class="muted" style="margin-top:6px;">Принято. Ожидает Мастера над золотом</div>`
+                  : deal?.offer?.type === "alliance"
+                    ? `
+                      <div class="muted" style="margin-top:6px;">Предложение союза</div>
+                      <div class="muted" style="margin-top:6px;">Бонус союза: +1 влияние обоим Домам</div>
+                      <div class="expedition-inline-actions">
+                        <button type="button" class="btn" onclick="respondDeal(${deal.id}, 'accept')">Принять</button>
+                        <button type="button" class="btn" onclick="respondDeal(${deal.id}, 'reject')">Отклонить</button>
+                      </div>
+                    `
+                  : `
+                    <div class="expedition-inline-actions">
+                      <button type="button" class="btn" onclick="respondDeal(${deal.id}, 'accept')">Принять</button>
+                      <button type="button" class="btn" onclick="respondDeal(${deal.id}, 'reject')">Отклонить</button>
+                    </div>
+                  `}
+              </div>
+          `).join("")}
+        </div>
+      ` : ""}
+      <div class="big-text">\u0421\u043d\u0430\u0447\u0430\u043b\u0430 \u0434\u043e\u0433\u043e\u0432\u043e\u0440\u0438\u0442\u0435\u0441\u044c \u0443 \u0431\u0430\u0440\u0430. \u041f\u043e\u0442\u043e\u043c \u0432\u043d\u0435\u0441\u0438\u0442\u0435 \u0438\u0442\u043e\u0433 \u0432 \u0441\u0438\u0441\u0442\u0435\u043c\u0443.</div>
+      <div class="field">
+        <label class="field-label" for="dealTargetHouse">\u0421 \u043a\u0435\u043c \u0434\u043e\u0433\u043e\u0432\u043e\u0440\u0438\u043b\u0438\u0441\u044c</label>
+        <select id="dealTargetHouse" class="field-control">
+          <option value="">\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0414\u043e\u043c</option>
+          ${houses.map(house => `
+            <option value="${house.id}">${escapeHtml(fixEncoding(house.name || house.house_key || `\u0414\u043e\u043c #${house.id}`))}</option>
+          `).join("")}
+        </select>
+        ${houses.length ? "" : `<div class="muted" style="margin-top:8px;">Нет доступных Домов для договорённости</div>`}
+      </div>
+      <div class="field">
+        <label class="field-label" for="dealType">Тип договорённости</label>
+        <select id="dealType" class="field-control">
+          <option value="">Выберите тип договорённости</option>
+          <option value="resource">Передача ресурса</option>
+          <option value="crest_piece">Кусок герба</option>
+          <option value="open_agreement">Открытая договорённость</option>
+          <option value="alliance">Союз</option>
+        </select>
+      </div>
+      ${dealType === "resource" ? `
+        <div class="field">
+          <label class="field-label" for="dealResourceType">Какой ресурс обещан</label>
+          <select id="dealResourceType" class="field-control">
+            <option value="">Выберите ресурс</option>
+            ${DEAL_RESOURCE_OPTIONS.map(item => `<option value="${item.code}">${item.label}</option>`).join("")}
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label" for="dealResourceAmount">Количество</label>
+          <input id="dealResourceAmount" class="field-control" type="number" min="1" placeholder="1">
+        </div>
+      ` : ""}
+      ${dealType === "crest_piece" ? `
+        <div class="field">
+          <label class="field-label" for="dealCrestPiece">Какой кусок герба обещан</label>
+          <input id="dealCrestPiece" class="field-control" placeholder="Какой кусок герба обещан">
+        </div>
+      ` : ""}
+      <div class="field">
+        <label class="field-label" for="dealOfferText">Комментарий</label>
+        <textarea id="dealOfferText" class="field-control" placeholder="Комментарий: условия, срок, что обещали у бара"></textarea>
+      </div>
+      <div class="expedition-inline-actions">
+        <button type="button" class="btn" id="dealSubmitBtn" onclick="createDeal()" ${(dealSubmitBusy || !houses.length) ? "disabled" : ""}>${dealSubmitBusy ? "\u0424\u0438\u043a\u0441\u0438\u0440\u0443\u044e..." : "\u0417\u0430\u0444\u0438\u043a\u0441\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0434\u043e\u0433\u043e\u0432\u043e\u0440\u0451\u043d\u043d\u043e\u0441\u0442\u044c"}</button>
+      </div>
+    </div>
+  `;
+
+  const targetEl = document.getElementById("dealTargetHouse");
+  const typeEl = document.getElementById("dealType");
+  const resourceTypeEl = document.getElementById("dealResourceType");
+  const resourceAmountEl = document.getElementById("dealResourceAmount");
+  const crestPieceEl = document.getElementById("dealCrestPiece");
+  const textEl = document.getElementById("dealOfferText");
+
+  if (targetEl) {
+    targetEl.value = window.dealDraft.targetHouseId || "";
+    targetEl.addEventListener("change", () => {
+      markDealEditing();
+      window.dealDraft.targetHouseId = targetEl.value;
+    });
+  }
+
+  if (typeEl) {
+    typeEl.value = window.dealDraft.dealType || "";
+    typeEl.addEventListener("change", () => {
+      markDealEditing();
+      window.dealDraft.dealType = typeEl.value;
+      renderDealControls(data);
+    });
+  }
+
+  if (resourceTypeEl) {
+    resourceTypeEl.value = window.dealDraft.resourceType || "";
+    resourceTypeEl.addEventListener("change", () => {
+      markDealEditing();
+      window.dealDraft.resourceType = resourceTypeEl.value;
+    });
+  }
+
+  if (resourceAmountEl) {
+    resourceAmountEl.value = window.dealDraft.resourceAmount || "";
+    resourceAmountEl.addEventListener("input", () => {
+      markDealEditing();
+      window.dealDraft.resourceAmount = resourceAmountEl.value;
+    });
+  }
+
+  if (crestPieceEl) {
+    crestPieceEl.value = window.dealDraft.crestPiece || "";
+    crestPieceEl.addEventListener("input", () => {
+      markDealEditing();
+      window.dealDraft.crestPiece = crestPieceEl.value;
+    });
+  }
+
+  if (textEl) {
+    textEl.value = window.dealDraft.offerText || "";
+    textEl.addEventListener("input", () => {
+      markDealEditing();
+      window.dealDraft.offerText = textEl.value;
+    });
+  }
+}
+
+function renderTreasurerDealResult(ok, title, text) {
+  const resultEl = document.getElementById("treasurerDealResultBox");
+  if (!resultEl) return;
+
+  resultEl.innerHTML = `
+    <div class="explore-result ${ok ? "ok" : "error"}">
+      <div class="explore-result-title">${escapeHtml(fixEncoding(title))}</div>
+      <div class="explore-result-text">${escapeHtml(fixEncoding(text))}</div>
+    </div>
+  `;
+}
+
+function clearTreasurerDealResult() {
+  const resultEl = document.getElementById("treasurerDealResultBox");
+  if (resultEl) {
+    resultEl.innerHTML = "";
+  }
+}
+
+function renderAllianceResult(ok, title, text) {
+  const resultEl = document.getElementById("alliancesResultBox");
+  if (!resultEl) return;
+
+  resultEl.innerHTML = `
+    <div class="explore-result ${ok ? "ok" : "error"}">
+      <div class="explore-result-title">${escapeHtml(fixEncoding(title))}</div>
+      <div class="explore-result-text">${escapeHtml(fixEncoding(text))}</div>
+    </div>
+  `;
+}
+
+function clearAllianceResult() {
+  const resultEl = document.getElementById("alliancesResultBox");
+  if (resultEl) {
+    resultEl.innerHTML = "";
+  }
+}
+
+async function respondDeal(dealId, action) {
+  const playerId = window.PLAYER_ID;
+
+  try {
+    const res = await fetch(`/player/deals/respond/${playerId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        deal_id: dealId,
+        action
+      })
+    });
+    const data = await res.json();
+
+    renderDealResult(
+      !!data?.ok,
+      data?.ok ? "Ответ сохранён" : "Действие не выполнено",
+      fixEncoding(data?.message || data?.detail || "Ошибка")
+    );
+
+    await loadPlayerState();
+  } catch (e) {
+    console.error("respond deal error", e);
+    renderDealResult(false, "Действие не выполнено", "Не удалось обработать договорённость");
+  }
+}
+
+async function breakAlliance(dealId, mode) {
+  const playerId = window.PLAYER_ID;
+
+  try {
+    const res = await fetch(`/player/alliances/break/${playerId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        deal_id: dealId,
+        mode
+      })
+    });
+    const data = await res.json();
+
+    renderAllianceResult(
+      !!data?.ok,
+      data?.ok ? "Союз обновлён" : "Действие не выполнено",
+      fixEncoding(data?.message || data?.detail || "Ошибка")
+    );
+
+    await loadPlayerState();
+  } catch (e) {
+    console.error("break alliance error", e);
+    renderAllianceResult(false, "Действие не выполнено", "Не удалось разорвать союз");
+  }
+}
+
+async function treasurerConfirmDeal(dealId, action) {
+  const playerId = window.PLAYER_ID;
+
+  try {
+    const res = await fetch(`/player/deals/treasurer-confirm/${playerId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        deal_id: dealId,
+        action
+      })
+    });
+    const data = await res.json();
+
+    renderTreasurerDealResult(
+      !!data?.ok,
+      data?.ok ? "Решение сохранено" : "Действие не выполнено",
+      fixEncoding(data?.message || data?.detail || "Ошибка")
+    );
+
+    await loadPlayerState();
+  } catch (e) {
+    console.error("treasurer confirm deal error", e);
+    renderTreasurerDealResult(false, "Действие не выполнено", "Не удалось обработать подтверждение сделки");
+  }
+}
+
+function renderExpeditionControls(data) {
+  const section = document.getElementById("expeditionSection");
+  const controls = document.getElementById("expeditionControls");
+  if (!section || !controls) return;
+
+  const roleCode = data?.role?.code || null;
+  const activePhaseTypes = getActivePhaseTypes(data);
+  const canExpedition = roleCode === "lord_lady" && hasActivePhase(data, ["map", "free_play"]);
+  const canDeal = roleCode === "diplomat" && hasActivePhase(data, ["diplomacy", "free_play"]);
+  const expedition = data?.active_house_expedition || null;
+  const playerVote = expedition?.player_vote_location_name || expedition?.player_vote_location || "";
+  const expeditionRoleCodes = expedition?.role_codes || [];
+  const expeditionRoleNames = formatRoleNames(expeditionRoleCodes);
+  const playerCanChooseRoute = !expeditionRoleCodes.length || expeditionRoleCodes.includes(roleCode);
+  const lordNeedsRouteChoice = roleCode === "lord_lady"
+    && expedition?.status === "planned"
+    && expeditionRoleCodes.includes("lord_lady")
+    && !expedition?.player_vote_location;
+  const voteStatusMarkup = expedition?.status === "planned"
+    ? `
+        <div class="chips" style="margin-top:10px;">
+          <span class="chip">Ответов получено: ${expedition.choices_count || 0}</span>
+          ${expedition?.members_count ? `<span class="chip">Назначено участников: ${expedition.members_count}</span>` : ""}
+        </div>
+      `
+    : "";
+  const lordResolutionHint = expedition?.status === "planned"
+    ? `<div class="muted" style="margin-top:10px;">Лорд ждёт решения Дома.</div>`
+    : "";
+
+  if (!roleCode) {
+    section.style.display = "none";
+    controls.innerHTML = "";
+    clearExpeditionResult();
+    return;
+  }
+
+  const locationButtons = EXPEDITION_LOCATIONS;
+
+  if (roleCode === "lord_lady") {
+    section.style.display = "";
+
+    if (!hasActivePhase(data, ["map", "free_play"])) {
+      controls.innerHTML = `
+        <div class="action-box">
+          <div class="big-text">Экспедиция Дома</div>
+          <div class="muted">Экспедиции откроются на этапе карты</div>
+        </div>
+      `;
+      return;
+    }
+
+    if (!expedition) {
+      controls.innerHTML = `
+        <div class="action-box">
+          <div class="big-text">Назначьте экспедицию Дома</div>
+          <div class="muted">Определите состав экспедиции и отправьте Дом в путь.</div>
+          <div class="expedition-inline-actions">
+            <label class="muted" for="expeditionMembersCount">Количество участников</label>
+            <select id="expeditionMembersCount" class="btn" style="text-align:left;background:var(--panel-2);">
+              <option value="2">2 участника</option>
+              <option value="3">3 участника</option>
+              <option value="4">4 участника</option>
+              <option value="5">5 участников</option>
+              <option value="6">6 участников</option>
+            </select>
+          </div>
+          <div class="expedition-choice-grid">
+            ${Object.entries(EXPEDITION_ROLE_LABELS).map(([code, label]) => `
+              <label class="chip" style="display:flex;align-items:center;gap:8px;">
+                <input type="checkbox" name="expeditionRoleCode" value="${code}">
+                <span>${label}</span>
+              </label>
+            `).join("")}
+          </div>
+          <div class="expedition-inline-actions">
+            <button type="button" class="btn" onclick="createExpedition()">Назначить экспедицию</button>
+          </div>
+        </div>
+      `;
+      restoreExpeditionDraft();
+      return;
+    }
+
+    controls.innerHTML = `
+      <div class="action-box">
+        <div class="big-text">Экспедиция уже назначена</div>
+        <div class="muted">Экспедиция ожидает завершения.</div>
+        ${expedition?.members_count ? `<div class="muted" style="margin-top:10px;">Назначено участников: ${expedition.members_count}</div>` : ""}
+        ${expeditionRoleNames ? `<div class="muted" style="margin-top:8px;">Состав: ${expeditionRoleNames}</div>` : ""}
+        ${expeditionRoleCodes.includes("lord_lady") ? `<div class="muted" style="margin-top:8px;">Ваш выбор: ${playerVote || "ещё не выбран"}.</div>` : ""}
+        ${voteStatusMarkup}
+        ${lordResolutionHint}
+        ${lordNeedsRouteChoice ? `
+          <div class="expedition-choice-grid" style="margin-top:10px;">
+            ${locationButtons.map(item => `
+              <button type="button" class="btn" onclick="chooseExpeditionLocation(${expedition.id}, '${item.code}')">${item.label}</button>
+            `).join("")}
+          </div>
+        ` : ""}
+        <div class="muted" style="margin-top:10px;">После выбора маршрутов Лорд может завершить экспедицию.</div>
+        <div class="expedition-inline-actions">
+          <button type="button" class="btn" onclick="resolveExpedition(${expedition.id})">Завершить экспедицию</button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  if (expedition) {
+    section.style.display = "";
+    if (!playerCanChooseRoute) {
+      controls.innerHTML = `
+        <div class="action-box">
+          <div class="big-text">Экспедиция Дома назначена</div>
+          <div class="muted">Дом готовит экспедицию. Ожидайте своего хода.</div>
+          ${voteStatusMarkup}
+        </div>
+      `;
+      return;
+    }
+    controls.innerHTML = `
+      <div class="action-box">
+        <div class="big-text">Выберите направление экспедиции</div>
+        <div class="muted">Лорд ждёт решения Дома. Ваш текущий выбор: ${playerVote || "ещё не выбран"}.</div>
+        ${expeditionRoleNames ? `<div class="muted" style="margin-top:8px;">В состав входят: ${expeditionRoleNames}</div>` : ""}
+        ${voteStatusMarkup}
+        <div class="expedition-choice-grid">
+          ${locationButtons.map(item => `
+            <button type="button" class="btn" onclick="chooseExpeditionLocation(${expedition.id}, '${item.code}')">${item.label}</button>
+          `).join("")}
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  section.style.display = "none";
+  controls.innerHTML = "";
+  clearExpeditionResult();
+}
+
+async function createExpedition() {
+  const playerId = window.PLAYER_ID;
+  const membersCountEl = document.getElementById("expeditionMembersCount");
+  const roleCodes = Array.from(document.querySelectorAll('input[name="expeditionRoleCode"]:checked'))
+    .map(input => input.value);
+  const membersCount = Number(membersCountEl?.value || 0);
+
+  if (roleCodes.length && roleCodes.length !== membersCount) {
+    renderExpeditionResult(false, "Действие не выполнено", "Количество участников должно совпадать с числом выбранных ролей");
+    return;
+  }
+
+  try {
+    const res = await fetch(`/player/expedition/create/${playerId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        members_count: membersCount,
+        role_codes: roleCodes
+      })
+    });
+    const data = await res.json();
+    if (data?.ok) {
+      clearExpeditionDraft();
+    }
+    renderExpeditionResult(!!data?.ok, data?.ok ? "Экспедиция Дома" : "Действие не выполнено", fixEncoding(data?.message || data?.detail || "Ошибка"));
+    await loadPlayerState();
+  } catch (e) {
+    console.error("create expedition error", e);
+    renderExpeditionResult(false, "Действие не выполнено", "Не удалось назначить экспедицию");
+  }
+}
+
+async function chooseExpeditionLocation(expeditionId, locationCode) {
+  const playerId = window.PLAYER_ID;
+  try {
+    const res = await fetch(`/player/expedition/${expeditionId}/choose-location/${playerId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        location_code: locationCode
+      })
+    });
+    const data = await res.json();
+    const extra = data?.location_name ? `Ваш выбор: ${escapeHtml(fixEncoding(data.location_name))}` : "";
+    renderExpeditionResult(!!data?.ok, data?.ok ? "Маршрут выбран" : "Действие не выполнено", fixEncoding(data?.message || data?.detail || "Ошибка"), extra);
+    await loadPlayerState();
+  } catch (e) {
+    console.error("choose expedition location error", e);
+    renderExpeditionResult(false, "Действие не выполнено", "Не удалось сохранить выбор маршрута");
+  }
+}
+
+async function resolveExpedition(expeditionId) {
+  const playerId = window.PLAYER_ID;
+  try {
+    const res = await fetch(`/player/expedition/${expeditionId}/resolve/${playerId}`, {
+      method: "POST"
+    });
+    const data = await res.json();
+    const rewardLines = formatDeltaLines(data?.reward, "Получено: +");
+    const penaltyLines = formatDeltaLines(data?.penalty, "Потеряно: -");
+    const details = [];
+
+    if (data?.success && data?.location_name) {
+      details.push(`<div class="explore-result-row">Дом дошёл до точки: ${escapeHtml(fixEncoding(data.location_name))}</div>`);
+    }
+    if (!data?.success) {
+      details.push(`<div class="explore-result-row">Дом не пришёл к единому решению.</div>`);
+    } else if (data?.outcome_text) {
+      details.push(`<div class="explore-result-row">Итог: ${escapeHtml(fixEncoding(data.outcome_text))}</div>`);
+    }
+    if (data?.role_bonus === true) {
+      details.push(`<div class="explore-result-row">Состав экспедиции усилил результат.</div>`);
+    }
+    rewardLines.forEach(line => details.push(`<div class="explore-result-row">${escapeHtml(line)}</div>`));
+    penaltyLines.forEach(line => details.push(`<div class="explore-result-row">${escapeHtml(line)}</div>`));
+    const voteCountsHtml = renderVoteCountsHtml(data?.vote_counts);
+    if (voteCountsHtml) {
+      details.push(voteCountsHtml);
+    }
+
+    renderExpeditionResult(
+      !!data?.ok,
+      data?.success ? "Экспедиция успешна" : "Экспедиция сорвалась",
+      fixEncoding(data?.message || data?.detail || "Ошибка"),
+      details.join("")
+    );
+    await loadPlayerState();
+  } catch (e) {
+    console.error("resolve expedition error", e);
+    renderExpeditionResult(false, "Действие не выполнено", "Не удалось завершить экспедицию");
+  }
+}
+
+async function createDeal() {
+  const playerId = window.PLAYER_ID;
+  const targetEl = document.getElementById("dealTargetHouse");
+  const typeEl = document.getElementById("dealType");
+  const resourceTypeEl = document.getElementById("dealResourceType");
+  const resourceAmountEl = document.getElementById("dealResourceAmount");
+  const crestPieceEl = document.getElementById("dealCrestPiece");
+  const offerEl = document.getElementById("dealOfferText");
+  const targetHouseId = Number(targetEl?.value || 0);
+  const dealType = String(typeEl?.value || "");
+  const resourceType = String(resourceTypeEl?.value || "");
+  const resourceAmount = resourceAmountEl?.value || "";
+  const crestPiece = String(crestPieceEl?.value || "").trim();
+  const offerText = String(offerEl?.value || "").trim();
+
+  dealSubmitBusy = true;
+  saveDealDraftFromForm();
+  await loadPlayerState();
+
+  try {
+    const res = await fetch(`/player/deals/create/${playerId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        target_house_id: targetHouseId,
+        deal_type: dealType,
+        resource_type: resourceType,
+        resource_amount: resourceAmount,
+        crest_piece: crestPiece,
+        offer_text: offerText
+      })
+    });
+    const data = await res.json();
+
+    renderDealResult(
+      !!data?.ok,
+      data?.ok ? "\u0414\u043e\u0433\u043e\u0432\u043e\u0440\u0451\u043d\u043d\u043e\u0441\u0442\u044c \u0432\u043d\u0435\u0441\u0435\u043d\u0430" : "\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \u043d\u0435 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u043e",
+      fixEncoding(data?.message || data?.detail || "\u041e\u0448\u0438\u0431\u043a\u0430")
+    );
+
+    if (data?.ok) {
+      isUserEditingDeal = false;
+      lastUserInteractionAt = 0;
+      window.dealDraft = {
+        targetHouseId: "",
+        dealType: "",
+        resourceType: "",
+        resourceAmount: "",
+        crestPiece: "",
+        offerText: ""
+      };
+    }
+  } catch (e) {
+    console.error("create deal error", e);
+    renderDealResult(false, "\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \u043d\u0435 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u043e", "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0444\u0438\u043a\u0441\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0434\u043e\u0433\u043e\u0432\u043e\u0440\u0451\u043d\u043d\u043e\u0441\u0442\u044c");
+  } finally {
+    dealSubmitBusy = false;
+    await loadPlayerState();
+  }
+}
+
+async function loadAssignments() {
+  if (!playerToken) return;
+  if (window.playerIsEditingAnswer === true) return;
+
+  try {
+    const res = await fetch(`/player/me/${playerToken}/assignments`);
+    const data = await res.json();
+
+    renderAssignments(data);
+  } catch (e) {
+    console.error("assignments load error", e);
+  }
+}
+
+window.playerIsEditingAnswer = window.playerIsEditingAnswer || false;
+window.answerDrafts = window.answerDrafts || {};
+window.latestPlayerState = window.latestPlayerState || null;
+
+function renderAssignments(data) {
+  const container = document.getElementById("assignmentsContainer");
+  if (!container) return;
+
+  const issued = data?.assignments?.issued || [];
+
+  if (!issued.length) {
+    const latestState = window.latestPlayerState || {};
+    const activeRoundCode = String(latestState?.active_host_round?.round_code || "").trim();
+    const roleCode = String(latestState?.role?.code || "").trim();
+    if (activeRoundCode === "stage_court") {
+      container.innerHTML = roleCode === "lord_lady"
+        ? `<div class="muted">Суд Домов: ожидается подтверждение позиции Дома</div>`
+        : `<div class="muted">Суд Домов: решение принимает Лорд / Леди</div>`;
+      return;
+    }
+    container.innerHTML = `<div class="muted">Нет активных заданий</div>`;
+    return;
+  }
+
+  const a = issued[0];
+
+  const template = a?.host_round_question?.template;
+
+  function getAssignmentContent(assignment) {
+    const raw =
+      assignment?.content_json
+      || assignment?.content
+      || assignment?.question?.content_json
+      || assignment?.question?.content
+      || assignment?.template_task?.content_json
+      || assignment?.template_task?.content
+      || assignment?.host_round_question?.template?.content_json
+      || assignment?.host_round_question?.template?.content
+      || {};
+
+    if (typeof raw === "string") {
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return {};
+      }
+    }
+
+    return raw && typeof raw === "object" ? raw : {};
+  }
+
+  function getAssignmentOptions(assignment) {
+    const content = getAssignmentContent(assignment);
+    if (Array.isArray(content?.options)) return content.options;
+    if (Array.isArray(content?.statements)) return content.statements;
+    if (Array.isArray(assignment?.options)) return assignment.options;
+    return [];
+  }
+
+  function getAssignmentCorrectAnswer(assignment) {
+    const content = getAssignmentContent(assignment);
+    return content?.correct_answer || assignment?.correct_answer || "";
+  }
+
+  function isLegacyConfirmAssignment(assignment, questionTemplate) {
+    const questionCode = String(questionTemplate?.question_code || assignment?.host_round_question?.template?.question_code || "").trim();
+    const roleCode = String(questionTemplate?.role_code || assignment?.role_code || "").trim();
+    const uiTemplate = String(questionTemplate?.ui_template || "").trim();
+    const answerMode = String(questionTemplate?.answer_mode || assignment?.answer_mode || "").trim();
+    return (
+      roleCode === "lord_lady"
+      && questionCode !== ""
+      && ["intro_q1", "court_q1"].includes(questionCode)
+      && (uiTemplate === "text" || answerMode === "text")
+    );
+  }
+
+  function getEffectiveAssignmentMode(assignment, questionTemplate) {
+    const answerMode = String(questionTemplate?.answer_mode || assignment?.answer_mode || "").trim();
+    const uiTemplate = String(questionTemplate?.ui_template || "").trim();
+    if (answerMode === "confirm" || uiTemplate === "confirm") {
+      return "confirm";
+    }
+    if (isLegacyConfirmAssignment(assignment, questionTemplate)) {
+      return "confirm";
+    }
+    return answerMode;
+  }
+
+  function normalizeTextForCompare(value) {
+    return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+  }
+
+  if (template) {
+    const content = getAssignmentContent(a);
+    const options = getAssignmentOptions(a);
+    const answerMode = getEffectiveAssignmentMode(a, template);
+    const questionCode = String(template?.question_code || "").trim();
+    const titleText = fixEncoding(template.title || "Вопрос");
+    const promptText = fixEncoding(template.prompt || "");
+    const isFreeTextQuestion = answerMode === "text" || template?.ui_template === "free_text";
+    const answerDraft = typeof window.answerDrafts?.[a.id] === "string" ? window.answerDrafts[a.id] : "";
+    const normalizedTitleText = normalizeTextForCompare(titleText);
+    const normalizedPromptText = normalizeTextForCompare(promptText);
+    const shouldShowPrompt =
+      Boolean(promptText)
+      && normalizedPromptText !== normalizedTitleText
+      && !normalizedPromptText.startsWith(normalizedTitleText);
+    const promptMarkup = shouldShowPrompt
+      ? `<div class="muted" style="margin-top:8px">${escapeHtml(promptText)}</div>`
+      : "";
+
+      if (isFreeTextQuestion) {
+        container.innerHTML = `
+        <div class="big-text">${escapeHtml(titleText)}</div>
+        ${promptMarkup}
+        <textarea
+          id="freeTextAnswer-${a.id}"
+          class="field-control"
+          rows="4"
+          placeholder="Введите ответ"
+          style="margin-top:12px;"
+        >${escapeHtml(answerDraft)}</textarea>
+        <button type="button" class="btn" style="margin-top:10px" onclick="submitTextAnswer(${a.id})">
+          Отправить ответ
+        </button>
+      `;
+      const input = document.getElementById(`freeTextAnswer-${a.id}`);
+      if (input) {
+        input.addEventListener("focus", () => {
+          window.playerIsEditingAnswer = true;
+        });
+        input.addEventListener("input", () => {
+          window.playerIsEditingAnswer = true;
+          window.answerDrafts[a.id] = input.value;
+        });
+        input.addEventListener("blur", () => {
+          window.playerIsEditingAnswer = false;
+          window.answerDrafts[a.id] = input.value;
+        });
+      }
+        return;
+      }
+
+      if (answerMode === "confirm") {
+        const buttonLabel = questionCode === "court_q1" ? "Позиция подтверждена" : "Дом готов";
+        container.innerHTML = `
+          <div class="big-text">${escapeHtml(titleText)}</div>
+          ${promptMarkup}
+          <button
+            type="button"
+            class="btn assignment-answer-btn"
+            data-assignment-id="${a.id}"
+            style="margin-top:12px"
+            onclick='submitConfirmAnswer(${a.id})'>
+            ${escapeHtml(buttonLabel)}
+          </button>
+        `;
+        return;
+      }
+
+      if (!options.length) {
+        container.innerHTML = `
+        <div class="big-text">${escapeHtml(titleText)}</div>
+        ${promptMarkup}
+        <div class="muted" style="margin-top:8px">Вопрос загружен, но варианты ответа отсутствуют</div>
+      `;
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="big-text">${escapeHtml(titleText)}</div>
+      ${promptMarkup}
+      ${options.map((item, index) => {
+        const code = typeof item === "string"
+          ? item
+          : (item?.code || item?.value || String(index));
+        const text = typeof item === "string"
+          ? item
+          : (item?.text || item?.label || item?.title || item?.name || code);
+        return `
+        <button
+          type="button"
+          class="btn assignment-answer-btn"
+          data-assignment-id="${a.id}"
+          style="margin-top:8px"
+          onclick='submitAnswer(${a.id}, ${JSON.stringify(String(code))})'>
+          ${escapeHtml(fixEncoding(text))}
+        </button>
+      `;
+      }).join("")}
+    `;
+  } else {
+    container.innerHTML = `<div class="muted">Задание без вопроса</div>`;
+  }
+}
+
+async function submitAnswer(assignmentId, code) {
+  const buttons = Array.from(document.querySelectorAll(`.assignment-answer-btn[data-assignment-id="${assignmentId}"]`));
+  buttons.forEach(button => {
+    button.disabled = true;
+    button.textContent = "Ответ отправляется...";
+  });
+
+  try {
+    const res = await fetch(`/player/assignments/${assignmentId}/answer`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        player_token: playerToken,
+        answer_payload: {
+          answer: code
+        }
+      })
+    });
+
+    const data = await res.json();
+
+    if (!data?.ok) {
+      buttons.forEach(button => {
+        button.disabled = false;
+      });
+      alert(fixEncoding(data?.message || "Не удалось отправить ответ"));
+      return;
+    }
+
+    await loadAssignments();
+    await loadPlayerState();
+  } catch (e) {
+    buttons.forEach(button => {
+      button.disabled = false;
+    });
+    console.error("answer error", e);
+    alert("Ошибка отправки ответа");
+  }
+}
+
+async function submitTextAnswer(assignmentId) {
+  const input = document.getElementById(`freeTextAnswer-${assignmentId}`);
+  const value = (input?.value || "").trim();
+
+  if (!value) {
+    alert("Введите ответ");
+    return;
+  }
+
+  window.answerDrafts[assignmentId] = value;
+  await submitAnswer(assignmentId, value);
+  delete window.answerDrafts[assignmentId];
+  window.playerIsEditingAnswer = false;
+}
+
+async function submitConfirmAnswer(assignmentId) {
+  await submitAnswer(assignmentId, { confirmed: true });
+}
+
+// автообновление
+setInterval(loadAssignments, 3000);
+setInterval(loadPlayerState, 5000);
+loadPlayerState();
+loadAssignments();
+</script>
+</body>
+</html>

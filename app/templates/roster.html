@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Состав игры — {{ game.title }}</title>
+</head>
+<body>
+    <h1>Состав игры</h1>
+
+    <p><strong>Игра:</strong> {{ game.title }}</p>
+    <p><strong>Код комнаты:</strong> {{ game.room_code }}</p>
+    <p><strong>Статус:</strong> {{ game.status }}</p>
+
+    <hr>
+
+    {% for item in roster_data %}
+        <h2>{{ item.house.name }}</h2>
+
+        {% if item.house.motto %}
+            <p><strong>Девиз:</strong> {{ item.house.motto }}</p>
+        {% endif %}
+
+        {% if item.house.color %}
+            <p><strong>Цвет:</strong> {{ item.house.color }}</p>
+        {% endif %}
+
+        <p><strong>Размер дома:</strong> {{ item.house.team_size }} чел.</p>
+        <p><strong>Уже в доме:</strong> {{ item.players|length }} чел.</p>
+        <p><strong>Осталось мест до заявленного состава:</strong> {{ item.house.team_size - (item.players|length) }}</p>
+
+        {% if item.house.team_size < 5 %}
+            <p><em>Малый состав: допускается совмещение ролей.</em></p>
+        {% elif item.house.team_size == 5 %}
+            <p><em>Полный ключевой состав.</em></p>
+        {% else %}
+            <p><em>Расширенный состав: дополнительные участники могут быть Соратниками Дома.</em></p>
+        {% endif %}
+
+        <h3>Игроки дома</h3>
+
+        {% if item.players %}
+            <ul>
+                {% for player in item.players %}
+                    <li>
+                        <strong>{{ player.nickname }}</strong>
+                        {% if player.role %}
+                            — {{ player.role.name }}
+                        {% else %}
+                            — роль пока не выбрана
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>Пока игроков нет.</p>
+        {% endif %}
+
+        <h3>Свободные роли</h3>
+
+        {% if item.free_roles %}
+            <ul>
+                {% for role in item.free_roles %}
+                    <li>
+                        <strong>{{ role.name }}</strong>
+                        {% if role.description %} — {{ role.description }}{% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>Все роли в этом доме заняты.</p>
+        {% endif %}
+
+        <hr>
+    {% endfor %}
+
+    <p><a href="/game/{{ game.room_code }}">Назад к игре</a></p>
+    <p><a href="/join">Ко входу</a></p>
+</body>
+</html>

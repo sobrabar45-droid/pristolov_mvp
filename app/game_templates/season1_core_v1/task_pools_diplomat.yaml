@@ -1,0 +1,37 @@
+pools:
+  - pool_code: diplomat_offer_pool
+    role_code: diplomat
+    assignment_type: negotiation
+    selection_policy: unique_per_house
+
+    tasks:
+      - task_code: dip_001
+        difficulty: 1
+        act_min: 1
+        act_max: 2
+
+        title: "Посольский круг"
+        prompt: "Выберите форму предложения другому Дому"
+        ui_template: "negotiation_offer"
+
+        content:
+          options:
+            - code: alliance_soft
+              text: "Предложить мягкий союз"
+              result_tag: "soft_alliance"
+
+            - code: trade_only
+              text: "Предложить только обмен"
+              result_tag: "trade_only"
+
+            - code: pressure
+              text: "Предложить договор под давлением"
+              result_tag: "pressure_line"
+
+          correct_answer: trade_only
+
+        reward:
+          influence: 1
+
+        fail_effect:
+          influence: 0
