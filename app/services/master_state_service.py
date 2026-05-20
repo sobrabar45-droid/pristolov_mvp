@@ -36,13 +36,27 @@ def _get_tower_class(score: int) -> str:
     return "dominant"
 
 
-def _build_master_prompt(*, active_host_round, current_question, duels_block, expeditions_block, active_phases):
+def _build_master_prompt(*, active_host_round, current_question, duels_block, expeditions_block, active_phases, court_runtime=None):
     if current_question and current_question.get("status") == "active":
         return {
             "title": "Вопрос в работе",
             "body": "Жди ответы или закрой вопрос вручную",
             "severity": "high",
         }
+
+    if isinstance(court_runtime, dict):
+        court_status = str(court_runtime.get("status") or "").strip().lower()
+        court_pair = court_runtime.get("current_pair")
+        if (
+            court_status == "bracket_ready"
+            and not isinstance(court_pair, dict)
+            and bool(court_runtime.get("can_start_next_pair"))
+        ):
+            return {
+                "title": "Суд готов",
+                "body": "Сетка Суда готова. Следующий безопасный шаг — начать первую пару.",
+                "severity": "high",
+            }
 
     if active_host_round and active_host_round.get("status") == "active" and not current_question:
         current_no = int(active_host_round.get("current_question_no") or 0)
@@ -768,14 +782,6 @@ def get_game_master_state_logic(
         "approved_expeditions_count": len(expeditions_block["approved"]),
     }
 
-    master_prompt = _build_master_prompt(
-        active_host_round=active_host_round,
-        current_question=current_runtime_question,
-        duels_block=duels_block,
-        expeditions_block=expeditions_block,
-        active_phases=active_phases,
-    )
-
     event_feed = []
     for duel in reversed(duels_payload):
         if duel["status"] == "challenged":
@@ -922,6 +928,14 @@ def get_game_master_state_logic(
         active_host_round,
         current_question_payload,
         court_runtime_allowed=court_runtime_allowed,
+    )
+    master_prompt = _build_master_prompt(
+        active_host_round=active_host_round,
+        current_question=current_runtime_question,
+        duels_block=duels_block,
+        expeditions_block=expeditions_block,
+        active_phases=active_phases,
+        court_runtime=court_runtime_payload,
     )
     final_outcome_payload = _build_final_outcome_payload(
         db,
