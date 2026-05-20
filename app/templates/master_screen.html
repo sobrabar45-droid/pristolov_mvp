@@ -2854,6 +2854,19 @@
     <section class="layout">
         <aside class="column left-column ps-pro-only">
             <section class="section-card">
+                <h2>Вход игроков</h2>
+                <div class="section-note">
+                    Создайте Дом через форму регистрации. Код игры уже известен ведущему: <strong>{{ room_code }}</strong>.
+                </div>
+                <div class="button-row" style="margin-top: 12px;">
+                    <button class="btn-blue" onclick="window.location.href='/delegation/start'">Создать Дом</button>
+                </div>
+                <div class="section-note" style="margin-top: 12px;">
+                    После создания Дома откройте Lord Dashboard или ссылку игрока. Игроки входят через ссылку Дома или join-код.
+                </div>
+            </section>
+
+            <section class="section-card">
                 <h2>Домы</h2>
                 <div class="houses-list" id="housesList"></div>
             </section>
