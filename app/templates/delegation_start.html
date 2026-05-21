@@ -2,140 +2,432 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Создать делегацию</title>
-</head>
-<body>
-    <h1>Создание делегации</h1>
-
-    <p>Этот путь проходит глава Дома. Он заявляет делегацию, получает признанный Дом и верительную грамоту.</p>
-
-    <form method="post" action="/delegation/start">
-        <div style="margin-bottom: 12px;">
-            <label for="game_code">Код игры:</label>
-            <input type="text" id="game_code" name="game_code" value="LIVE01" required>
-        </div>
-
-        <div style="margin-bottom: 12px;">
-            <label for="leader_nickname">Имя главы делегации:</label>
-            <input type="text" id="leader_nickname" name="leader_nickname" required>
-        </div>
-
-        <div style="margin-bottom: 12px;">
-            <label for="team_size_declared">Сколько человек представляет ваш Дом?</label>
-            <select id="team_size_declared" name="team_size_declared" required>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5" selected>5</option>
-                <option value="6">6</option>
-                <option value="7">7</option>
-                <option value="8">8</option>
-                <option value="9">9</option>
-                <option value="10">10</option>
-            </select>
-        </div>
-
-        <div style="margin-bottom: 16px;">
-            <strong>Как ваша делегация вступает в игру?</strong><br>
-
-            <label>
-                <input
-                    type="radio"
-                    name="entry_mode"
-                    value="quiz"
-                    id="entry_mode_quiz"
-                >
-                Вдумчиво определить путь Дома (+1 золото на старт)
-            </label>
-            <br>
-
-            <label>
-                <input
-                    type="radio"
-                    name="entry_mode"
-                    value="random"
-                    id="entry_mode_random"
-                    checked
-                >
-                Вверить Дом судьбе (+1 к событийности)
-            </label>
-        </div>
-
-        <div id="ritual_block" style="display: none;">
-            <h2>Ритуал определения</h2>
-
-            <div style="margin-bottom: 12px;">
-                <label for="answer_priority">Что для вашей делегации важнее всего?</label>
-                <select id="answer_priority" name="answer_priority">
-                    <option value="power">Сила и воля</option>
-                    <option value="diplomacy">Союзы и влияние</option>
-                    <option value="wealth">Выгода и богатство</option>
-                    <option value="knowledge">Знание и расчёт</option>
-                    <option value="shadow">Тайна и скрытое действие</option>
-                    <option value="risk">Риск и дерзкий ход</option>
-                </select>
-            </div>
-
-            <div style="margin-bottom: 12px;">
-                <label for="answer_conflict">Как вы решаете конфликт?</label>
-                <select id="answer_conflict" name="answer_conflict">
-                    <option value="direct">Давим прямо</option>
-                    <option value="negotiate">Договариваемся</option>
-                    <option value="calculate">Считаем выгоду</option>
-                    <option value="secret">Работаем скрытно</option>
-                </select>
-            </div>
-
-            <div style="margin-bottom: 12px;">
-                <label for="answer_style">Какой путь вам ближе?</label>
-                <select id="answer_style" name="answer_style">
-                    <option value="dominance">Доминирование</option>
-                    <option value="alliances">Союзы</option>
-                    <option value="knowledge">Знание</option>
-                    <option value="risk">Риск</option>
-                </select>
-            </div>
-        </div>
-
-        <button type="submit">Заявить делегацию</button>
-    </form>
-
-    {% if error %}
-        <p style="color: red; margin-top: 16px;">{{ error }}</p>
-    {% endif %}
-
-    <p><a href="/delegation/join">У меня уже есть верительная грамота</a></p>
-
-    <script>
-        function toggleRitualBlock() {
-            const quizRadio = document.getElementById("entry_mode_quiz");
-            const ritualBlock = document.getElementById("ritual_block");
-
-            if (!quizRadio || !ritualBlock) {
-                return;
-            }
-
-            if (quizRadio.checked) {
-                ritualBlock.style.display = "block";
-            } else {
-                ritualBlock.style.display = "none";
-            }
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Создать Дом — приСтолов</title>
+    <style>
+        :root {
+            --bg: #0f1115;
+            --panel: #1a1d24;
+            --panel-2: #222733;
+            --panel-3: #171b22;
+            --text: #f4f7fb;
+            --muted: #a9b2c3;
+            --line: rgba(255,255,255,0.08);
+            --gold: #d4a94f;
+            --blue: #4c8bf5;
+            --red: #b45353;
+            --focus: rgba(76,139,245,0.32);
         }
 
-        document.addEventListener("DOMContentLoaded", function () {
-            const quizRadio = document.getElementById("entry_mode_quiz");
-            const randomRadio = document.getElementById("entry_mode_random");
+        * {
+            box-sizing: border-box;
+        }
 
-            if (quizRadio) {
-                quizRadio.addEventListener("change", toggleRitualBlock);
+        html, body {
+            min-height: 100%;
+        }
+
+        body {
+            margin: 0;
+            background:
+                radial-gradient(circle at top, rgba(212,169,79,0.10), transparent 28%),
+                linear-gradient(180deg, rgba(255,255,255,0.02), transparent 30%),
+                var(--bg);
+            color: var(--text);
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        }
+
+        .page {
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 18px 14px 28px;
+        }
+
+        .shell {
+            width: min(100%, 760px);
+            display: grid;
+            gap: 14px;
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            padding: 18px;
+            box-shadow: 0 18px 44px rgba(0,0,0,0.22);
+        }
+
+        .hero {
+            display: grid;
+            gap: 12px;
+        }
+
+        .eyebrow {
+            color: var(--gold);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        .title {
+            font-size: clamp(30px, 6vw, 44px);
+            font-weight: 900;
+            line-height: 1.02;
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 7px 11px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .form-card {
+            display: grid;
+            gap: 16px;
+        }
+
+        .field-group {
+            display: grid;
+            gap: 8px;
+        }
+
+        .field-label,
+        .section-label {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--muted);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .field-control,
+        .field-group select,
+        .field-group input[type="text"] {
+            width: 100%;
+            min-height: 54px;
+            border-radius: 16px;
+            border: 1px solid var(--line);
+            background: var(--panel-2);
+            color: var(--text);
+            padding: 14px 16px;
+            font: inherit;
+            font-size: 16px;
+            outline: none;
+            appearance: none;
+        }
+
+        .field-group select:focus,
+        .field-group input[type="text"]:focus {
+            border-color: rgba(76,139,245,0.55);
+            box-shadow: 0 0 0 4px var(--focus);
+        }
+
+        .entry-mode-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .entry-card {
+            display: grid;
+            grid-template-columns: 22px 1fr;
+            gap: 12px;
+            align-items: start;
+            background: var(--panel-2);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 14px;
+            cursor: pointer;
+        }
+
+        .entry-card input[type="radio"] {
+            margin: 4px 0 0;
+            accent-color: var(--blue);
+            transform: scale(1.15);
+        }
+
+        .entry-title {
+            font-size: 16px;
+            font-weight: 800;
+            line-height: 1.25;
+            margin-bottom: 6px;
+        }
+
+        .entry-note {
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.45;
+        }
+
+        .ritual-card {
+            display: none;
+            gap: 14px;
+            padding: 16px;
+            border-radius: 18px;
+            background: linear-gradient(180deg, rgba(76,139,245,0.10), rgba(76,139,245,0.04));
+            border: 1px solid rgba(76,139,245,0.18);
+        }
+
+        .ritual-title {
+            font-size: 20px;
+            font-weight: 900;
+            line-height: 1.1;
+        }
+
+        .ritual-note {
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.45;
+        }
+
+        .error-box {
+            background: rgba(180,83,83,0.12);
+            border: 1px solid rgba(180,83,83,0.35);
+            color: #ffd2d2;
+            border-radius: 16px;
+            padding: 14px;
+            font-size: 14px;
+            line-height: 1.45;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 56px;
+            border: none;
+            border-radius: 16px;
+            background: var(--blue);
+            color: #fff;
+            font-size: 16px;
+            font-weight: 900;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            filter: brightness(1.05);
+        }
+
+        .footer-card {
+            display: grid;
+            gap: 10px;
+        }
+
+        .footer-link {
+            color: #d9e6ff;
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .footer-link:hover {
+            text-decoration: underline;
+        }
+
+        @media (min-width: 720px) {
+            .card {
+                padding: 22px;
             }
 
-            if (randomRadio) {
-                randomRadio.addEventListener("change", toggleRitualBlock);
+            .form-grid {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                gap: 14px;
             }
 
-            toggleRitualBlock();
-        });
-    </script>
+            .form-grid .field-group.full {
+                grid-column: 1 / -1;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <div class="shell">
+        <section class="card hero">
+            <div class="eyebrow">Вход в игру</div>
+            <div class="title">Создать Дом</div>
+            <div class="muted">
+                Этот путь проходит глава Дома. Здесь вы заявляете делегацию, получаете признанный Дом
+                и верительную грамоту для остальных участников.
+            </div>
+            <div class="chips">
+                <span class="chip">Код игры: LIVE01</span>
+                <span class="chip">Первый шаг главы Дома</span>
+            </div>
+        </section>
+
+        <section class="card form-card">
+            <form method="post" action="/delegation/start">
+                <div class="form-grid">
+                    <div class="field-group">
+                        <label class="field-label" for="game_code">Код игры</label>
+                        <input type="text" id="game_code" name="game_code" value="LIVE01" required>
+                    </div>
+
+                    <div class="field-group">
+                        <label class="field-label" for="leader_nickname">Имя главы делегации</label>
+                        <input type="text" id="leader_nickname" name="leader_nickname" required>
+                    </div>
+
+                    <div class="field-group full">
+                        <label class="field-label" for="team_size_declared">Сколько человек представляет ваш Дом?</label>
+                        <select id="team_size_declared" name="team_size_declared" required>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5" selected>5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                        </select>
+                    </div>
+
+                    <div class="field-group full">
+                        <div class="section-label">Как ваша делегация вступает в игру?</div>
+                        <div class="entry-mode-grid">
+                            <label class="entry-card" for="entry_mode_quiz">
+                                <input
+                                    type="radio"
+                                    name="entry_mode"
+                                    value="quiz"
+                                    id="entry_mode_quiz"
+                                >
+                                <span>
+                                    <span class="entry-title">Вдумчиво определить путь Дома</span>
+                                    <span class="entry-note">Небольшой ритуал выбора. Даёт +1 золото на старт.</span>
+                                </span>
+                            </label>
+
+                            <label class="entry-card" for="entry_mode_random">
+                                <input
+                                    type="radio"
+                                    name="entry_mode"
+                                    value="random"
+                                    id="entry_mode_random"
+                                    checked
+                                >
+                                <span>
+                                    <span class="entry-title">Вверить Дом судьбе</span>
+                                    <span class="entry-note">Быстрый вход в игру. Даёт +1 к событийности.</span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="ritual_block" class="ritual-card">
+                    <div>
+                        <div class="ritual-title">Ритуал определения</div>
+                        <div class="ritual-note">
+                            Коротко ответьте на три вопроса. Это поможет подобрать Дом, который ближе вашей делегации.
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <label class="field-label" for="answer_priority">Что для вашей делегации важнее всего?</label>
+                        <select id="answer_priority" name="answer_priority">
+                            <option value="power">Сила и воля</option>
+                            <option value="diplomacy">Союзы и влияние</option>
+                            <option value="wealth">Выгода и богатство</option>
+                            <option value="knowledge">Знание и расчёт</option>
+                            <option value="shadow">Тайна и скрытое действие</option>
+                            <option value="risk">Риск и дерзкий ход</option>
+                        </select>
+                    </div>
+
+                    <div class="field-group">
+                        <label class="field-label" for="answer_conflict">Как вы решаете конфликт?</label>
+                        <select id="answer_conflict" name="answer_conflict">
+                            <option value="direct">Давим прямо</option>
+                            <option value="negotiate">Договариваемся</option>
+                            <option value="calculate">Считаем выгоду</option>
+                            <option value="secret">Работаем скрытно</option>
+                        </select>
+                    </div>
+
+                    <div class="field-group">
+                        <label class="field-label" for="answer_style">Какой путь вам ближе?</label>
+                        <select id="answer_style" name="answer_style">
+                            <option value="dominance">Доминирование</option>
+                            <option value="alliances">Союзы</option>
+                            <option value="knowledge">Знание</option>
+                            <option value="risk">Риск</option>
+                        </select>
+                    </div>
+                </div>
+
+                {% if error %}
+                    <div class="error-box" style="margin-top: 16px;">{{ error }}</div>
+                {% endif %}
+
+                <div style="margin-top: 18px;">
+                    <button type="submit" class="btn">Заявить делегацию</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="card footer-card">
+            <div class="muted">
+                Если у вас уже есть верительная грамота, переходите сразу ко входу в Дом.
+            </div>
+            <a class="footer-link" href="/delegation/join">У меня уже есть верительная грамота</a>
+        </section>
+    </div>
+</div>
+
+<script>
+    function toggleRitualBlock() {
+        const quizRadio = document.getElementById("entry_mode_quiz");
+        const ritualBlock = document.getElementById("ritual_block");
+
+        if (!quizRadio || !ritualBlock) {
+            return;
+        }
+
+        if (quizRadio.checked) {
+            ritualBlock.style.display = "grid";
+        } else {
+            ritualBlock.style.display = "none";
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const quizRadio = document.getElementById("entry_mode_quiz");
+        const randomRadio = document.getElementById("entry_mode_random");
+
+        if (quizRadio) {
+            quizRadio.addEventListener("change", toggleRitualBlock);
+        }
+
+        if (randomRadio) {
+            randomRadio.addEventListener("change", toggleRitualBlock);
+        }
+
+        toggleRitualBlock();
+    });
+</script>
 </body>
 </html>
