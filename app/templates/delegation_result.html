@@ -2,97 +2,410 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Делегация признана</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дом признан — приСтолов</title>
+    <style>
+        :root {
+            --bg: #0f1115;
+            --panel: #1a1d24;
+            --panel-2: #222733;
+            --panel-3: #171b22;
+            --text: #f4f7fb;
+            --muted: #a9b2c3;
+            --line: rgba(255,255,255,0.08);
+            --gold: #d4a94f;
+            --blue: #4c8bf5;
+            --green: #4ea56b;
+            --amber: #d59f3a;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            min-height: 100%;
+        }
+
+        body {
+            margin: 0;
+            background:
+                radial-gradient(circle at top, rgba(212,169,79,0.12), transparent 30%),
+                linear-gradient(180deg, rgba(255,255,255,0.02), transparent 32%),
+                var(--bg);
+            color: var(--text);
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        }
+
+        .page {
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 18px 14px 28px;
+        }
+
+        .shell {
+            width: min(100%, 860px);
+            display: grid;
+            gap: 14px;
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            padding: 18px;
+            box-shadow: 0 18px 44px rgba(0,0,0,0.24);
+        }
+
+        .hero {
+            display: grid;
+            gap: 12px;
+        }
+
+        .eyebrow {
+            color: var(--gold);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        .title {
+            font-size: clamp(30px, 6vw, 46px);
+            font-weight: 900;
+            line-height: 1.02;
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .chips,
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 7px 11px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .hero-grid,
+        .summary-grid,
+        .stats-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .summary-grid,
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .tile,
+        .summary,
+        .stat,
+        .invite-panel {
+            background: var(--panel-2);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 16px;
+        }
+
+        .tile-label,
+        .summary-label,
+        .stat-label {
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .tile-value,
+        .summary-value,
+        .stat-value {
+            font-size: 22px;
+            font-weight: 900;
+            line-height: 1.15;
+        }
+
+        .summary-copy,
+        .stat-note {
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.45;
+            margin-top: 8px;
+        }
+
+        .invite-shell {
+            display: grid;
+            gap: 12px;
+        }
+
+        .invite-code-box {
+            background: linear-gradient(180deg, rgba(212,169,79,0.14), rgba(212,169,79,0.05));
+            border: 1px solid rgba(212,169,79,0.24);
+            border-radius: 20px;
+            padding: 18px;
+            text-align: center;
+        }
+
+        .invite-code-label {
+            color: var(--muted);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 10px;
+        }
+
+        .invite-code {
+            font-size: clamp(32px, 8vw, 56px);
+            font-weight: 900;
+            letter-spacing: 0.12em;
+            color: var(--gold);
+            line-height: 1;
+        }
+
+        .link-box {
+            background: var(--panel-3);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 12px 14px;
+            color: var(--text);
+            font-size: 14px;
+            line-height: 1.45;
+            word-break: break-word;
+        }
+
+        .btn,
+        .btn-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 54px;
+            border-radius: 16px;
+            border: none;
+            text-decoration: none;
+            color: #fff;
+            background: var(--blue);
+            font-size: 16px;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+        .btn-link.alt {
+            background: #374151;
+        }
+
+        .btn-link.green {
+            background: var(--green);
+        }
+
+        .resource-list {
+            display: grid;
+            gap: 8px;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .resource-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--line);
+            font-size: 14px;
+        }
+
+        .resource-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .resource-name {
+            color: var(--muted);
+        }
+
+        .resource-value {
+            font-weight: 800;
+        }
+
+        @media (min-width: 760px) {
+            .card {
+                padding: 22px;
+            }
+
+            .hero-grid {
+                grid-template-columns: 1.1fr 0.9fr;
+                align-items: start;
+            }
+
+            .summary-grid,
+            .stats-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .actions {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>Делегация признана</h1>
+{% set color_names = {
+    "emerald": "изумрудный",
+    "crimson": "алый",
+    "red": "алый",
+    "scarlet": "алый",
+    "ruby": "рубиновый",
+    "azure": "лазурный",
+    "blue": "синий",
+    "navy": "тёмно-синий",
+    "violet": "фиолетовый",
+    "purple": "фиолетовый",
+    "gold": "золотой",
+    "silver": "серебряный",
+    "gray": "серый",
+    "grey": "серый",
+    "black": "чёрный",
+    "white": "белый",
+    "ivory": "слоновая кость",
+    "green": "зелёный",
+    "yellow": "жёлтый",
+    "orange": "оранжевый",
+    "brown": "коричневый",
+    "bronze": "бронзовый",
+    "copper": "медный",
+    "stone": "каменный"
+} %}
 
-    <p><strong>Игра:</strong> {{ game.title }}</p>
-    <p><strong>Глава делегации:</strong> {{ leader.nickname }}</p>
+{% set entry_mode_names = {
+    "quiz": "вдумчивый выбор пути",
+    "random": "воля судьбы"
+} %}
 
-    {% set color_names = {
-        "emerald": "изумрудный",
-        "crimson": "алый",
-        "red": "алый",
-        "scarlet": "алый",
-        "ruby": "рубиновый",
-        "azure": "лазурный",
-        "blue": "синий",
-        "navy": "тёмно-синий",
-        "violet": "фиолетовый",
-        "purple": "фиолетовый",
-        "gold": "золотой",
-        "silver": "серебряный",
-        "gray": "серый",
-        "grey": "серый",
-        "black": "чёрный",
-        "white": "белый",
-        "ivory": "слоновая кость",
-        "green": "зелёный",
-        "yellow": "жёлтый",
-        "orange": "оранжевый",
-        "brown": "коричневый",
-        "bronze": "бронзовый",
-        "copper": "медный",
-        "stone": "каменный"
-    } %}
+{% set color_label = color_names.get(house.color, house.color) %}
+{% set entry_mode_label = entry_mode_names.get(house.entry_mode, house.entry_mode) %}
+{% set join_url = "/delegation/join?game_code=" ~ game.room_code ~ "&invite_code=" ~ house.invite_code %}
 
-    {% set entry_mode_names = {
-        "quiz": "вдумчивый выбор пути",
-        "random": "воля судьбы"
-    } %}
+<div class="page">
+    <div class="shell">
+        <section class="card hero">
+            <div class="eyebrow">Дом признан</div>
+            <div class="title">{{ house.name }}</div>
+            <div class="muted">
+                Делегация признана. Теперь у Дома есть имя, грамота и точка входа для участников.
+                Следующий шаг — открыть экран Дома и позвать остальных.
+            </div>
+            <div class="chips">
+                <span class="chip">Игра: {{ game.title }}</span>
+                <span class="chip">Глава: {{ leader.nickname }}</span>
+                <span class="chip">Режим входа: {{ entry_mode_label }}</span>
+            </div>
+        </section>
 
-    {% set color_label = color_names.get(house.color, house.color) %}
-    {% set entry_mode_label = entry_mode_names.get(house.entry_mode, house.entry_mode) %}
+        <section class="card">
+            <div class="hero-grid">
+                <div class="summary-grid">
+                    <div class="summary">
+                        <div class="summary-label">Решение</div>
+                        {% if house.entry_mode == "random" %}
+                            <div class="summary-value">Судьба признала {{ house.name }}</div>
+                            <div class="summary-copy">
+                                Этот Дом был определён не ритуалом ответов, а волей случая.
+                                Ваш путь начнётся с большей событийности и права принять неожиданный ход.
+                            </div>
+                        {% else %}
+                            <div class="summary-value">{{ house.name }} соответствует вашей делегации</div>
+                            <div class="summary-copy">
+                                {% if best_match_overall and best_match_overall["key"] != house.house_key %}
+                                    Из доступных Домов именно этот путь сейчас оказался наиболее близок характеру вашей делегации.
+                                {% else %}
+                                    Именно этот путь оказался наиболее близок складу вашей делегации.
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
 
-    <h2>Решение</h2>
+                    <div class="summary">
+                        <div class="summary-label">Дом</div>
+                        <div class="summary-value">{{ house.motto }}</div>
+                        <div class="summary-copy">
+                            Цвет Дома: {{ color_label }}. Заявленный размер делегации: {{ house.team_size_declared }}.
+                        </div>
+                    </div>
+                </div>
 
-    {% if house.entry_mode == "random" %}
-        <p><strong>Судьба признала за вашей делегацией {{ house.name }}.</strong></p>
-        <p>Этот Дом был определён не ритуалом ответов, а волей случая. Значит, ваш путь в игре начнётся с большей событийности и права принять неожиданную роль в раскладе сил.</p>
-    {% else %}
-        <p><strong>Вашей делегации соответствует {{ house.name }}.</strong></p>
+                <div class="invite-panel invite-shell">
+                    <div class="invite-code-box">
+                        <div class="invite-code-label">Верительная грамота</div>
+                        <div class="invite-code">{{ house.invite_code }}</div>
+                    </div>
+                    <div class="muted">
+                        Передайте этот код участникам или сразу отправьте им ссылку входа в Дом.
+                    </div>
+                    <div class="link-box">{{ join_url }}</div>
+                </div>
+            </div>
+        </section>
 
-        {% if best_match_overall and best_match_overall["key"] != house.house_key %}
-            <p>Из доступных Домов именно этот путь сейчас оказался наиболее близок характеру вашей делегации.</p>
-        {% else %}
-            <p>Именно этот путь наиболее близок складу вашей делегации.</p>
-        {% endif %}
-    {% endif %}
+        <section class="card">
+            <div class="summary-grid">
+                <div class="stat">
+                    <div class="stat-label">Стартовые параметры</div>
+                    <ul class="resource-list">
+                        <li class="resource-row"><span class="resource-name">Золото</span><span class="resource-value">{{ house.resource_gold }}</span></li>
+                        <li class="resource-row"><span class="resource-name">Влияние</span><span class="resource-value">{{ house.resource_influence }}</span></li>
+                        <li class="resource-row"><span class="resource-name">Камень</span><span class="resource-value">{{ house.resource_stone }}</span></li>
+                        <li class="resource-row"><span class="resource-name">Дерево</span><span class="resource-value">{{ house.resource_wood }}</span></li>
+                        <li class="resource-row"><span class="resource-name">Железо</span><span class="resource-value">{{ house.resource_iron }}</span></li>
+                        <li class="resource-row"><span class="resource-name">Свитки</span><span class="resource-value">{{ house.resource_scroll }}</span></li>
+                        <li class="resource-row"><span class="resource-name">Ключи</span><span class="resource-value">{{ house.resource_key }}</span></li>
+                        <li class="resource-row"><span class="resource-name">Огонь</span><span class="resource-value">{{ house.resource_fire }}</span></li>
+                        <li class="resource-row"><span class="resource-name">Печать судьбы</span><span class="resource-value">{{ house.fate_bias }}</span></li>
+                    </ul>
+                </div>
 
-    <p><strong>Девиз:</strong> {{ house.motto }}</p>
-    <p><strong>Цвет Дома:</strong> {{ color_label }}</p>
-    <p><strong>Заявленный размер делегации:</strong> {{ house.team_size_declared }}</p>
-    <p><strong>Режим входа:</strong> {{ entry_mode_label }}</p>
+                <div class="stat">
+                    <div class="stat-label">Следующий шаг</div>
+                    <div class="stat-value">Теперь можно звать участников</div>
+                    <div class="stat-note">
+                        Откройте экран Дома, проверьте состав, назначьте роли и передайте игрокам грамоту
+                        или ссылку входа в Дом.
+                    </div>
+                    {% if house.entry_mode == "quiz" %}
+                        <div class="stat-note">Преимущество старта: делегация вошла в игру через ритуал определения и начала путь с дополнительным золотом.</div>
+                    {% elif house.entry_mode == "random" %}
+                        <div class="stat-note">Преимущество старта: делегация вверила выбор судьбе и получила повышенную вероятность событийного поворота.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
 
-    <h2>Верительная грамота</h2>
-    <p>Передайте этот код тем, кто будет входить в ваш Дом.</p>
-    <p><strong>{{ house.invite_code }}</strong></p>
-
-    <h2>Стартовые параметры</h2>
-    <ul>
-        <li>Золото: {{ house.resource_gold }}</li>
-        <li>Влияние: {{ house.resource_influence }}</li>
-        <li>Камень: {{ house.resource_stone }}</li>
-        <li>Дерево: {{ house.resource_wood }}</li>
-        <li>Железо: {{ house.resource_iron }}</li>
-        <li>Свитки: {{ house.resource_scroll }}</li>
-        <li>Ключи: {{ house.resource_key }}</li>
-        <li>Огонь: {{ house.resource_fire }}</li>
-        <li>Печать судьбы: {{ house.fate_bias }}</li>
-    </ul>
-
-    {% if house.entry_mode == "quiz" %}
-        <p><strong>Преимущество старта:</strong> ваша делегация вошла в игру через ритуал определения и начала путь с дополнительным золотом.</p>
-    {% elif house.entry_mode == "random" %}
-        <p><strong>Преимущество старта:</strong> ваша делегация вверила выбор судьбе и получила повышенную вероятность событийного поворота.</p>
-    {% endif %}
-
-    <h2>Следующий шаг</h2>
-    <p>Теперь глава Дома может открыть экран Дома, посмотреть состав делегации, назначить роли и дальше вести Дом через Lord Dashboard.</p>
-
-    <p><a href="/house/{{ house.invite_code }}">Открыть экран Дома</a></p>
-    <p><a href="/delegation/join">Передать грамоту участникам</a></p>
-    <p><a href="/delegation/start">Создать новую делегацию</a></p>
+        <section class="card">
+            <div class="actions">
+                <a class="btn-link green" href="/house/{{ house.invite_code }}">Открыть Дом</a>
+                <a class="btn-link alt" href="{{ join_url }}">Передать ссылку игрокам</a>
+                <a class="btn-link" href="/delegation/start">Создать новую делегацию</a>
+            </div>
+        </section>
+    </div>
+</div>
 </body>
 </html>
