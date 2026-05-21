@@ -2,34 +2,284 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Войти по грамоте</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Войти в Дом — приСтолов</title>
+    <style>
+        :root {
+            --bg: #0f1115;
+            --panel: #1a1d24;
+            --panel-2: #222733;
+            --panel-3: #171b22;
+            --text: #f4f7fb;
+            --muted: #a9b2c3;
+            --line: rgba(255,255,255,0.08);
+            --gold: #d4a94f;
+            --blue: #4c8bf5;
+            --red: #b45353;
+            --focus: rgba(76,139,245,0.32);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            min-height: 100%;
+        }
+
+        body {
+            margin: 0;
+            background:
+                radial-gradient(circle at top, rgba(212,169,79,0.10), transparent 28%),
+                linear-gradient(180deg, rgba(255,255,255,0.02), transparent 30%),
+                var(--bg);
+            color: var(--text);
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        }
+
+        .page {
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 18px 14px 28px;
+        }
+
+        .shell {
+            width: min(100%, 720px);
+            display: grid;
+            gap: 14px;
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            padding: 18px;
+            box-shadow: 0 18px 44px rgba(0,0,0,0.22);
+        }
+
+        .hero {
+            display: grid;
+            gap: 12px;
+        }
+
+        .eyebrow {
+            color: var(--gold);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        .title {
+            font-size: clamp(30px, 6vw, 44px);
+            font-weight: 900;
+            line-height: 1.02;
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 7px 11px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .form-card {
+            display: grid;
+            gap: 16px;
+        }
+
+        .field-group {
+            display: grid;
+            gap: 8px;
+        }
+
+        .field-label {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--muted);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .field-group input[type="text"] {
+            width: 100%;
+            min-height: 54px;
+            border-radius: 16px;
+            border: 1px solid var(--line);
+            background: var(--panel-2);
+            color: var(--text);
+            padding: 14px 16px;
+            font: inherit;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .field-group input[type="text"]:focus {
+            border-color: rgba(76,139,245,0.55);
+            box-shadow: 0 0 0 4px var(--focus);
+        }
+
+        .hint-box {
+            background: linear-gradient(180deg, rgba(76,139,245,0.10), rgba(76,139,245,0.04));
+            border: 1px solid rgba(76,139,245,0.18);
+            border-radius: 18px;
+            padding: 14px;
+        }
+
+        .hint-title {
+            font-size: 16px;
+            font-weight: 900;
+            margin-bottom: 6px;
+        }
+
+        .hint-text {
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.45;
+        }
+
+        .error-box {
+            background: rgba(180,83,83,0.12);
+            border: 1px solid rgba(180,83,83,0.35);
+            color: #ffd2d2;
+            border-radius: 16px;
+            padding: 14px;
+            font-size: 14px;
+            line-height: 1.45;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 56px;
+            border: none;
+            border-radius: 16px;
+            background: var(--blue);
+            color: #fff;
+            font-size: 16px;
+            font-weight: 900;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            filter: brightness(1.05);
+        }
+
+        .footer-card {
+            display: grid;
+            gap: 10px;
+        }
+
+        .footer-link {
+            color: #d9e6ff;
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .footer-link:hover {
+            text-decoration: underline;
+        }
+
+        @media (min-width: 720px) {
+            .card {
+                padding: 22px;
+            }
+
+            .form-grid {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                gap: 14px;
+            }
+
+            .form-grid .field-group.full {
+                grid-column: 1 / -1;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>Вход по верительной грамоте</h1>
+<div class="page">
+    <div class="shell">
+        <section class="card hero">
+            <div class="eyebrow">Вход участника</div>
+            <div class="title">Войти в Дом</div>
+            <div class="muted">
+                Укажите код игры, грамоту Дома и своё имя. После этого вы войдёте в состав Дома и попадёте на личный экран игрока.
+            </div>
+            <div class="chips">
+                <span class="chip">Код игры: {{ default_game_code or "LIVE01" }}</span>
+                {% if default_invite_code %}
+                    <span class="chip">Грамота: {{ default_invite_code }}</span>
+                {% else %}
+                    <span class="chip">Нужна верительная грамота Дома</span>
+                {% endif %}
+            </div>
+        </section>
 
-    <form method="post" action="/delegation/join">
-        <div style="margin-bottom: 12px;">
-            <label for="game_code">Код игры:</label>
-            <input type="text" id="game_code" name="game_code" value="{{ default_game_code or 'LIVE01' }}" required>
-        </div>
+        <section class="card form-card">
+            <div class="hint-box">
+                <div class="hint-title">Что нужно для входа</div>
+                <div class="hint-text">
+                    Игроку достаточно знать код игры, код Дома и имя, под которым он входит в состав делегации.
+                </div>
+            </div>
 
-        <div style="margin-bottom: 12px;">
-            <label for="invite_code">Верительная грамота:</label>
-            <input type="text" id="invite_code" name="invite_code" value="{{ default_invite_code or '' }}" required>
-        </div>
+            <form method="post" action="/delegation/join">
+                <div class="form-grid">
+                    <div class="field-group">
+                        <label class="field-label" for="game_code">Код игры</label>
+                        <input type="text" id="game_code" name="game_code" value="{{ default_game_code or 'LIVE01' }}" required>
+                    </div>
 
-        <div style="margin-bottom: 12px;">
-            <label for="nickname">Имя участника:</label>
-            <input type="text" id="nickname" name="nickname" required>
-        </div>
+                    <div class="field-group">
+                        <label class="field-label" for="invite_code">Код Дома</label>
+                        <input type="text" id="invite_code" name="invite_code" value="{{ default_invite_code or '' }}" required>
+                    </div>
 
-        <button type="submit">Войти в Дом</button>
-    </form>
+                    <div class="field-group full">
+                        <label class="field-label" for="nickname">Ваше имя</label>
+                        <input type="text" id="nickname" name="nickname" required>
+                    </div>
+                </div>
 
-    {% if error %}
-        <p style="color: red; margin-top: 16px;">{{ error }}</p>
-    {% endif %}
+                {% if error %}
+                    <div class="error-box" style="margin-top: 16px;">{{ error }}</div>
+                {% endif %}
 
-    <p><a href="/delegation/start">Я создаю делегацию впервые</a></p>
+                <div style="margin-top: 18px;">
+                    <button type="submit" class="btn">Войти в Дом</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="card footer-card">
+            <div class="muted">
+                Если вы создаёте Дом впервые, сначала пройдите регистрацию делегации.
+            </div>
+            <a class="footer-link" href="/delegation/start">Я создаю делегацию впервые</a>
+        </section>
+    </div>
+</div>
 </body>
 </html>
