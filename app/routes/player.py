@@ -539,6 +539,76 @@ def _normalize_expedition_role_codes(role_codes) -> list[str]:
     return normalized
 
 
+def _validate_expedition_party_request(db: Session, *, house_id: int, members_count: int, raw_role_codes) -> dict:
+    house_players = (
+        db.query(Player)
+        .options(joinedload(Player.role))
+        .filter(Player.house_id == house_id)
+        .all()
+    )
+    real_players_count = len(house_players)
+
+    if members_count > real_players_count:
+        return {
+            "ok": False,
+            "message": f"В Доме только {real_players_count} реальных игроков. Нельзя назначить экспедицию на {members_count} участников.",
+        }
+
+    if not isinstance(raw_role_codes, list):
+        return {
+            "ok": True,
+            "role_codes": [],
+            "real_players_count": real_players_count,
+        }
+
+    requested_role_codes: list[str] = []
+    seen_role_codes = set()
+
+    for raw_code in raw_role_codes:
+        if not isinstance(raw_code, str):
+            return {
+                "ok": False,
+                "message": "Состав экспедиции содержит некорректную роль участника.",
+            }
+
+        code = raw_code.strip().lower()
+        if code not in EXPEDITION_ROLE_OPTIONS:
+            return {
+                "ok": False,
+                "message": "Состав экспедиции содержит неизвестную роль.",
+            }
+
+        if code in seen_role_codes:
+            return {
+                "ok": False,
+                "message": "Роли участников экспедиции не должны повторяться.",
+            }
+
+        seen_role_codes.add(code)
+        requested_role_codes.append(code)
+
+    occupied_role_codes = {
+        str(player.role.code).strip().lower()
+        for player in house_players
+        if player.role and player.role.code
+    }
+    missing_role_codes = [
+        code for code in requested_role_codes
+        if code not in occupied_role_codes
+    ]
+    if missing_role_codes:
+        return {
+            "ok": False,
+            "message": "В составе экспедиции есть роль, которая не принадлежит реальному игроку этого Дома.",
+        }
+
+    return {
+        "ok": True,
+        "role_codes": requested_role_codes,
+        "real_players_count": real_players_count,
+    }
+
+
 def _build_active_house_expedition_payload(db: Session, expedition: GameExpedition | None, *, player_id: int | None = None):
     if not expedition:
         return None
@@ -1231,7 +1301,17 @@ def create_expedition(player_id: int, payload: dict = Body(default={})):
         members_count = payload.get("members_count")
         if not isinstance(members_count, int):
             members_count = 0
-        role_codes = _normalize_expedition_role_codes(payload.get("role_codes"))
+
+        validation = _validate_expedition_party_request(
+            db,
+            house_id=player.house_id,
+            members_count=members_count,
+            raw_role_codes=payload.get("role_codes"),
+        )
+        if not validation.get("ok"):
+            return validation
+
+        role_codes = validation.get("role_codes") or []
 
         if role_codes and members_count != len(role_codes):
             return {
