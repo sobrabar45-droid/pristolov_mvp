@@ -85,6 +85,30 @@ EXPEDITION_ROLE_OPTIONS = {
     "house_sworn": "Соратник Дома",
 }
 
+DEAL_ACTIVE_SUBMIT_BLOCKING_STATUSES = {
+    "pending",
+    "processing",
+    "countered",
+    "accepted_waiting_treasurer",
+    "accepted",
+    "alliance_active",
+}
+
+DEAL_PROMISE_BLOCKING_STATUSES = {
+    "pending",
+    "processing",
+    "countered",
+    "accepted_waiting_treasurer",
+    "accepted",
+    "alliance_active",
+    "completed",
+}
+
+DEAL_ACTIONABLE_RESPONSE_STATUSES = {
+    "pending",
+    "countered",
+}
+
 
 def _issue_player_token() -> str:
     return token_urlsafe(24)
@@ -118,6 +142,118 @@ def _ensure_player_token(db: Session, player: Player) -> str:
             player.player_token = new_token
             db.flush()
             return new_token
+
+
+def _normalize_deal_text_value(value) -> str:
+    if value is None:
+        return ""
+    normalized = fix_encoding(str(value)).strip().lower()
+    return " ".join(normalized.split())
+
+
+def _normalize_deal_offer_payload(offer_payload) -> dict:
+    if not isinstance(offer_payload, dict):
+        return {}
+    resource_amount = offer_payload.get("resource_amount")
+    if not isinstance(resource_amount, int):
+        resource_amount = None
+    return {
+        "type": str(offer_payload.get("type") or "").strip().lower(),
+        "resource_type": str(offer_payload.get("resource_type") or "").strip().lower() or None,
+        "resource_amount": resource_amount,
+        "crest_piece": _normalize_deal_text_value(offer_payload.get("crest_piece")) or None,
+        "text": _normalize_deal_text_value(offer_payload.get("text")) or None,
+    }
+
+
+def _offers_are_equivalent(left_offer, right_offer) -> bool:
+    return _normalize_deal_offer_payload(left_offer) == _normalize_deal_offer_payload(right_offer)
+
+
+def _find_duplicate_outgoing_deal(
+    db: Session,
+    *,
+    game_id: int,
+    from_house_id: int,
+    to_house_id: int,
+    offer_payload: dict,
+):
+    candidate_deals = (
+        db.query(GameDeal)
+        .filter(
+            GameDeal.game_id == game_id,
+            GameDeal.from_house_id == from_house_id,
+            GameDeal.to_house_id == to_house_id,
+            GameDeal.status.in_(list(DEAL_ACTIVE_SUBMIT_BLOCKING_STATUSES)),
+        )
+        .order_by(GameDeal.id.desc())
+        .all()
+    )
+    for deal in candidate_deals:
+        if _offers_are_equivalent(deal.offer, offer_payload):
+            return deal
+    return None
+
+
+def _find_promised_crest_piece_conflict(
+    db: Session,
+    *,
+    game_id: int,
+    from_house_id: int,
+    crest_piece: str,
+):
+    normalized_piece = _normalize_deal_text_value(crest_piece)
+    if not normalized_piece:
+        return None
+    candidate_deals = (
+        db.query(GameDeal)
+        .filter(
+            GameDeal.game_id == game_id,
+            GameDeal.from_house_id == from_house_id,
+            GameDeal.status.in_(list(DEAL_PROMISE_BLOCKING_STATUSES)),
+        )
+        .order_by(GameDeal.id.desc())
+        .all()
+    )
+    for deal in candidate_deals:
+        offer = _normalize_deal_offer_payload(deal.offer)
+        if offer.get("type") != "crest_piece":
+            continue
+        if offer.get("crest_piece") == normalized_piece:
+            return deal
+    return None
+
+
+def _find_promised_resource_conflict(
+    db: Session,
+    *,
+    game_id: int,
+    from_house_id: int,
+    to_house_id: int,
+    resource_type: str,
+    resource_amount: int | None,
+):
+    normalized_type = str(resource_type or "").strip().lower()
+    if not normalized_type or not isinstance(resource_amount, int) or resource_amount <= 0:
+        return None
+    candidate_deals = (
+        db.query(GameDeal)
+        .filter(
+            GameDeal.game_id == game_id,
+            GameDeal.from_house_id == from_house_id,
+            GameDeal.to_house_id == to_house_id,
+            GameDeal.status.in_(list(DEAL_ACTIVE_SUBMIT_BLOCKING_STATUSES)),
+        )
+        .order_by(GameDeal.id.desc())
+        .all()
+    )
+    for deal in candidate_deals:
+        offer = _normalize_deal_offer_payload(deal.offer)
+        if offer.get("type") != "resource":
+            continue
+        if offer.get("resource_type") == normalized_type and offer.get("resource_amount") == resource_amount:
+            return deal
+    return None
 
 
 def _touch_last_seen(player: Player):
@@ -1849,6 +1985,49 @@ def create_player_deal(player_id: int, payload: dict = Body(default={})):
             "crest_piece": crest_piece or None,
             "text": offer_text,
         }
+        duplicate_deal = _find_duplicate_outgoing_deal(
+            db,
+            game_id=player.game_id,
+            from_house_id=player.house_id,
+            to_house_id=target_house_id,
+            offer_payload=offer_payload,
+        )
+        if duplicate_deal:
+            return _fix_text_map({
+                "ok": False,
+                "message": "Такая договорённость уже зафиксирована и ещё не закрыта.",
+                "duplicate_deal_id": duplicate_deal.id,
+            })
+
+        if deal_type == "crest_piece":
+            crest_conflict = _find_promised_crest_piece_conflict(
+                db,
+                game_id=player.game_id,
+                from_house_id=player.house_id,
+                crest_piece=crest_piece,
+            )
+            if crest_conflict:
+                return _fix_text_map({
+                    "ok": False,
+                    "message": "Этот кусок герба уже обещан в другой договорённости.",
+                    "duplicate_deal_id": crest_conflict.id,
+                })
+
+        if deal_type == "resource":
+            resource_conflict = _find_promised_resource_conflict(
+                db,
+                game_id=player.game_id,
+                from_house_id=player.house_id,
+                to_house_id=target_house_id,
+                resource_type=resource_type,
+                resource_amount=resource_amount,
+            )
+            if resource_conflict:
+                return _fix_text_map({
+                    "ok": False,
+                    "message": "Такой ресурс уже обещан в незакрытой договорённости.",
+                    "duplicate_deal_id": resource_conflict.id,
+                })
         human_offer_text = _format_deal_offer_text(offer_payload, None)
 
         deal = GameDeal(
@@ -1940,6 +2119,13 @@ def respond_player_deal(player_id: int, payload: dict = Body(default={})):
                 "ok": False,
                 "message": "Вы не можете отвечать на эту договорённость",
             }
+
+        if deal.status not in DEAL_ACTIONABLE_RESPONSE_STATUSES:
+            return _fix_text_map({
+                "ok": False,
+                "message": "Эта договорённость уже обработана и не принимает повторный ответ.",
+                "deal_status": deal.status,
+            })
 
         offer_type = ""
         if isinstance(deal.offer, dict):

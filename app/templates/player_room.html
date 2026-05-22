@@ -1513,6 +1513,9 @@ async function resolveExpedition(expeditionId) {
 }
 
 async function createDeal() {
+  if (dealSubmitBusy) {
+    return;
+  }
   const playerId = window.PLAYER_ID;
   const targetEl = document.getElementById("dealTargetHouse");
   const typeEl = document.getElementById("dealType");
@@ -1526,8 +1529,13 @@ async function createDeal() {
   const resourceAmount = resourceAmountEl?.value || "";
   const crestPiece = String(crestPieceEl?.value || "").trim();
   const offerText = String(offerEl?.value || "").trim();
+  const submitBtn = document.getElementById("dealSubmitBtn");
 
   dealSubmitBusy = true;
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Фиксирую...";
+  }
   saveDealDraftFromForm();
   await loadPlayerState();
 
