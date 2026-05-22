@@ -2867,6 +2867,18 @@
             </section>
 
             <section class="section-card">
+                <h2>Подготовка комнаты</h2>
+                <div class="section-note">
+                    Dev / rehearsal only. Очистка runtime, Домов и игроков для комнаты <strong>{{ room_code }}</strong> перед репетицией.
+                </div>
+                <div class="button-row" style="margin-top: 12px;">
+                    <button class="btn-red" onclick="resetRoomForRehearsal()">Сбросить комнату для репетиции</button>
+                </div>
+                <div class="small-label" style="margin-top: 12px;">Статус сброса</div>
+                <div class="result-box compact-result" id="rehearsalResetResult">Комната не сбрасывалась в этой сессии.</div>
+            </section>
+
+            <section class="section-card">
                 <h2>Домы</h2>
                 <div class="houses-list" id="housesList"></div>
             </section>
@@ -3404,6 +3416,79 @@ function pickText(value) {
 
 function setBox(id, value) {
     document.getElementById(id).textContent = prettyJson(value);
+}
+
+function htmlToPlainText(value) {
+    if (value == null) return "";
+    const container = document.createElement("div");
+    container.innerHTML = String(value);
+    return (container.textContent || container.innerText || "").replace(/\s+\n/g, "\n").trim();
+}
+
+async function resetRoomForRehearsal() {
+    const confirmed = window.confirm(`Очистить runtime, Дома и игроков для ${ROOM_CODE}?`);
+    if (!confirmed) {
+        return;
+    }
+
+    const resultEl = document.getElementById("rehearsalResetResult");
+    if (resultEl) {
+        resultEl.textContent = "Запускаем rehearsal reset...";
+    }
+
+    try {
+        const runtimeResponse = await fetch(`/dev/games/${ROOM_CODE}/reset-runtime`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+        const runtimeData = await runtimeResponse.json().catch(() => null);
+
+        if (!runtimeResponse.ok || !runtimeData?.ok) {
+            throw new Error(
+                runtimeData?.message ||
+                runtimeData?.detail ||
+                `reset-runtime: HTTP ${runtimeResponse.status}`
+            );
+        }
+
+        const delegationResponse = await fetch(`/dev/reset-delegations/${ROOM_CODE}`, {
+            method: "GET",
+            headers: {
+                "Accept": "text/html"
+            }
+        });
+        const delegationText = await delegationResponse.text();
+
+        if (!delegationResponse.ok) {
+            throw new Error(
+                htmlToPlainText(delegationText) ||
+                `reset-delegations: HTTP ${delegationResponse.status}`
+            );
+        }
+
+        const delegationSummary = htmlToPlainText(delegationText) || "Сброс делегаций выполнен";
+
+        if (resultEl) {
+            resultEl.textContent =
+                `Комната ${ROOM_CODE} очищена.\n\n` +
+                `1. Runtime reset: OK\n` +
+                `2. Delegations reset: OK\n\n` +
+                delegationSummary;
+        }
+
+        logLine(`Rehearsal reset выполнен для ${ROOM_CODE}`);
+        await loadState(true);
+    } catch (error) {
+        const message = error?.message || "Не удалось подготовить комнату";
+        if (resultEl) {
+            resultEl.textContent =
+                `Сброс комнаты ${ROOM_CODE} завершился с ошибкой.\n\n${message}`;
+        }
+        logLine(`Ошибка rehearsal reset для ${ROOM_CODE}: ${message}`);
+        await loadState(true);
+    }
 }
 
 function getMainPhaseLabel(activePhases) {
