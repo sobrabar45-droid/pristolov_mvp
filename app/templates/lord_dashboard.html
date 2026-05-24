@@ -207,6 +207,27 @@
             gap: 10px;
         }
 
+        .guidance-card {
+            display: grid;
+            gap: 12px;
+            background: linear-gradient(180deg, rgba(212,169,79,0.12), rgba(212,169,79,0.05));
+            border: 1px solid rgba(212,169,79,0.24);
+        }
+
+        .guidance-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .guidance-item {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 10px 12px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
         .row-top {
             display: flex;
             justify-content: space-between;
@@ -374,6 +395,19 @@
                 <div class="sub">Раунд: {{ active_host_round.title }}</div>
                 {% endif %}
             </div>
+        </div>
+    </section>
+
+    <section class="card guidance-card">
+        <div class="section-title">Как играть малым составом</div>
+        <div class="muted">
+            Свободная роль не означает ошибку. Дом может играть неполным составом, а Лорд / Леди распределяет обязанности по ситуации.
+        </div>
+        <div class="guidance-list">
+            <div class="guidance-item"><strong>2 игрока</strong> — роли можно совмещать.</div>
+            <div class="guidance-item"><strong>3 игрока</strong> — часть ролей может остаться свободной.</div>
+            <div class="guidance-item"><strong>4 игрока</strong> — один пост может быть вакантным.</div>
+            <div class="guidance-item"><strong>5 игроков</strong> — полный состав Дома.</div>
         </div>
     </section>
 
