@@ -1,5 +1,6 @@
 import random
 import secrets
+from pathlib import Path
 
 from fastapi import APIRouter, Body, Form, Request
 from fastapi.responses import HTMLResponse, Response
@@ -16,16 +17,46 @@ from app.models.house_gold_transaction import HouseGoldTransaction
 from app.models.player import Player
 from app.models.role import Role
 from app.services.house_service import set_house_ready_logic
+from app.services.map_service import load_locations_catalog
 from app.utils.player_tokens import issue_player_token
 from sqlalchemy import text
 
 router = APIRouter(tags=["delegation"])
 
 templates = Jinja2Templates(directory="app/templates")
+BASE_DIR = Path(__file__).resolve().parent.parent
+MAP_LOCATIONS_FILE = BASE_DIR / "game_templates" / "season1_core_v1" / "locations.yaml"
 
 
 def generate_invite_code():
     return secrets.token_hex(3).upper()
+
+
+def _build_public_expedition_locations() -> list[dict[str, str]]:
+    try:
+        catalog = load_locations_catalog(MAP_LOCATIONS_FILE)
+    except Exception:
+        return [
+            {"code": "old_market", "label": "Старый рынок"},
+            {"code": "craft_yard", "label": "Ремесленный двор"},
+            {"code": "archive", "label": "Архив"},
+            {"code": "guard_barracks", "label": "Казармы стражи"},
+            {"code": "alleys", "label": "Переулки"},
+            {"code": "guest_court", "label": "Гостевой двор"},
+            {"code": "watchtower", "label": "Дозорная башня"},
+        ]
+
+    locations = []
+    for code, item in catalog.items():
+        if not isinstance(item, dict):
+            continue
+        if item.get("requires_any_tag"):
+            continue
+        locations.append({
+            "code": str(code).strip(),
+            "label": str(item.get("name") or code).strip(),
+        })
+    return locations
 
 
 @router.get("/dev/reset-delegations/{room_code}", response_class=HTMLResponse)
@@ -1010,4 +1041,5 @@ def _build_player_room_context(db: Session, invite_code: str, player_id: int):
         "active_host_round": active_host_round,
         "active_phase_label": active_phase_label,
         "active_assignments_count": active_assignments_count["cnt"] if active_assignments_count else 0,
+        "expedition_locations": _build_public_expedition_locations(),
     }

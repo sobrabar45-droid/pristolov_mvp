@@ -313,6 +313,19 @@ def _location_name_by_code(location_code: str | None) -> str | None:
     return fix_encoding(raw_name)
 
 
+def _normalize_expedition_location_code(location_code) -> str:
+    if not isinstance(location_code, str):
+        return ""
+    return location_code.strip().lower()
+
+
+def _get_catalog_expedition_location(location_code) -> dict | None:
+    normalized_code = _normalize_expedition_location_code(location_code)
+    if not normalized_code:
+        return None
+    return _load_expedition_locations_catalog().get(normalized_code)
+
+
 def _weighted_pick_outcome(outcomes: list[dict]) -> dict:
     weighted_pool = []
     total_weight = 0
@@ -766,7 +779,7 @@ def _build_active_house_expedition_payload(db: Session, expedition: GameExpediti
         "unique_locations_count": len(unique_locations),
         "chosen_locations": unique_locations,
         "player_vote_location": player_vote.location_code if player_vote else None,
-        "player_vote_location_name": EXPEDITION_LOCATION_OPTIONS.get(player_vote.location_code) if player_vote and player_vote.location_code else None,
+        "player_vote_location_name": _location_name_by_code(player_vote.location_code) if player_vote and player_vote.location_code else None,
     }
 
 
@@ -1534,8 +1547,9 @@ def choose_expedition_location(expedition_id: int, player_id: int, payload: dict
         if not isinstance(payload, dict):
             raise HTTPException(status_code=400, detail="Тело запроса должно быть JSON-объектом")
 
-        location_code = payload.get("location_code")
-        if location_code not in EXPEDITION_LOCATION_OPTIONS:
+        location_code = _normalize_expedition_location_code(payload.get("location_code"))
+        location = _get_catalog_expedition_location(location_code)
+        if not location:
             raise HTTPException(status_code=400, detail="Недопустимое направление экспедиции")
 
         player = (
@@ -1573,7 +1587,7 @@ def choose_expedition_location(expedition_id: int, player_id: int, payload: dict
             None,
         )
 
-        location_name = _location_name_by_code(location_code) or EXPEDITION_LOCATION_OPTIONS[location_code]
+        location_name = fix_encoding(location.get("name") or location_code)
 
         vote_meta = json.dumps(
             {

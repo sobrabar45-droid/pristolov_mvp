@@ -567,14 +567,7 @@ const PHASE_LABELS = {
   intermission: "Перерыв",
   final: "Финал"
 };
-const EXPEDITION_LOCATIONS = [
-  { code: "old_market", label: "Старый рынок" },
-  { code: "craft_yard", label: "Ремесленный двор" },
-  { code: "archive", label: "Архив" },
-  { code: "guard_barracks", label: "Казармы стражи" },
-  { code: "alleys", label: "Переулки" },
-  { code: "guest_court", label: "Гостевой двор" }
-];
+const EXPEDITION_LOCATIONS = {{ (expedition_locations or []) | tojson }};
 const RESOURCE_LABELS = {
   gold: "золота",
   influence: "влияния",
