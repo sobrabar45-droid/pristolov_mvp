@@ -17,6 +17,7 @@ $VenvPython = Join-Path $ProjectRoot "venv\Scripts\python.exe"
 $TmpDir = Join-Path $ProjectRoot "tmp"
 $StdoutLog = Join-Path $TmpDir ("uvicorn_{0}_stdout.log" -f $Port)
 $StderrLog = Join-Path $TmpDir ("uvicorn_{0}_stderr.log" -f $Port)
+$TrustedLogMaxAgeHours = 24
 
 function Fail-Step {
     param([string]$Message)
@@ -55,11 +56,6 @@ function Get-NormalizedProcessEnvironment {
     }
 
     return $environment
-}
-
-function ConvertTo-PowerShellSingleQuotedLiteral {
-    param([string]$Value)
-    return "'" + ($Value -replace "'", "''") + "'"
 }
 
 function ConvertTo-CmdDoubleQuotedLiteral {
@@ -113,6 +109,98 @@ function Get-ProcessRecord {
         ExecutablePath = if ($cim) { $cim.ExecutablePath } elseif ($proc) { $proc.Path } else { $null }
         CommandLine = if ($cim) { $cim.CommandLine } else { $null }
         ParentProcessId = if ($cim) { $cim.ParentProcessId } else { $null }
+        StartTime = if ($proc) { $proc.StartTime } else { $null }
+    }
+}
+
+function Get-TrustedRuntimeEvidence {
+    param(
+        [pscustomobject]$ProcessRecord,
+        [int]$LocalPort
+    )
+
+    $listenerPid = $ProcessRecord.ProcessId
+    if (-not (Test-Path $StdoutLog) -or -not (Test-Path $StderrLog)) {
+        return [pscustomobject]@{
+            Trusted = $false
+            Reason = "trusted_runtime_logs_missing"
+        }
+    }
+
+    $stdoutItem = Get-Item $StdoutLog -ErrorAction SilentlyContinue
+    $stderrItem = Get-Item $StderrLog -ErrorAction SilentlyContinue
+    if (-not $stdoutItem -or -not $stderrItem) {
+        return [pscustomobject]@{
+            Trusted = $false
+            Reason = "trusted_runtime_logs_unreadable"
+        }
+    }
+
+    $ageLimit = (Get-Date).AddHours(-1 * $TrustedLogMaxAgeHours)
+    if ($stdoutItem.LastWriteTime -lt $ageLimit -or $stderrItem.LastWriteTime -lt $ageLimit) {
+        return [pscustomobject]@{
+            Trusted = $false
+            Reason = "trusted_runtime_logs_stale"
+        }
+    }
+
+    $stdoutText = ""
+    $stderrText = ""
+    try {
+        $stdoutText = (Get-Content $StdoutLog -Tail 60 -ErrorAction Stop) -join "`n"
+        $stderrText = (Get-Content $StderrLog -Tail 120 -ErrorAction Stop) -join "`n"
+    } catch {
+        return [pscustomobject]@{
+            Trusted = $false
+            Reason = "trusted_runtime_logs_read_failed"
+        }
+    }
+
+    $hasProjectMarker = $stdoutText -match [regex]::Escape($ProjectRoot) -or $stdoutText -match [regex]::Escape((Join-Path $ProjectRoot "app"))
+
+    $pidMatches = [regex]::Matches($stderrText, "Started server process \[(\d+)\]")
+    $matchedPid = $null
+    if ($pidMatches.Count -gt 0) {
+        $matchedPid = [int]$pidMatches[$pidMatches.Count - 1].Groups[1].Value
+    }
+
+    $hasStartupComplete = $stderrText -match "Application startup complete"
+    $hasRunningMarker = $stderrText -match ("Uvicorn running on http://[^ \r\n]+:{0}\b" -f $LocalPort)
+    if ($matchedPid -eq $listenerPid -and $hasStartupComplete -and $hasRunningMarker -and $hasProjectMarker) {
+        return [pscustomobject]@{
+            Trusted = $true
+            Reason = "trusted_runtime_log_match"
+        }
+    }
+
+    $hasTrustedMasterScreen = $false
+    try {
+        $masterResponse = Invoke-WebRequest -UseBasicParsing -Uri ("http://127.0.0.1:{0}/dev/master-screen/LIVE01" -f $LocalPort) -TimeoutSec 5
+        if ($masterResponse.StatusCode -ge 200 -and $masterResponse.StatusCode -lt 400) {
+            $masterHtml = [string]$masterResponse.Content
+            $hasTrustedMasterScreen = $masterHtml.Contains("/delegation/start") -and $masterHtml.Contains("resetRoomForRehearsal")
+        }
+    } catch {
+        $hasTrustedMasterScreen = $false
+    }
+
+    $singleListener = (Get-ListenerPids -LocalPort $LocalPort).Count -eq 1
+    $processStartCloseToLogs = $false
+    if ($ProcessRecord.StartTime) {
+        $startupDeltaMinutes = [math]::Abs(($stderrItem.LastWriteTime - $ProcessRecord.StartTime).TotalMinutes)
+        $processStartCloseToLogs = $startupDeltaMinutes -le 15
+    }
+
+    if ($singleListener -and $hasProjectMarker -and $hasTrustedMasterScreen -and $processStartCloseToLogs) {
+        return [pscustomobject]@{
+            Trusted = $true
+            Reason = "trusted_runtime_http_stdout_starttime_match"
+        }
+    }
+
+    return [pscustomobject]@{
+        Trusted = $false
+        Reason = "trusted_runtime_log_mismatch"
     }
 }
 
@@ -164,9 +252,17 @@ function Get-StandaloneSafety {
         }
     }
 
+    $trustedRuntimeEvidence = Get-TrustedRuntimeEvidence -ProcessRecord $ProcessRecord -LocalPort $Port
+    if ($trustedRuntimeEvidence.Trusted) {
+        return [pscustomobject]@{
+            Safe = $true
+            Reason = $trustedRuntimeEvidence.Reason
+        }
+    }
+
     return [pscustomobject]@{
         Safe = $false
-        Reason = "python_process_does_not_look_like_project_runtime"
+        Reason = "python_process_does_not_look_like_project_runtime; evidence=" + $trustedRuntimeEvidence.Reason
     }
 }
 
@@ -276,7 +372,7 @@ if ($listenerPids.Count -gt 0) {
         Fail-Step "Could not identify a safe single-runtime stop plan for port $Port."
     }
 
-    $orderedStopPids = @($safeStopPids.ToArray() | Sort-Object -Descending)
+    $orderedStopPids = @($safeStopPids | ForEach-Object { [int]$_ } | Sort-Object -Descending)
     if ($orderedStopPids.Count -gt 0) {
         Write-Step ("Safe stop plan for port {0}: {1}" -f $Port, ($orderedStopPids -join ", "))
         if ($NoLaunch) {

@@ -28,6 +28,11 @@ The launcher does this:
 7. Normalizes Windows environment variables before launch so the child process gets one canonical `Path` entry instead of conflicting `Path` / `PATH` keys.
 8. Starts a stable runtime by default for rehearsal, without `--reload`.
 9. Supports optional reload mode only for active development.
+10. If command line attribution is missing, it can still trust the current runtime only when all of these match:
+   - the listener PID matches the latest `Started server process [PID]` entry in `tmp\uvicorn_8000_stderr.log`;
+   - stderr also contains `Application startup complete` and `Uvicorn running on http://...:8000`;
+   - stdout contains project-specific markers from `D:\Projects\pristolov_mvp`.
+11. If stderr PID attribution is noisy on Windows, the launcher can still trust the runtime only when there is a single python listener on `8000`, the live master screen answers with the expected project UI, and stdout still contains project markers from `D:\Projects\pristolov_mvp`.
 
 ```powershell
 .\venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
@@ -96,6 +101,9 @@ Instead:
 2. confirm whether it is really the project runtime;
 3. stop only that specific process manually;
 4. rerun the launcher.
+
+Arbitrary `python.exe` listeners are still not stopped automatically just because they use port `8000`.
+The launcher only trusts them when the PID and the project uvicorn logs point to the same runtime.
 
 ## LAN / phone access
 
