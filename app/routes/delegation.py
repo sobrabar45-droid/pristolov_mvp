@@ -1,6 +1,7 @@
 import random
 import secrets
 from pathlib import Path
+from urllib.parse import quote
 
 from fastapi import APIRouter, Body, Form, Request
 from fastapi.responses import HTMLResponse, Response
@@ -57,6 +58,26 @@ def _build_public_expedition_locations() -> list[dict[str, str]]:
             "label": str(item.get("name") or code).strip(),
         })
     return locations
+
+
+def _build_join_qr_assets(join_url: str | None) -> dict[str, str | None]:
+    if not join_url:
+        return {
+            "join_url_qr_src": None,
+            "join_url_qr_data_uri": None,
+        }
+
+    qr = segno.make(join_url, error="M", micro=False)
+    svg_text = qr.svg_inline(
+        scale=10,
+        border=3,
+        dark="#111111",
+        light="#ffffff",
+    )
+    return {
+        "join_url_qr_src": None,
+        "join_url_qr_data_uri": "data:image/svg+xml;utf8," + quote(svg_text),
+    }
 
 
 @router.get("/dev/reset-delegations/{room_code}", response_class=HTMLResponse)
@@ -321,6 +342,10 @@ def delegation_start_submit(
         db.commit()
         db.refresh(house)
 
+        join_url = f"/delegation/join?game_code={game.room_code}&invite_code={house.invite_code}"
+        join_url_absolute = f"{str(request.base_url).rstrip('/')}{join_url}"
+        qr_assets = _build_join_qr_assets(join_url_absolute)
+
         return templates.TemplateResponse(
             request=request,
             name="delegation_result.html",
@@ -330,6 +355,9 @@ def delegation_start_submit(
                 "leader": leader,
                 "best_match_overall": best_match_overall,
                 "chosen_house": chosen_house,
+                "join_url": join_url,
+                "join_url_absolute": join_url_absolute,
+                **qr_assets,
             },
         )
 
@@ -888,7 +916,7 @@ def _build_house_lobby_context(db: Session, invite_code: str, base_url: str | No
     active_phase_label = phase_name_map.get(active_phase_type, active_phase_type) if active_phase_type else None
     join_url = f"/delegation/join?game_code={game.room_code}&invite_code={house.invite_code}" if game else None
     join_url_absolute = f"{base_url}{join_url}" if base_url and join_url else join_url
-    join_url_qr_src = f"/house/{house.invite_code}/join-qr.svg" if join_url_absolute else None
+    qr_assets = _build_join_qr_assets(join_url_absolute)
 
     return {
         "error": None,
@@ -907,7 +935,7 @@ def _build_house_lobby_context(db: Session, invite_code: str, base_url: str | No
         "leader_player_url": f"/house/{house.invite_code}/player/{leader.id}" if leader else None,
         "join_url": join_url,
         "join_url_absolute": join_url_absolute,
-        "join_url_qr_src": join_url_qr_src,
+        **qr_assets,
         "active_phase_type": active_phase_type,
         "active_phase_label": active_phase_label,
         "active_host_round": active_host_round,
