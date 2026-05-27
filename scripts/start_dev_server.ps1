@@ -17,7 +17,10 @@ $VenvPython = Join-Path $ProjectRoot "venv\Scripts\python.exe"
 $TmpDir = Join-Path $ProjectRoot "tmp"
 $StdoutLog = Join-Path $TmpDir ("uvicorn_{0}_stdout.log" -f $Port)
 $StderrLog = Join-Path $TmpDir ("uvicorn_{0}_stderr.log" -f $Port)
+$RuntimeMarker = Join-Path $TmpDir ("uvicorn_{0}_runtime.json" -f $Port)
 $TrustedLogMaxAgeHours = 24
+$RecentAccessLogWindowMinutes = 20
+$LauncherVersion = "2026-05-28-runtime-marker-v1"
 
 function Fail-Step {
     param([string]$Message)
@@ -61,6 +64,70 @@ function Get-NormalizedProcessEnvironment {
 function ConvertTo-CmdDoubleQuotedLiteral {
     param([string]$Value)
     return '"' + ($Value -replace '"', '\"') + '"'
+}
+
+function Get-LogTailText {
+    param(
+        [string]$Path,
+        [int]$TailCount
+    )
+
+    if (-not (Test-Path $Path)) {
+        return ""
+    }
+
+    try {
+        return (Get-Content $Path -Tail $TailCount -ErrorAction Stop) -join "`n"
+    } catch {
+        return ""
+    }
+}
+
+function Get-RuntimeMarkerData {
+    if (-not (Test-Path $RuntimeMarker)) {
+        return $null
+    }
+
+    try {
+        return Get-Content $RuntimeMarker -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+    } catch {
+        return $null
+    }
+}
+
+function Write-RuntimeMarkerData {
+    param([hashtable]$Data)
+
+    $json = $Data | ConvertTo-Json -Depth 6
+    Set-Content -Path $RuntimeMarker -Value $json -Encoding utf8
+}
+
+function Test-TrustedMasterScreen {
+    param([int]$LocalPort)
+
+    try {
+        $masterResponse = Invoke-WebRequest -UseBasicParsing -Uri ("http://127.0.0.1:{0}/dev/master-screen/LIVE01" -f $LocalPort) -TimeoutSec 5
+        if ($masterResponse.StatusCode -lt 200 -or $masterResponse.StatusCode -ge 400) {
+            return $false
+        }
+
+        $masterHtml = [string]$masterResponse.Content
+        return $masterHtml.Contains("/delegation/start") -and $masterHtml.Contains("resetRoomForRehearsal")
+    } catch {
+        return $false
+    }
+}
+
+function Test-RecentProjectAccessLog {
+    param([string]$StdoutText)
+
+    if ([string]::IsNullOrWhiteSpace($StdoutText)) {
+        return $false
+    }
+
+    return $StdoutText.Contains("/dev/master-screen/LIVE01") -or
+        $StdoutText.Contains("/dev/game-master/LIVE01/state") -or
+        $StdoutText.Contains("/dev/games/LIVE01/scenario/director")
 }
 
 function Get-ListenerPids {
@@ -120,6 +187,8 @@ function Get-TrustedRuntimeEvidence {
     )
 
     $listenerPid = $ProcessRecord.ProcessId
+    $runtimeMarker = Get-RuntimeMarkerData
+
     if (-not (Test-Path $StdoutLog) -or -not (Test-Path $StderrLog)) {
         return [pscustomobject]@{
             Trusted = $false
@@ -144,19 +213,19 @@ function Get-TrustedRuntimeEvidence {
         }
     }
 
-    $stdoutText = ""
-    $stderrText = ""
-    try {
-        $stdoutText = (Get-Content $StdoutLog -Tail 60 -ErrorAction Stop) -join "`n"
-        $stderrText = (Get-Content $StderrLog -Tail 120 -ErrorAction Stop) -join "`n"
-    } catch {
+    $stdoutText = Get-LogTailText -Path $StdoutLog -TailCount 120
+    $stderrText = Get-LogTailText -Path $StderrLog -TailCount 160
+    if (-not $stdoutText -and -not $stderrText) {
         return [pscustomobject]@{
             Trusted = $false
             Reason = "trusted_runtime_logs_read_failed"
         }
     }
 
-    $hasProjectMarker = $stdoutText -match [regex]::Escape($ProjectRoot) -or $stdoutText -match [regex]::Escape((Join-Path $ProjectRoot "app"))
+    $hasProjectMarker = $stdoutText -match [regex]::Escape($ProjectRoot) -or
+        $stderrText -match [regex]::Escape($ProjectRoot) -or
+        $stdoutText -match [regex]::Escape((Join-Path $ProjectRoot "app")) -or
+        $stderrText -match [regex]::Escape((Join-Path $ProjectRoot "app"))
 
     $pidMatches = [regex]::Matches($stderrText, "Started server process \[(\d+)\]")
     $matchedPid = $null
@@ -166,35 +235,65 @@ function Get-TrustedRuntimeEvidence {
 
     $hasStartupComplete = $stderrText -match "Application startup complete"
     $hasRunningMarker = $stderrText -match ("Uvicorn running on http://[^ \r\n]+:{0}\b" -f $LocalPort)
-    if ($matchedPid -eq $listenerPid -and $hasStartupComplete -and $hasRunningMarker -and $hasProjectMarker) {
-        return [pscustomobject]@{
-            Trusted = $true
-            Reason = "trusted_runtime_log_match"
-        }
-    }
-
-    $hasTrustedMasterScreen = $false
-    try {
-        $masterResponse = Invoke-WebRequest -UseBasicParsing -Uri ("http://127.0.0.1:{0}/dev/master-screen/LIVE01" -f $LocalPort) -TimeoutSec 5
-        if ($masterResponse.StatusCode -ge 200 -and $masterResponse.StatusCode -lt 400) {
-            $masterHtml = [string]$masterResponse.Content
-            $hasTrustedMasterScreen = $masterHtml.Contains("/delegation/start") -and $masterHtml.Contains("resetRoomForRehearsal")
-        }
-    } catch {
-        $hasTrustedMasterScreen = $false
-    }
-
+    $hasTrustedMasterScreen = Test-TrustedMasterScreen -LocalPort $LocalPort
     $singleListener = (Get-ListenerPids -LocalPort $LocalPort).Count -eq 1
+    $hasRecentProjectAccessLog = Test-RecentProjectAccessLog -StdoutText $stdoutText
     $processStartCloseToLogs = $false
     if ($ProcessRecord.StartTime) {
         $startupDeltaMinutes = [math]::Abs(($stderrItem.LastWriteTime - $ProcessRecord.StartTime).TotalMinutes)
         $processStartCloseToLogs = $startupDeltaMinutes -le 15
     }
 
+    if ($runtimeMarker) {
+        $markerPortMatches = [int]$runtimeMarker.port -eq $LocalPort
+        $markerRootMatches = (Normalize-Text ([string]$runtimeMarker.project_root)) -eq (Normalize-Text $ProjectRoot)
+        $markerStdoutMatches = (Normalize-Text ([string]$runtimeMarker.stdout_log)) -eq (Normalize-Text $StdoutLog)
+        $markerStderrMatches = (Normalize-Text ([string]$runtimeMarker.stderr_log)) -eq (Normalize-Text $StderrLog)
+        $markerPid = $null
+        if ($runtimeMarker.pid -as [int]) {
+            $markerPid = [int]$runtimeMarker.pid
+        }
+
+        if (-not $markerPortMatches -or -not $markerRootMatches -or -not $markerStdoutMatches -or -not $markerStderrMatches) {
+            return [pscustomobject]@{
+                Trusted = $false
+                Reason = "trusted_runtime_marker_conflict"
+            }
+        }
+
+        if ($markerPid -and $markerPid -ne $listenerPid) {
+            return [pscustomobject]@{
+                Trusted = $false
+                Reason = "trusted_runtime_marker_pid_conflict"
+            }
+        }
+    }
+
+    if ($matchedPid -eq $listenerPid -and $hasStartupComplete -and $hasRunningMarker -and ($hasProjectMarker -or $runtimeMarker)) {
+        return [pscustomobject]@{
+            Trusted = $true
+            Reason = "trusted_runtime_log_match"
+        }
+    }
+
     if ($singleListener -and $hasProjectMarker -and $hasTrustedMasterScreen -and $processStartCloseToLogs) {
         return [pscustomobject]@{
             Trusted = $true
             Reason = "trusted_runtime_http_stdout_starttime_match"
+        }
+    }
+
+    if ($singleListener -and $hasTrustedMasterScreen -and $hasRecentProjectAccessLog -and $runtimeMarker) {
+        return [pscustomobject]@{
+            Trusted = $true
+            Reason = "trusted_runtime_marker_http_accesslog_match"
+        }
+    }
+
+    if ($singleListener -and $hasTrustedMasterScreen -and $hasRecentProjectAccessLog -and -not $runtimeMarker) {
+        return [pscustomobject]@{
+            Trusted = $true
+            Reason = "trusted_runtime_http_accesslog_match"
         }
     }
 
@@ -404,6 +503,33 @@ $modeLabel = if ($useReload) { "reload" } else { "stable no-reload" }
 Write-Step ("Starting uvicorn from venv on http://{0}:{1} ({2})" -f $BindHost, $Port, $modeLabel)
 $processEnvironment = Get-NormalizedProcessEnvironment
 [System.Environment]::SetEnvironmentVariable("Path", $processEnvironment["Path"], "Process")
+$launchStartedAt = (Get-Date).ToString("o")
+
+$logHeader = @(
+    ("[dev-launch] launcher_version={0}" -f $LauncherVersion),
+    ("[dev-launch] started_at={0}" -f $launchStartedAt),
+    ("[dev-launch] project_root={0}" -f $ProjectRoot),
+    ("[dev-launch] bind_host={0}" -f $BindHost),
+    ("[dev-launch] port={0}" -f $Port),
+    ("[dev-launch] mode={0}" -f $modeLabel),
+    ("[dev-launch] venv_python={0}" -f $VenvPython)
+)
+Set-Content -Path $StdoutLog -Value $logHeader -Encoding utf8
+Set-Content -Path $StderrLog -Value $logHeader -Encoding utf8
+
+Write-RuntimeMarkerData @{
+    started_at = $launchStartedAt
+    port = $Port
+    bind_host = $BindHost
+    mode = $modeLabel
+    project_root = $ProjectRoot
+    venv_python = $VenvPython
+    stdout_log = $StdoutLog
+    stderr_log = $StderrLog
+    launcher_version = $LauncherVersion
+    started_by = ("{0}@{1}" -f $env:USERNAME, $env:COMPUTERNAME)
+    pid = $null
+}
 
 $uvicornArgs = @(
     "-m",
@@ -441,6 +567,25 @@ Start-Sleep -Seconds 3
 $liveListeners = Get-ListenerPids -LocalPort $Port
 if ($liveListeners.Count -eq 0) {
     Fail-Step "The uvicorn runtime did not open port $Port. Check $StderrLog"
+}
+
+$runtimePid = $null
+if ($liveListeners.Count -eq 1) {
+    $runtimePid = [int]$liveListeners[0]
+}
+
+Write-RuntimeMarkerData @{
+    started_at = $launchStartedAt
+    port = $Port
+    bind_host = $BindHost
+    mode = $modeLabel
+    project_root = $ProjectRoot
+    venv_python = $VenvPython
+    stdout_log = $StdoutLog
+    stderr_log = $StderrLog
+    launcher_version = $LauncherVersion
+    started_by = ("{0}@{1}" -f $env:USERNAME, $env:COMPUTERNAME)
+    pid = $runtimePid
 }
 
 $baseUrl = "http://127.0.0.1:{0}" -f $Port

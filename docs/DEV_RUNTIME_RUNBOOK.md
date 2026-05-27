@@ -28,11 +28,25 @@ The launcher does this:
 7. Normalizes Windows environment variables before launch so the child process gets one canonical `Path` entry instead of conflicting `Path` / `PATH` keys.
 8. Starts a stable runtime by default for rehearsal, without `--reload`.
 9. Supports optional reload mode only for active development.
-10. If command line attribution is missing, it can still trust the current runtime only when all of these match:
-   - the listener PID matches the latest `Started server process [PID]` entry in `tmp\uvicorn_8000_stderr.log`;
-   - stderr also contains `Application startup complete` and `Uvicorn running on http://...:8000`;
-   - stdout contains project-specific markers from `D:\Projects\pristolov_mvp`.
-11. If stderr PID attribution is noisy on Windows, the launcher can still trust the runtime only when there is a single python listener on `8000`, the live master screen answers with the expected project UI, and stdout still contains project markers from `D:\Projects\pristolov_mvp`.
+10. Rotates the current `tmp\uvicorn_8000_stdout.log` and `tmp\uvicorn_8000_stderr.log` on every fresh launch by truncating them and writing a new launcher header for the current runtime.
+11. Writes `tmp\uvicorn_8000_runtime.json` with the current launch metadata:
+   - `started_at`
+   - `port`
+   - `bind_host`
+   - `mode`
+   - `project_root`
+   - `venv_python`
+   - `stdout_log`
+   - `stderr_log`
+   - `launcher_version`
+   - `started_by`
+   - `pid` when it can be confirmed
+12. If command line attribution is missing, it can still trust the current runtime only when multiple signals agree:
+   - there is exactly one python listener on `8000`;
+   - the live master screen answers with the expected project UI markers;
+   - the current marker/log points to the same project root and port;
+   - PID match is a strong signal when available;
+   - if PID is missing, the launcher still requires matching log or recent access-log evidence and no conflicting marker evidence.
 
 ```powershell
 .\venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
@@ -103,7 +117,28 @@ Instead:
 4. rerun the launcher.
 
 Arbitrary `python.exe` listeners are still not stopped automatically just because they use port `8000`.
-The launcher only trusts them when the PID and the project uvicorn logs point to the same runtime.
+The launcher only trusts them when project evidence converges.
+
+## Trusted runtime marker and logs
+
+The launcher now maintains:
+
+- `tmp\uvicorn_8000_runtime.json`
+- `tmp\uvicorn_8000_stdout.log`
+- `tmp\uvicorn_8000_stderr.log`
+
+Why this matters:
+
+- old append-logs can make trusted attribution ambiguous;
+- Windows may hide the command line for the active `python.exe`;
+- the marker gives the launcher a fresh record of the current project runtime without making that marker the only trust signal.
+
+The launcher still refuses auto-stop when the signals conflict, for example:
+
+- marker says one PID, but another PID listens on `8000`;
+- marker/log points to another port or project root;
+- master screen does not answer with the expected project UI;
+- more than one listener is present on `8000`.
 
 ## LAN / phone access
 
