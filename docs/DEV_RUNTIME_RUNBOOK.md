@@ -6,13 +6,15 @@ Start one fresh dev runtime from the project `venv` before smoke or rehearsal.
 
 Do not run multiple uvicorn instances for the same project on port `8000`.
 
+For smoke or rehearsal, prefer stable no-reload mode.
+
 ## Safe launcher
 
 Use:
 
 ```powershell
 cd D:\Projects\pristolov_mvp
-.\scripts\start_dev_server.ps1
+.\scripts\start_dev_server.ps1 -NoReload
 ```
 
 The launcher does this:
@@ -23,10 +25,12 @@ The launcher does this:
 4. Prints the PID, executable path, and command line for the listener.
 5. Stops only a listener that looks like the project python/uvicorn runtime.
 6. Refuses to stop anything automatically if the process path or command line is ambiguous.
-7. Starts:
+7. Normalizes Windows environment variables before launch so the child process gets one canonical `Path` entry instead of conflicting `Path` / `PATH` keys.
+8. Starts a stable runtime by default for rehearsal, without `--reload`.
+9. Supports optional reload mode only for active development.
 
 ```powershell
-.\venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+.\venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
 ## Why not kill all Python processes
@@ -54,8 +58,10 @@ Expected result: clean working tree.
 
 ```powershell
 cd D:\Projects\pristolov_mvp
-.\scripts\start_dev_server.ps1
+.\scripts\start_dev_server.ps1 -NoReload
 ```
+
+If you change code while running in stable no-reload mode, restart the launcher before the next smoke.
 
 3. Verify fresh UI on the runtime:
 
@@ -96,7 +102,7 @@ Instead:
 Default local smoke:
 
 ```powershell
-.\scripts\start_dev_server.ps1
+.\scripts\start_dev_server.ps1 -NoReload
 ```
 
 This binds to `127.0.0.1`.
@@ -104,10 +110,20 @@ This binds to `127.0.0.1`.
 For phone or LAN rehearsal, use:
 
 ```powershell
-.\scripts\start_dev_server.ps1 -BindHost 0.0.0.0
+.\scripts\start_dev_server.ps1 -NoReload -BindHost 0.0.0.0
 ```
 
 Use `0.0.0.0` only when you really need another device on the network to connect.
+
+## Reload mode
+
+Use reload mode only during active template or route development:
+
+```powershell
+.\scripts\start_dev_server.ps1 -Reload
+```
+
+Do not use reload mode as the rehearsal default on this Windows machine.
 
 ## Dry run
 

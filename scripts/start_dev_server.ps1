@@ -2,7 +2,9 @@
 param(
     [int]$Port = 8000,
     [string]$BindHost = "127.0.0.1",
-    [switch]$NoLaunch
+    [switch]$NoLaunch,
+    [switch]$NoReload,
+    [switch]$Reload
 )
 
 $ErrorActionPreference = "Stop"
@@ -32,6 +34,37 @@ function Normalize-Text {
         return ""
     }
     return $Value.Trim().ToLowerInvariant()
+}
+
+function Get-NormalizedProcessEnvironment {
+    $environment = [System.Collections.Generic.Dictionary[string, string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+
+    foreach ($entry in [System.Environment]::GetEnvironmentVariables().GetEnumerator()) {
+        $rawKey = [string]$entry.Key
+        if ([string]::IsNullOrWhiteSpace($rawKey)) {
+            continue
+        }
+
+        $canonicalKey = if ($rawKey.Equals("PATH", [System.StringComparison]::OrdinalIgnoreCase)) {
+            "Path"
+        } else {
+            $rawKey
+        }
+
+        $environment[$canonicalKey] = [string]$entry.Value
+    }
+
+    return $environment
+}
+
+function ConvertTo-PowerShellSingleQuotedLiteral {
+    param([string]$Value)
+    return "'" + ($Value -replace "'", "''") + "'"
+}
+
+function ConvertTo-CmdDoubleQuotedLiteral {
+    param([string]$Value)
+    return '"' + ($Value -replace '"', '\"') + '"'
 }
 
 function Get-ListenerPids {
@@ -192,6 +225,10 @@ if ($CurrentLocationTrimmed -ne $ProjectRootTrimmed) {
     Fail-Step "Run this launcher from the project root: $ProjectRoot"
 }
 
+if ($NoReload -and $Reload) {
+    Fail-Step "Use only one launch mode flag: -NoReload or -Reload."
+}
+
 if (-not (Test-Path $VenvPython)) {
     Fail-Step "Project venv python was not found: $VenvPython"
 }
@@ -266,32 +303,48 @@ if ($listenerPids.Count -gt 0) {
     }
 }
 
-$argumentList = @(
+$useReload = $Reload -and (-not $NoReload)
+$modeLabel = if ($useReload) { "reload" } else { "stable no-reload" }
+Write-Step ("Starting uvicorn from venv on http://{0}:{1} ({2})" -f $BindHost, $Port, $modeLabel)
+$processEnvironment = Get-NormalizedProcessEnvironment
+[System.Environment]::SetEnvironmentVariable("Path", $processEnvironment["Path"], "Process")
+
+$uvicornArgs = @(
     "-m",
     "uvicorn",
-    "app.main:app",
-    "--reload",
+    "app.main:app"
+)
+if ($useReload) {
+    $uvicornArgs += "--reload"
+}
+$uvicornArgs += @(
     "--host",
     $BindHost,
     "--port",
     "$Port"
 )
 
-Write-Step ("Starting uvicorn from venv on http://{0}:{1}" -f $BindHost, $Port)
-$launchedProcess = Start-Process `
-    -FilePath $VenvPython `
-    -ArgumentList $argumentList `
-    -WorkingDirectory $ProjectRoot `
-    -WindowStyle Hidden `
-    -RedirectStandardOutput $StdoutLog `
-    -RedirectStandardError $StderrLog `
-    -PassThru
+$cmdArgList = [string]::Join(" ", @(
+    $uvicornArgs | ForEach-Object { ConvertTo-CmdDoubleQuotedLiteral $_ }
+))
+
+$cmdCommand = @(
+    "start",
+    '""',
+    "/b",
+    (ConvertTo-CmdDoubleQuotedLiteral $VenvPython),
+    $cmdArgList,
+    "1>>" + (ConvertTo-CmdDoubleQuotedLiteral $StdoutLog),
+    "2>>" + (ConvertTo-CmdDoubleQuotedLiteral $StderrLog)
+) -join " "
+
+cmd /c $cmdCommand
 
 Start-Sleep -Seconds 3
 
-$liveProcess = Get-Process -Id $launchedProcess.Id -ErrorAction SilentlyContinue
-if (-not $liveProcess) {
-    Fail-Step "The uvicorn launcher process exited before validation. Check $StderrLog"
+$liveListeners = Get-ListenerPids -LocalPort $Port
+if ($liveListeners.Count -eq 0) {
+    Fail-Step "The uvicorn runtime did not open port $Port. Check $StderrLog"
 }
 
 $baseUrl = "http://127.0.0.1:{0}" -f $Port
@@ -304,7 +357,7 @@ try {
     Fail-Step "Uvicorn started, but the master screen did not respond successfully. Check $StderrLog"
 }
 
-Write-Step ("Launcher PID: {0}" -f $launchedProcess.Id)
+Write-Step ("Launch mode: {0}" -f $modeLabel)
 Write-Step ("stdout log: {0}" -f $StdoutLog)
 Write-Step ("stderr log: {0}" -f $StderrLog)
 Write-Host ""
