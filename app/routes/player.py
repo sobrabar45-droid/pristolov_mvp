@@ -109,6 +109,11 @@ DEAL_ACTIONABLE_RESPONSE_STATUSES = {
     "countered",
 }
 
+V1_DIPLOMACY_RESOURCE_TYPES = {
+    "gold",
+    "influence",
+}
+
 
 def _issue_player_token() -> str:
     return token_urlsafe(24)
@@ -254,6 +259,37 @@ def _find_promised_resource_conflict(
         if offer.get("resource_type") == normalized_type and offer.get("resource_amount") == resource_amount:
             return deal
     return None
+
+
+def _get_blocked_crest_pieces_for_house(
+    db: Session,
+    *,
+    game_id: int,
+    from_house_id: int,
+) -> list[str]:
+    candidate_deals = (
+        db.query(GameDeal)
+        .filter(
+            GameDeal.game_id == game_id,
+            GameDeal.from_house_id == from_house_id,
+            GameDeal.status.in_(list(DEAL_PROMISE_BLOCKING_STATUSES)),
+        )
+        .order_by(GameDeal.id.desc())
+        .all()
+    )
+    blocked_by_key: dict[str, str] = {}
+    for deal in candidate_deals:
+        offer = _normalize_deal_offer_payload(deal.offer)
+        if offer.get("type") != "crest_piece":
+            continue
+        normalized_piece = offer.get("crest_piece")
+        if not normalized_piece or normalized_piece in blocked_by_key:
+            continue
+        raw_piece = ""
+        if isinstance(deal.offer, dict):
+            raw_piece = fix_encoding(str(deal.offer.get("crest_piece") or "").strip())
+        blocked_by_key[normalized_piece] = raw_piece or normalized_piece
+    return sorted(blocked_by_key.values(), key=lambda item: _normalize_deal_text_value(item))
 
 
 def _touch_last_seen(player: Player):
@@ -1190,6 +1226,14 @@ def get_player_me(player_token: str):
                 )
             ]
 
+        blocked_crest_pieces = []
+        if player.house_id:
+            blocked_crest_pieces = _get_blocked_crest_pieces_for_house(
+                db,
+                game_id=player.game_id,
+                from_house_id=player.house_id,
+            )
+
         return {
             "ok": True,
             "player": {
@@ -1242,6 +1286,7 @@ def get_player_me(player_token: str):
             "incoming_deals": [_serialize_player_deal(deal) for deal in incoming_deals],
             "treasurer_pending_deals": [_serialize_player_deal(deal) for deal in treasurer_pending_deals],
             "active_alliances": active_alliances,
+            "blocked_crest_pieces": blocked_crest_pieces,
             "whisper_feed": _build_whisper_feed(db, player),
         }
 
@@ -1896,7 +1941,7 @@ def create_player_deal(player_id: int, payload: dict = Body(default={})):
 
         target_house_id = payload.get("target_house_id")
         deal_type = str(payload.get("deal_type") or "").strip()
-        resource_type = str(payload.get("resource_type") or "").strip()
+        resource_type = str(payload.get("resource_type") or "").strip().lower()
         crest_piece = fix_encoding(str(payload.get("crest_piece") or "").strip())
         offer_text = fix_encoding(str(payload.get("offer_text") or "").strip())
         resource_amount_raw = payload.get("resource_amount")
@@ -1922,6 +1967,12 @@ def create_player_deal(player_id: int, payload: dict = Body(default={})):
                     "ok": False,
                     "message": "Выберите ресурс",
                 }
+            if resource_type not in V1_DIPLOMACY_RESOURCE_TYPES:
+                return _fix_text_map({
+                    "ok": False,
+                    "message": "В этой версии для договорённостей доступны только золото и влияние.",
+                    "allowed_resource_types": sorted(V1_DIPLOMACY_RESOURCE_TYPES),
+                })
             if resource_amount is None or resource_amount <= 0:
                 return {
                     "ok": False,

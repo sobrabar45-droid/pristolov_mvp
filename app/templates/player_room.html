@@ -572,11 +572,7 @@ const RESOURCE_LABELS = {
 };
 const DEAL_RESOURCE_OPTIONS = [
   { code: "gold", label: "Золото" },
-  { code: "influence", label: "Влияние" },
-  { code: "stone", label: "Камень" },
-  { code: "wood", label: "Дерево" },
-  { code: "iron", label: "Железо" },
-  { code: "fire", label: "Огонь" }
+  { code: "influence", label: "Влияние" }
 ];
 const DEAL_TYPE_LABELS = {
   resource: "Передача ресурса",
@@ -627,6 +623,13 @@ function getPhaseLabel(phase) {
   }
 
   return phase.phase_label || PHASE_LABELS[phase.phase_type] || phase.phase_type || "Нет активной фазы";
+}
+
+function normalizeDealTextValue(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
 }
 
 function getActivePhaseTypes(data) {
@@ -966,9 +969,13 @@ function renderDealControls(data) {
   const roleCode = data?.role?.code || null;
   const houses = Array.isArray(data?.available_deal_houses) ? data.available_deal_houses : [];
   const incoming = Array.isArray(data?.incoming_deals) ? data.incoming_deals : [];
+  const blockedCrestPieces = Array.isArray(data?.blocked_crest_pieces) ? data.blocked_crest_pieces : [];
+  const blockedCrestLookup = new Set(blockedCrestPieces.map(item => normalizeDealTextValue(item)));
   const activePhaseTypes = getActivePhaseTypes(data);
   const canDeal = roleCode === "diplomat" && hasActivePhase(data, ["diplomacy", "free_play"]);
   const dealType = window.dealDraft.dealType || "";
+  const crestDraftValue = normalizeDealTextValue(window.dealDraft.crestPiece || "");
+  const crestDraftBlocked = dealType === "crest_piece" && crestDraftValue && blockedCrestLookup.has(crestDraftValue);
 
   if (roleCode !== "diplomat") {
     section.style.display = "none";
@@ -1058,6 +1065,12 @@ function renderDealControls(data) {
         <div class="field">
           <label class="field-label" for="dealCrestPiece">Какой кусок герба обещан</label>
           <input id="dealCrestPiece" class="field-control" placeholder="Какой кусок герба обещан">
+          ${blockedCrestPieces.length ? `
+            <div class="muted" style="margin-top:8px;">Уже обещано этим Домом: ${blockedCrestPieces.map(item => escapeHtml(fixEncoding(item))).join(", ")}</div>
+          ` : ""}
+          <div class="muted" id="dealCrestValidation" style="margin-top:8px; color:${crestDraftBlocked ? '#ffc2c2' : 'var(--muted)'};">
+            ${crestDraftBlocked ? "Этот кусок герба уже обещан в другой договорённости." : "Выберите часть герба, которая ещё не обещана в другой сделке."}
+          </div>
         </div>
       ` : ""}
       <div class="field">
@@ -1065,7 +1078,7 @@ function renderDealControls(data) {
         <textarea id="dealOfferText" class="field-control" placeholder="Комментарий: условия, срок, что обещали у бара"></textarea>
       </div>
       <div class="expedition-inline-actions">
-        <button type="button" class="btn" id="dealSubmitBtn" onclick="createDeal()" ${(dealSubmitBusy || !houses.length) ? "disabled" : ""}>${dealSubmitBusy ? "\u0424\u0438\u043a\u0441\u0438\u0440\u0443\u044e..." : "\u0417\u0430\u0444\u0438\u043a\u0441\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0434\u043e\u0433\u043e\u0432\u043e\u0440\u0451\u043d\u043d\u043e\u0441\u0442\u044c"}</button>
+        <button type="button" class="btn" id="dealSubmitBtn" onclick="createDeal()" ${(dealSubmitBusy || !houses.length || crestDraftBlocked) ? "disabled" : ""}>${dealSubmitBusy ? "\u0424\u0438\u043a\u0441\u0438\u0440\u0443\u044e..." : "\u0417\u0430\u0444\u0438\u043a\u0441\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0434\u043e\u0433\u043e\u0432\u043e\u0440\u0451\u043d\u043d\u043e\u0441\u0442\u044c"}</button>
       </div>
     </div>
   `;
@@ -1115,6 +1128,19 @@ function renderDealControls(data) {
     crestPieceEl.addEventListener("input", () => {
       markDealEditing();
       window.dealDraft.crestPiece = crestPieceEl.value;
+      const normalizedValue = normalizeDealTextValue(crestPieceEl.value);
+      const validationEl = document.getElementById("dealCrestValidation");
+      const submitBtn = document.getElementById("dealSubmitBtn");
+      const isBlocked = normalizedValue && blockedCrestLookup.has(normalizedValue);
+      if (validationEl) {
+        validationEl.textContent = isBlocked
+          ? "Этот кусок герба уже обещан в другой договорённости."
+          : "Выберите часть герба, которая ещё не обещана в другой сделке.";
+        validationEl.style.color = isBlocked ? "#ffc2c2" : "var(--muted)";
+      }
+      if (submitBtn && !dealSubmitBusy) {
+        submitBtn.disabled = isBlocked || !houses.length;
+      }
     });
   }
 
@@ -1511,6 +1537,13 @@ async function createDeal() {
   const crestPiece = String(crestPieceEl?.value || "").trim();
   const offerText = String(offerEl?.value || "").trim();
   const submitBtn = document.getElementById("dealSubmitBtn");
+  const blockedCrestPieces = Array.isArray(window.latestPlayerState?.blocked_crest_pieces) ? window.latestPlayerState.blocked_crest_pieces : [];
+  const blockedCrestLookup = new Set(blockedCrestPieces.map(item => normalizeDealTextValue(item)));
+
+  if (dealType === "crest_piece" && blockedCrestLookup.has(normalizeDealTextValue(crestPiece))) {
+    renderDealResult(false, "Кусок герба уже занят", "Этот кусок герба уже обещан в другой договорённости. Выберите другой вариант.");
+    return;
+  }
 
   dealSubmitBusy = true;
   if (submitBtn) {
