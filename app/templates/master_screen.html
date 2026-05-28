@@ -2973,8 +2973,6 @@
                             <option value="stone">камень</option>
                             <option value="wood">дерево</option>
                             <option value="iron">железо</option>
-                            <option value="scroll">свиток</option>
-                            <option value="key">ключ</option>
                             <option value="fire">огонь</option>
                         </select>
                     </div>
@@ -3306,11 +3304,6 @@
             <section class="section-card">
                 <h2>Экспедиции</h2>
                 <div class="deals-list" id="expeditionsList"></div>
-            </section>
-
-            <section class="section-card">
-                <h2>Башни Домов</h2>
-                <div class="deals-list" id="towerQuickList"></div>
             </section>
 
             <section class="section-card">
@@ -6641,14 +6634,6 @@ function renderHouses(houses) {
                 <div class="chip">🪙 золото: ${r.gold}</div>
                 <div class="chip">⚔ влияние: ${r.influence}</div>
             </div>
-            <div class="house-resources">
-                <div class="chip">🪨 ${r.stone}</div>
-                <div class="chip">🌲 ${r.wood}</div>
-                <div class="chip">⛓ ${r.iron}</div>
-                <div class="chip">📜 ${r.scroll}</div>
-                <div class="chip">🗝 ${r.key}</div>
-                <div class="chip">🔥 ${r.fire}</div>
-            </div>
         `;
         root.appendChild(div);
     });
@@ -7005,37 +6990,6 @@ function renderTowerQuick(state) {
     const root = document.getElementById("towerQuickList");
     if (!root) return;
     root.innerHTML = "";
-
-    const towers = state?.towers_quick || [];
-    if (!towers.length) {
-        root.innerHTML = `<div class="ps-card ps-empty">Башни пока не зафиксированы</div>`;
-        return;
-    }
-
-    towers.forEach(tower => {
-        const div = document.createElement("div");
-        div.className = "ps-card";
-        div.innerHTML = `
-            <div class="ps-card-kicker">Башня Дома</div>
-            <div class="ps-card-grid">
-                ${renderHouseMini({ name: tower?.house_name, house_key: tower?.house_key })}
-                <div class="ps-chip-row">
-                    ${renderResourceChip("influence", tower?.tower_score ?? 0)}
-                </div>
-                <div class="ps-meta-grid">
-                    <div class="ps-meta-item">
-                        <div class="ps-meta-label">Сила башни</div>
-                        <div class="ps-meta-value">${escapeHtml(tower?.tower_score ?? 0)}</div>
-                    </div>
-                    <div class="ps-meta-item">
-                        <div class="ps-meta-label">Класс</div>
-                        <div class="ps-meta-value">${escapeHtml(formatTowerClass(tower?.tower_class))}</div>
-                    </div>
-                </div>
-            </div>
-        `;
-        root.appendChild(div);
-    });
 }
 
 function renderEventFeed(state) {

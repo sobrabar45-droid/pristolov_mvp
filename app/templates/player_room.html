@@ -524,14 +524,6 @@
                 <div class="resource-label">Влияние</div>
                 <div class="resource-value" id="houseInfluenceValue">{{ house.resource_influence }}</div>
             </div>
-            <div class="resource">
-                <div class="resource-label">Свитки</div>
-                <div class="resource-value" id="houseScrollValue">{{ house.resource_scroll }}</div>
-            </div>
-            <div class="resource">
-                <div class="resource-label">Ключи</div>
-                <div class="resource-value" id="houseKeyValue">{{ house.resource_key }}</div>
-            </div>
         </div>
     </section>
 
@@ -584,8 +576,6 @@ const DEAL_RESOURCE_OPTIONS = [
   { code: "stone", label: "Камень" },
   { code: "wood", label: "Дерево" },
   { code: "iron", label: "Железо" },
-  { code: "scroll", label: "Свиток" },
-  { code: "key", label: "Ключ" },
   { code: "fire", label: "Огонь" }
 ];
 const DEAL_TYPE_LABELS = {
@@ -661,8 +651,6 @@ function updatePlayerStateHeader(data) {
   setText("playerActiveRoundValue", data?.active_host_round?.title || "Нет активного раунда");
   setText("houseGoldValue", resources.gold ?? 0);
   setText("houseInfluenceValue", resources.influence ?? 0);
-  setText("houseScrollValue", resources.scroll ?? 0);
-  setText("houseKeyValue", resources.key ?? 0);
 }
 
 function formatDeltaLines(deltaMap, prefix) {

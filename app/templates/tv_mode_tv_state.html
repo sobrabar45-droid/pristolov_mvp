@@ -1616,8 +1616,8 @@
         <section class="slide" id="slide-resources" data-slide-key="resources">
           <div class="slide-inner resources-layout">
             <div class="slide-head">
-              <div class="slide-title">10 Домов и ресурсы</div>
-              <div class="slide-sub" id="resourcesMeta">Полный расклад по всем активным Домам</div>
+              <div class="slide-title">10 Домов</div>
+              <div class="slide-sub" id="resourcesMeta">Влияние и золото по активным Домам</div>
             </div>
             <div class="resources-grid" id="resourcesGrid"></div>
           </div>
@@ -1726,10 +1726,7 @@
       key: "доступ и редкость", fire: "риск и рывок", raven: "разведка и слухи", cup: "экономика и достаток"
     };
 
-      const RESOURCE_LAYOUT = [
-        ["scroll", "Свитки"],
-        ["key", "Ключи"]
-      ];
+      const RESOURCE_LAYOUT = [];
 
     const phaseState = {
       endsAt: null,
@@ -1912,12 +1909,10 @@
       const houses = safeList(state?.houses);
       const influenceLeader = Array.isArray(leaders?.by_influence) ? leaders.by_influence[0] : null;
       const goldLeader = Array.isArray(leaders?.by_gold) ? leaders.by_gold[0] : null;
-      const scrollLeader = Array.isArray(leaders?.by_scroll) ? leaders.by_scroll[0] : null;
-      const winner = influenceLeader || goldLeader || scrollLeader || houses[0] || null;
+      const winner = influenceLeader || goldLeader || houses[0] || null;
       const winnerName = pickText(outcome?.winner_house_name) || pickText(winner?.name) || "Дом вечера";
       const influenceValue = winner?.resources?.influence ?? "—";
       const goldValue = winner?.resources?.gold ?? "—";
-      const scrollValue = winner?.resources?.scroll ?? "—";
       const jackpotAmountLabel = pickText(outcome?.jackpot_amount_label) || "сумма уточняется ведущим";
       const outcomeTitle = pickText(outcome?.outcome_title) || "Исход джекпота объявляет ведущий";
       const outcomeText = pickText(outcome?.outcome_text) || "Победитель вечера определён, приз озвучивается со сцены.";
@@ -1931,7 +1926,7 @@
             <div class="court-current-pair court-winner">
               <div class="court-house">
                 <div class="court-house-name">${escapeHtml(winnerName)}</div>
-                <div class="court-alive">Влияние ${escapeHtml(influenceValue)} · Золото ${escapeHtml(goldValue)} · Свитки ${escapeHtml(scrollValue)}</div>
+                <div class="court-alive">Влияние ${escapeHtml(influenceValue)} · Золото ${escapeHtml(goldValue)}</div>
               </div>
             </div>
             <div class="court-pair-list">
@@ -4168,19 +4163,19 @@ function scheduleNextSlideRotation() {
           `;
         }
 
-        const rows = houses.map(house => {
-            const resources = house?.resources || {};
-            return `
+      const rows = houses.map(house => {
+        const resources = house?.resources || {};
+        return `
               <div class="tv-activity-row">
-                <div class="tv-activity-item">${escapeHtml(pickText(house?.name) || "Дом")} — подготовка герба</div>
-                <div class="tv-activity-meta">влияние ${num(resources.influence)} • золото ${num(resources.gold)} • ключи ${num(resources.key)} • свитки ${num(resources.scroll)}</div>
+                <div class="tv-activity-item">${escapeHtml(pickText(house?.name) || "Дом")} — подготовка Дома</div>
+                <div class="tv-activity-meta">влияние ${num(resources.influence)} • золото ${num(resources.gold)}</div>
               </div>
             `;
           }).join("");
 
           return `
             <div class="tv-activity-block">
-              <div class="tv-activity-title">Гербы домов</div>
+              <div class="tv-activity-title">Дома в подготовке</div>
               <div class="tv-activity-list">${rows}</div>
               <div class="tv-activity-sub">Полный герб даст дому влияние, способность и преимущество в финале</div>
             </div>
