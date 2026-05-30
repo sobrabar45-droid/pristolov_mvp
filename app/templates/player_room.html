@@ -937,6 +937,7 @@ function renderLastWhisperInfo(data) {
   const latestEvent = whisperState?.latest_event && typeof whisperState.latest_event === "object" ? whisperState.latest_event : null;
   const availableActions = Array.isArray(whisperState?.available_actions) ? whisperState.available_actions : [];
   const availableTargetHouses = Array.isArray(whisperState?.available_target_houses) ? whisperState.available_target_houses : [];
+  const availableAlliances = Array.isArray(whisperState?.available_alliances) ? whisperState.available_alliances : [];
   const roleCode = String(data?.role?.code || "").trim();
   const viewerCanAct = whisperState?.viewer_can_act === true && roleCode === "whisper_master";
   const viewerHasActed = whisperState?.viewer_has_acted === true;
@@ -961,11 +962,12 @@ function renderLastWhisperInfo(data) {
   }
 
   if (viewerHasActed && viewerAction) {
+    const targetText = viewerAction?.target_label || viewerAction?.target_house_name || "";
     controls.innerHTML = `
       <div class="action-box">
         <div class="big-text">Ход уже сделан</div>
         <div class="muted">Ваше действие: ${escapeHtml(fixEncoding(viewerAction.action_label || "Политическое действие"))}.</div>
-        ${viewerAction?.target_house_name ? `<div class="muted" style="margin-top:6px;">Цель: ${escapeHtml(fixEncoding(viewerAction.target_house_name))}.</div>` : ""}
+        ${targetText ? `<div class="muted" style="margin-top:6px;">Цель: ${escapeHtml(fixEncoding(targetText))}.</div>` : ""}
         <div class="muted" style="margin-top:6px;">Повторный ход в этом окне запрещён.</div>
       </div>
     `;
@@ -974,15 +976,16 @@ function renderLastWhisperInfo(data) {
 
   const quietSupportAction = availableActions.find(action => String(action?.code || "").trim() === "quiet_support") || null;
   const crownTaxAction = availableActions.find(action => String(action?.code || "").trim() === "crown_tax") || null;
+  const breakAllianceAction = availableActions.find(action => String(action?.code || "").trim() === "break_alliance") || null;
   const otherActions = availableActions.filter(action => {
     const code = String(action?.code || "").trim();
-    return code !== "quiet_support" && code !== "crown_tax";
+    return code !== "quiet_support" && code !== "crown_tax" && code !== "break_alliance";
   });
 
   controls.innerHTML = `
     <div class="action-box">
       <div class="big-text">Действие Мастера шепота</div>
-      <div class="muted">Тихая поддержка усиливает выбранный Дом, а Налог на корону бьёт по единоличному лидеру по влиянию.</div>
+      <div class="muted">Тихая поддержка усиливает выбранный Дом, Налог на корону бьёт по лидеру, а Разрыв союза снимает один активный союз до финала.</div>
       ${quietSupportAction ? `
         <div style="margin-top:12px;">
           <label class="muted" for="lastWhisperTargetHouse">Дом для тайной поддержки</label>
@@ -1010,6 +1013,26 @@ function renderLastWhisperInfo(data) {
             onclick="submitLastWhisperAction('crown_tax')"
             ${lastWhisperActionBusy ? "disabled" : ""}
           >${lastWhisperActionBusy ? "Фиксирую..." : escapeHtml(fixEncoding(crownTaxAction.label || "Налог на корону"))}</button>
+        </div>
+      ` : ""}
+      ${breakAllianceAction ? `
+        <div style="margin-top:12px;">
+          <label class="muted" for="lastWhisperAllianceDeal">Союз для разрыва</label>
+          <select id="lastWhisperAllianceDeal" class="select" style="margin-top:6px;">
+            <option value="">Выберите союз</option>
+            ${availableAlliances.map(item => `
+              <option value="${escapeHtml(String(item.deal_id || ""))}">${escapeHtml(fixEncoding(item.label || `Союз #${item.deal_id}`))}</option>
+            `).join("")}
+          </select>
+          ${availableAlliances.length ? "" : `<div class="muted" style="margin-top:8px;">Сейчас нет активных союзов для разрыва.</div>`}
+        </div>
+        <div class="expedition-inline-actions" style="margin-top:12px;">
+          <button
+            type="button"
+            class="btn"
+            onclick="submitLastWhisperAction('break_alliance')"
+            ${(lastWhisperActionBusy || !availableAlliances.length) ? "disabled" : ""}
+          >${lastWhisperActionBusy ? "Фиксирую..." : escapeHtml(fixEncoding(breakAllianceAction.label || "Разрыв союза"))}</button>
         </div>
       ` : ""}
       ${otherActions.length ? `
@@ -1062,6 +1085,14 @@ async function submitLastWhisperAction(actionCode) {
         return;
       }
       payload.target_house_id = targetHouseId;
+    } else if (actionCode === "break_alliance") {
+      const dealEl = document.getElementById("lastWhisperAllianceDeal");
+      const targetDealId = Number(dealEl?.value || 0);
+      if (!targetDealId) {
+        renderLastWhisperResult(false, "Действие не выполнено", "Сначала выберите активный союз для разрыва");
+        return;
+      }
+      payload.target_deal_id = targetDealId;
     }
     const res = await fetch(`/player/last-whisper/action/${playerId}`, {
       method: "POST",

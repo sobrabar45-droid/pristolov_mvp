@@ -127,8 +127,8 @@ LAST_WHISPER_ACTIONS = {
         "label": "Тихая поддержка",
         "tv_text": "{house_name} пустил тихую поддержку перед финалом.",
     },
-    "alliance_break": {
-        "code": "alliance_break",
+    "break_alliance": {
+        "code": "break_alliance",
         "label": "Разрыв союза",
         "tv_text": "{house_name} вмешался в союзные договорённости.",
     },
@@ -369,13 +369,16 @@ def _serialize_last_whisper_action(raw_action: dict) -> dict:
     action_label = fix_encoding(str(raw_action.get("action_label") or "").strip())
     tv_text = fix_encoding(str(raw_action.get("tv_text") or "").strip())
     target_house_name = fix_encoding(str(raw_action.get("target_house_name") or "").strip())
+    target_label = fix_encoding(str(raw_action.get("target_label") or "").strip())
     return {
         "order_no": raw_action.get("order_no"),
         "created_at": raw_action.get("created_at"),
         "house_id": raw_action.get("house_id"),
         "house_name": house_name or None,
+        "target_deal_id": raw_action.get("target_deal_id"),
         "target_house_id": raw_action.get("target_house_id"),
         "target_house_name": target_house_name or None,
+        "target_label": target_label or None,
         "player_id": raw_action.get("player_id"),
         "player_name": fix_encoding(str(raw_action.get("player_name") or "").strip()) or None,
         "action_code": action_code or None,
@@ -417,6 +420,26 @@ def _build_last_whisper_state_for_player(db: Session, player: Player) -> dict | 
             for house in other_houses
         ]
 
+    available_alliances = [
+        {
+            "deal_id": deal.id,
+            "house_a": {
+                "id": deal.from_house.id,
+                "name": deal.from_house.name,
+                "house_key": deal.from_house.house_key,
+            } if deal.from_house else None,
+            "house_b": {
+                "id": deal.to_house.id,
+                "name": deal.to_house.name,
+                "house_key": deal.to_house.house_key,
+            } if deal.to_house else None,
+            "label": fix_encoding(
+                f"{deal.from_house.name if deal.from_house else 'Дом'} ↔ {deal.to_house.name if deal.to_house else 'Дом'}"
+            ),
+        }
+        for deal in _get_active_alliance_deals(db, game_id=player.game_id)
+    ]
+
     return {
         "active": True,
         "phase_id": phase.id,
@@ -429,10 +452,12 @@ def _build_last_whisper_state_for_player(db: Session, player: Player) -> dict | 
                 "code": item["code"],
                 "label": item["label"],
                 "requires_target_house": item["code"] == "quiet_support",
+                "requires_alliance_deal": item["code"] == "break_alliance",
             }
             for item in LAST_WHISPER_ACTIONS.values()
         ],
         "available_target_houses": available_target_houses,
+        "available_alliances": available_alliances,
         "events": events,
         "latest_event": events[-1] if events else None,
     }
@@ -1174,6 +1199,29 @@ def _get_active_alliances_for_house(db: Session, *, game_id: int, house_id: int)
         .order_by(GameDeal.id.desc())
         .all()
     )
+
+
+def _get_active_alliance_deals(db: Session, *, game_id: int) -> list[GameDeal]:
+    if not game_id:
+        return []
+
+    deals = (
+        db.query(GameDeal)
+        .options(joinedload(GameDeal.from_house), joinedload(GameDeal.to_house))
+        .filter(
+            GameDeal.game_id == game_id,
+            GameDeal.status == "alliance_active",
+        )
+        .order_by(GameDeal.id.desc())
+        .all()
+    )
+
+    result = []
+    for deal in deals:
+        offer = deal.offer if isinstance(deal.offer, dict) else {}
+        if str(offer.get("type") or "").strip() == "alliance":
+            result.append(deal)
+    return result
 
 
 def _get_treasurer_pending_deals(db: Session, player: Player) -> list[GameDeal]:
@@ -2307,6 +2355,9 @@ def apply_last_whisper_action(player_id: int, payload: dict = Body(default={})):
 
         target_house = None
         target_house_id = payload.get("target_house_id")
+        target_deal = None
+        target_deal_id = payload.get("target_deal_id")
+        target_label = None
         resources_changed = {}
 
         if action_code == "quiet_support":
@@ -2343,8 +2394,40 @@ def apply_last_whisper_action(player_id: int, payload: dict = Body(default={})):
                 else:
                     zero_target_name = f"Дома {target_house.name[4:]}" if isinstance(target_house.name, str) and target_house.name.startswith("Дом ") else f"Дома {target_house.name}"
                     tv_text = f"Корона стала тяжелее, но влияние {zero_target_name} уже не может быть уменьшено."
+        elif action_code == "break_alliance":
+            active_alliances = _get_active_alliance_deals(db, game_id=player.game_id)
+            if not active_alliances:
+                return {"ok": False, "message": "Нет активных союзов для разрыва."}
+            if not isinstance(target_deal_id, int):
+                return {"ok": False, "message": "Выберите активный союз для разрыва."}
+            target_deal = (
+                db.query(GameDeal)
+                .options(joinedload(GameDeal.from_house), joinedload(GameDeal.to_house))
+                .filter(
+                    GameDeal.id == target_deal_id,
+                    GameDeal.game_id == player.game_id,
+                )
+                .first()
+            )
+            if not target_deal:
+                return {"ok": False, "message": "Выбранный союз не найден в этой игре."}
+            target_offer = dict(target_deal.offer) if isinstance(target_deal.offer, dict) else {}
+            if target_deal.status != "alliance_active" or str(target_offer.get("type") or "").strip() != "alliance":
+                return {"ok": False, "message": "Выбранный союз уже недоступен для разрыва."}
+            house_a_name = target_deal.from_house.name if target_deal.from_house else "Дом"
+            house_b_name = target_deal.to_house.name if target_deal.to_house else "Дом"
+            target_label = fix_encoding(f"{house_a_name} ↔ {house_b_name}")
+            target_offer["break_mode"] = "whisper_break"
+            target_offer["broken_at"] = datetime.utcnow().isoformat()
+            target_offer["broken_by_house_id"] = player.house_id
+            target_offer["break_text"] = f"Последний шёпот разрушил союз: {house_a_name} и {house_b_name} больше не связаны договором."
+            target_deal.status = "alliance_broken"
+            target_deal.offer = target_offer
+            target_deal.responded_at = datetime.utcnow()
+            db.add(target_deal)
+            tv_text = target_offer["break_text"]
         else:
-            tv_text = action_meta["tv_text"].format(house_name=player.house.name if player.house else "Р”РѕРј")
+            tv_text = action_meta["tv_text"].format(house_name=player.house.name if player.house else "Дом")
 
         action_meta = {
             **action_meta,
@@ -2356,8 +2439,10 @@ def apply_last_whisper_action(player_id: int, payload: dict = Body(default={})):
             "created_at": datetime.now(timezone.utc).isoformat(),
             "house_id": player.house_id,
             "house_name": player.house.name if player.house else None,
+            "target_deal_id": target_deal.id if target_deal else None,
             "target_house_id": target_house.id if target_house else None,
             "target_house_name": target_house.name if target_house else None,
+            "target_label": target_label,
             "player_id": player.id,
             "player_name": player.nickname,
             "action_code": action_meta["code"],
