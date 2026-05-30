@@ -24,6 +24,7 @@ SYSTEM_STAGE_PHASE_MAP = {
     "stage_duels": "duel",
     "stage_intrigue": "intrigue",
     "stage_court": "court",
+    "stage_last_whisper": "last_whisper",
 }
 
 

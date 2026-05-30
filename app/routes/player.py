@@ -317,6 +317,8 @@ def _get_phase_label(phase_type: str | None) -> str | None:
         "court": "Суд Домов",
         "final": "Финал",
     }
+    if phase_type == "last_whisper":
+        return "РџРѕСЃР»РµРґРЅРёР№ РЁС‘РїРѕС‚"
     return phase_labels.get(phase_type, phase_type)
 
 

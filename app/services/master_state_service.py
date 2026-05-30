@@ -110,6 +110,12 @@ def _build_master_prompt(*, active_host_round, current_question, duels_block, ex
         }
 
     active_phase_types = [phase.phase_type for phase in (active_phases or [])]
+    if "last_whisper" in active_phase_types:
+        return {
+            "title": "Последний Шёпот открыт",
+            "body": "Дай Домам короткое окно на интриги и затем переводи игру к финалу.",
+            "severity": "medium",
+        }
     phase_text = ", ".join(active_phase_types) if active_phase_types else "нет активной фазы"
     return {
         "title": "Окно перехода",

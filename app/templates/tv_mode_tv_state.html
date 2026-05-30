@@ -1797,7 +1797,8 @@
           market:"РЫНОК", trial:"СУД ДОМОВ", herald:"ГЛАС ДВОРА", feast:"ПИР",
           final:"ФИНАЛ", game_phase:"ИГРОВАЯ ФАЗА",
           map:"КАРТА", crest:"ГЕРБ", duel:"ДУЭЛИ",
-          free_play:"СВОБОДНАЯ ИГРА", upgrade:"УСИЛЕНИЕ", intrigue:"ИНТРИГИ"
+          free_play:"СВОБОДНАЯ ИГРА", upgrade:"УСИЛЕНИЕ", intrigue:"ИНТРИГИ",
+          last_whisper:"ПОСЛЕДНИЙ ШЁПОТ"
         };
         return map[String(code || "").toLowerCase()] || prettify(String(code || "Игровая фаза"));
       }
@@ -1818,7 +1819,8 @@
           duel:"Вызовы объявлены. Ставки, отказ и победа меняют золото, влияние и страх в зале.",
           free_play:"Сейчас дома свободно используют открытые механики и ищут лучший момент для рывка.",
           upgrade:"Каждый вложенный ресурс делает дом сильнее перед следующим конфликтом.",
-          intrigue:"Скрытые сведения и влияние становятся опаснее прямого богатства."
+          intrigue:"Скрытые сведения и влияние становятся опаснее прямого богатства.",
+          last_whisper:"Дома собирают последние слухи и готовятся к финальному объявлению."
         };
       return map[String(code || "").toLowerCase()] || "Двор в движении. Расклад сил меняется быстрее, чем успевают договориться союзники.";
     }
@@ -1945,6 +1947,45 @@
               <div class="court-pair-item">
                 <span>Итог</span>
                 <strong>${escapeHtml(outcomeText)}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderLastWhisperActivity(state){
+      const phase = safeList(state?.active_phases).find(item => pickText(item?.phase_type).trim().toLowerCase() === "last_whisper") || null;
+      const openedAt = Date.parse(pickText(phase?.opened_at));
+      let countdown = "05:00";
+      if (Number.isFinite(openedAt)) {
+        const remainingSec = Math.max(0, 300 - Math.floor((Date.now() - openedAt) / 1000));
+        const minutes = Math.floor(remainingSec / 60);
+        const seconds = remainingSec % 60;
+        countdown = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+      }
+
+      return `
+        <div class="court-scene">
+          <div class="court-stage">
+            <div class="court-header">
+              <div class="court-title">ПОСЛЕДНИЙ ШЁПОТ</div>
+              <div class="court-warning">Дома плетут интриги перед финалом</div>
+            </div>
+            <div class="court-current-pair court-winner">
+              <div class="court-house">
+                <div class="court-house-name">Короткое политическое окно</div>
+                <div class="court-alive">До финального сигнала: ${escapeHtml(countdown)}</div>
+              </div>
+            </div>
+            <div class="court-pair-list">
+              <div class="court-pair-item">
+                <span>Сцена</span>
+                <strong>Сейчас зал живёт слухами, паузой и ожиданием развязки</strong>
+              </div>
+              <div class="court-pair-item">
+                <span>Что дальше</span>
+                <strong>После сигнала ведущего откроется финальное объявление</strong>
               </div>
             </div>
           </div>
@@ -2095,6 +2136,18 @@
             airText: "Дома могут использовать открытые механики.",
             turnTitle: "Что происходит",
             turnText: "Сейчас инициативу получают те, кто быстрее всего превращает свободу в конкретный выигрыш."
+            },
+            stage_last_whisper: {
+              mode: "last_whisper",
+              phaseLine: "Последний Шёпот",
+              pillText: "Интриги перед финалом",
+              phaseName: "ДОМА ШЕПЧУТСЯ ПЕРЕД РАЗВЯЗКОЙ",
+              phaseSub: "Короткая пауза напряжения между Судом и финальным объявлением.",
+              phaseBadges: `<span class="phase-badge">${escapeHtml(currentRound.title || "Последний Шёпот")}</span>`,
+              airTitle: "Последний Шёпот",
+              airText: "Сейчас двор дышит тише обычного: каждое слово может изменить восприятие финала.",
+              turnTitle: "Что происходит",
+              turnText: "Дома плетут интриги перед финалом."
             },
             stage_upgrade: {
               mode: "upgrade",
@@ -2859,6 +2912,10 @@
 
         if (sceneModel?.mode === "court_setup") {
           return renderActivityLayer(renderCourtSetupActivity(state), sceneModel);
+        }
+
+        if (sceneModel?.mode === "last_whisper") {
+          return renderActivityLayer(renderLastWhisperActivity(state), sceneModel);
         }
 
         if (sceneModel?.mode === "final_show") {

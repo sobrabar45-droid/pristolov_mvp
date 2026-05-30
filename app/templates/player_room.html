@@ -484,6 +484,11 @@
         <div id="duelResultBox"></div>
     </section>
 
+    <section class="card" id="lastWhisperSection" style="display:none;">
+        <div class="eyebrow">Последний Шёпот</div>
+        <div id="lastWhisperInfo" class="muted">Дома плетут интриги перед финалом.</div>
+    </section>
+
     <section class="card" id="treasurerDealsSection" style="display:none;">
         <div class="eyebrow">Подтверждение сделок</div>
         <div id="treasurerDealsControls" class="muted">Подготовка списка сделок...</div>
@@ -600,6 +605,7 @@ const PHASE_LABELS = {
   intrigue: "Интриги",
   free_play: "Свободная игра",
   intermission: "Перерыв",
+  last_whisper: "Последний Шёпот",
   final: "Финал"
 };
 const EXPEDITION_LOCATIONS = {{ (expedition_locations or []) | tojson }};
@@ -687,6 +693,21 @@ function getActivePhaseTypes(data) {
 function hasActivePhase(data, phaseTypes) {
   const active = getActivePhaseTypes(data);
   return phaseTypes.some(type => active.includes(type));
+}
+
+function getActivePhaseEntry(data, phaseType) {
+  const phases = Array.isArray(data?.active_phases) ? data.active_phases : [];
+  return phases.find(phase => phase?.phase_type === phaseType) || null;
+}
+
+function formatCountdownFromIso(isoString, durationSec) {
+  if (!isoString || !durationSec) return "";
+  const openedAt = Date.parse(isoString);
+  if (!Number.isFinite(openedAt)) return "";
+  const remainingSec = Math.max(0, durationSec - Math.floor((Date.now() - openedAt) / 1000));
+  const minutes = Math.floor(remainingSec / 60);
+  const seconds = remainingSec % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 function updatePlayerStateHeader(data) {
@@ -818,6 +839,7 @@ async function loadPlayerState() {
     window.latestPlayerState = data;
     updatePlayerStateHeader(data);
     renderWhisperFeed(data);
+    renderLastWhisperInfo(data);
     saveDealDraftFromForm();
     renderDuelControls(data);
     renderDealControls(data);
@@ -885,6 +907,29 @@ function renderDealResult(ok, title, text) {
       <div class="explore-result-title">${escapeHtml(fixEncoding(title))}</div>
       <div class="explore-result-text">${escapeHtml(fixEncoding(text))}</div>
     </div>
+  `;
+}
+
+function renderLastWhisperInfo(data) {
+  const section = document.getElementById("lastWhisperSection");
+  const info = document.getElementById("lastWhisperInfo");
+  if (!section || !info) return;
+
+  const isActive = hasActivePhase(data, ["last_whisper"]);
+  section.style.display = isActive ? "" : "none";
+  if (!isActive) return;
+
+  const phase = getActivePhaseEntry(data, "last_whisper");
+  const countdown = formatCountdownFromIso(phase?.opened_at, 5 * 60);
+  const countdownText = countdown
+    ? `До финального сигнала: ${countdown}.`
+    : "Окно интриг открыто на 5 минут.";
+
+  info.innerHTML = `
+    <div class="big-text" style="font-size:16px;">ПОСЛЕДНИЙ ШЁПОТ</div>
+    <div class="muted" style="margin-top:6px;">Дома плетут интриги перед финалом.</div>
+    <div class="muted" style="margin-top:6px;">${escapeHtml(countdownText)}</div>
+    <div class="muted" style="margin-top:6px;">Сейчас это только информационное окно: ждите сигнала ведущего.</div>
   `;
 }
 
@@ -1936,6 +1981,11 @@ function renderAssignments(data) {
     const latestState = window.latestPlayerState || {};
     const activeRoundCode = String(latestState?.active_host_round?.round_code || "").trim();
     const roleCode = String(latestState?.role?.code || "").trim();
+    if (hasActivePhase(latestState, ["last_whisper"])) {
+      container.innerHTML = `<div class="muted">Последний Шёпот: сейчас Домы только собирают напряжение перед финалом.</div>`;
+      renderAssignmentFeedback(window.latestAssignmentFeedback);
+      return;
+    }
     if (activeRoundCode === "stage_court") {
       container.innerHTML = roleCode === "lord_lady"
         ? `<div class="muted">Суд Домов: ожидается подтверждение позиции Дома</div>`

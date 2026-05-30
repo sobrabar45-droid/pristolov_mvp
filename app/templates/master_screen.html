@@ -3523,6 +3523,7 @@ function getPhaseLabel(phaseType) {
         upgrade: "Усиление домов",
         intrigue: "Интриги",
         court: "Суд Домов",
+        last_whisper: "Последний Шёпот",
         final: "Финал",
         game_phase: "Игровой акт",
         market: "Рынок",
@@ -3642,6 +3643,7 @@ function getSceneLabel(sceneType) {
         map: "Карта",
         diplomacy: "Дипломатия",
         crest: "Герб",
+        last_whisper: "Последний Шёпот",
         final: "Финал"
     };
     return labels[sceneType] || "Ожидание";
@@ -4090,6 +4092,29 @@ function isCourtSceneState(state) {
     return phaseTypes.includes("court");
 }
 
+function getLastWhisperPhaseState(state) {
+    const phases = Array.isArray(state?.active_phases) ? state.active_phases : [];
+    return phases.find(phase => String(phase?.phase_type || "").trim().toLowerCase() === "last_whisper") || null;
+}
+
+function isLastWhisperSceneState(state) {
+    if (!state) return false;
+    const director = getDirectorState(state);
+    const currentRoundCode = pickText(director?.current_round?.round_code).trim().toLowerCase();
+    if (currentRoundCode === "stage_last_whisper") return true;
+    return Boolean(getLastWhisperPhaseState(state));
+}
+
+function getCountdownTextFromIso(isoString, durationSec = 300) {
+    if (!isoString) return "05:00";
+    const openedAt = Date.parse(isoString);
+    if (!Number.isFinite(openedAt)) return "05:00";
+    const remainingSec = Math.max(0, durationSec - Math.floor((Date.now() - openedAt) / 1000));
+    const minutes = Math.floor(remainingSec / 60);
+    const seconds = remainingSec % 60;
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
 function shouldShowGenericHostRoundScene(state) {
     if (!state) return false;
 
@@ -4144,6 +4169,8 @@ function getCurrentSceneType(state) {
         }
         return "court";
     }
+
+    if (isLastWhisperSceneState(state)) return "last_whisper";
 
     if (hasActiveDuel) return "duel";
 
@@ -5749,6 +5776,36 @@ function renderFinalScene(state = null) {
     `;
 }
 
+function renderLastWhisperScene(state) {
+    const phase = getLastWhisperPhaseState(state);
+    const countdownText = getCountdownTextFromIso(phase?.opened_at, 5 * 60);
+    return `
+        <div class="ps-card ps-stage-panel ps-scene-object">
+            <div class="ps-card-kicker">Переход к финалу</div>
+            <h2 class="ps-scene-title">ПОСЛЕДНИЙ ШЁПОТ</h2>
+            <div class="ps-scene-subtitle">Дома плетут интриги перед финалом</div>
+            <div class="ps-meta-grid">
+                <div class="ps-meta-item">
+                    <div class="ps-meta-label">Окно</div>
+                    <div class="ps-meta-value">Короткий политический мост между Судом и Финалом</div>
+                </div>
+                <div class="ps-meta-item">
+                    <div class="ps-meta-label">Таймер</div>
+                    <div class="ps-meta-value">${escapeHtml(countdownText)}</div>
+                </div>
+            </div>
+            <div class="ps-final-outcome">
+                <div class="ps-final-outcome-title">Интриги перед решением</div>
+                <div class="ps-final-outcome-body">Игровых действий здесь пока нет. Это стабильное окно напряжения перед финальным объявлением.</div>
+                <div class="ps-final-outcome-note">Когда зал готов, ведущий завершает Последний Шёпот и открывает Финал.</div>
+            </div>
+            <div class="ps-scene-action">
+                <button class="btn-blue" onclick="finishLastWhisperWindow()">Завершить Последний Шёпот</button>
+            </div>
+        </div>
+    `;
+}
+
 function renderNeutralScene(state = null) {
     const director = getDirectorState(state);
     const currentRound = director?.current_round || null;
@@ -5977,6 +6034,8 @@ function renderActiveScene(state) {
 
     if (sceneType === "duel" && isDuelActive) {
         root.innerHTML = renderDuelScene(activeDuel);
+    } else if (sceneType === "last_whisper") {
+        root.innerHTML = renderLastWhisperScene(state);
     } else if (sceneType === "final") {
         root.innerHTML = renderFinalScene(state);
     } else if (sceneType === "court_question") {
@@ -6122,6 +6181,15 @@ async function advanceScenarioRound(autoStartNext = false) {
             ? "Запрошено завершение текущего раунда сценария с автозапуском следующего"
             : "Запрошено подтверждение завершения текущего раунда сценария"
     );
+    await loadState();
+}
+
+async function finishLastWhisperWindow() {
+    const data = await apiPost(`/dev/games/${ROOM_CODE}/scenario/advance`, {
+        auto_start_next: true
+    });
+    setBox("scenarioDirectorResult", data);
+    logLine("Последний Шёпот завершён, запрошен переход к Финалу");
     await loadState();
 }
 
