@@ -17,9 +17,16 @@ from app.models.game_host_round import GameHostRound
 from app.models.game_expedition import GameExpedition
 from app.models.game_map_visit import GameMapVisit
 from app.models.game_deal import GameDeal
+from app.models.game_duel import GameDuel
 from app.services.serialization_utils import dump_json as _dump_json, load_json_text as _load_json_text
 from app.services.map_service import load_locations_catalog
 from app.services.expedition_service import create_expedition as _create_expedition
+from app.services.duel_service import (
+    create_duel_challenge as _create_duel_challenge,
+    accept_duel as _accept_duel,
+    refuse_duel as _refuse_duel,
+    serialize_duel as _serialize_duel,
+)
 
 # Временный мост: используем уже существующую игровую логику ответов
 from app.services.resource_service import apply_house_effect as _apply_house_effect, build_house_resources_snapshot as _build_house_resources_snapshot
@@ -1002,6 +1009,10 @@ def _serialize_active_alliance(deal: GameDeal, viewer_house_id: int | None = Non
     })
 
 
+def _serialize_player_duel(duel: GameDuel) -> dict:
+    return _fix_text_map(_serialize_duel(duel))
+
+
 def _get_active_alliances_for_house(db: Session, *, game_id: int, house_id: int) -> list[GameDeal]:
     if not game_id or not house_id:
         return []
@@ -1044,6 +1055,39 @@ def _get_treasurer_pending_deals(db: Session, player: Player) -> list[GameDeal]:
         deal for deal in deals
         if isinstance(deal.offer, dict) and str(deal.offer.get("type") or "").strip() == "resource"
     ]
+
+
+def _get_house_duels(
+    db: Session,
+    *,
+    game_id: int,
+    house_id: int,
+    statuses: set[str] | None = None,
+) -> list[GameDuel]:
+    if not game_id or not house_id:
+        return []
+
+    query = (
+        db.query(GameDuel)
+        .options(
+            joinedload(GameDuel.challenger_house),
+            joinedload(GameDuel.target_house),
+            joinedload(GameDuel.winner_house),
+        )
+        .filter(
+            GameDuel.game_id == game_id,
+            (
+                (GameDuel.challenger_house_id == house_id)
+                | (GameDuel.target_house_id == house_id)
+            ),
+        )
+        .order_by(GameDuel.id.desc())
+    )
+
+    if statuses:
+        query = query.filter(GameDuel.status.in_(list(statuses)))
+
+    return query.all()
 
 
 def _find_alliance_conflict(
@@ -1192,6 +1236,7 @@ def get_player_me(player_token: str):
             )
 
         available_deal_houses = []
+        available_duel_houses = []
         if player.house_id:
             other_houses = (
                 db.query(House)
@@ -1203,6 +1248,14 @@ def get_player_me(player_token: str):
                 .all()
             )
             available_deal_houses = [
+                {
+                    "id": house.id,
+                    "name": house.name,
+                    "house_key": house.house_key,
+                }
+                for house in other_houses
+            ]
+            available_duel_houses = [
                 {
                     "id": house.id,
                     "name": house.name,
@@ -1233,6 +1286,21 @@ def get_player_me(player_token: str):
                 game_id=player.game_id,
                 from_house_id=player.house_id,
             )
+
+        active_house_duels = []
+        incoming_house_duels = []
+        if player.house_id:
+            active_house_duels = _get_house_duels(
+                db,
+                game_id=player.game_id,
+                house_id=player.house_id,
+                statuses={"challenged", "accepted"},
+            )
+            incoming_house_duels = [
+                duel
+                for duel in active_house_duels
+                if duel.target_house_id == player.house_id and duel.status == "challenged"
+            ]
 
         return {
             "ok": True,
@@ -1283,10 +1351,13 @@ def get_player_me(player_token: str):
             "active_assignments_count": active_assignments_count,
             "active_house_expedition": active_house_expedition,
             "available_deal_houses": available_deal_houses,
+            "available_duel_houses": available_duel_houses,
             "incoming_deals": [_serialize_player_deal(deal) for deal in incoming_deals],
             "treasurer_pending_deals": [_serialize_player_deal(deal) for deal in treasurer_pending_deals],
             "active_alliances": active_alliances,
             "blocked_crest_pieces": blocked_crest_pieces,
+            "active_house_duels": [_serialize_player_duel(duel) for duel in active_house_duels],
+            "incoming_house_duels": [_serialize_player_duel(duel) for duel in incoming_house_duels],
             "whisper_feed": _build_whisper_feed(db, player),
         }
 
@@ -1895,6 +1966,153 @@ def resolve_expedition(expedition_id: int, player_id: int):
             "chosen_locations": chosen_locations,
             "resources_after": resources_after,
         })
+    finally:
+        db.close()
+
+
+@router.post("/duels/challenge/{player_id}")
+def create_player_duel_challenge(player_id: int, payload: dict = Body(default={})):
+    db: Session = SessionLocal()
+
+    try:
+        if payload is None:
+            payload = {}
+        if not isinstance(payload, dict):
+            return {
+                "ok": False,
+                "message": "Тело запроса должно быть JSON-объектом",
+            }
+
+        player = (
+            db.query(Player)
+            .options(joinedload(Player.role), joinedload(Player.house), joinedload(Player.game))
+            .filter(Player.id == player_id)
+            .first()
+        )
+        if not player:
+            return {"ok": False, "message": "Игрок не найден"}
+        if not player.house:
+            return {"ok": False, "message": "У игрока не найден Дом"}
+        if not player.role or player.role.code != "lord_lady":
+            return {"ok": False, "message": "Только Лорд/Леди может бросать и принимать вызовы."}
+
+        target_house_id = payload.get("target_house_id")
+        if not isinstance(target_house_id, int):
+            return {"ok": False, "message": "Выберите Дом, которому хотите бросить вызов"}
+
+        result = _create_duel_challenge(
+            db=db,
+            game_id=player.game_id,
+            challenger_house_id=player.house_id,
+            target_house_id=target_house_id,
+            payload=payload,
+        )
+        if not result.get("ok"):
+            db.rollback()
+            return _fix_text_map(result)
+
+        db.commit()
+        return _fix_text_map(result)
+    finally:
+        db.close()
+
+
+@router.post("/duels/accept/{player_id}/{duel_id}")
+def accept_player_duel(player_id: int, duel_id: int, payload: dict = Body(default={})):
+    db: Session = SessionLocal()
+
+    try:
+        if payload is None or not isinstance(payload, dict):
+            payload = {}
+
+        player = (
+            db.query(Player)
+            .options(joinedload(Player.role), joinedload(Player.house), joinedload(Player.game))
+            .filter(Player.id == player_id)
+            .first()
+        )
+        if not player:
+            return {"ok": False, "message": "Игрок не найден"}
+        if not player.house:
+            return {"ok": False, "message": "У игрока не найден Дом"}
+        if not player.role or player.role.code != "lord_lady":
+            return {"ok": False, "message": "Только Лорд/Леди может бросать и принимать вызовы."}
+
+        duel = (
+            db.query(GameDuel)
+            .options(
+                joinedload(GameDuel.challenger_house),
+                joinedload(GameDuel.target_house),
+                joinedload(GameDuel.winner_house),
+            )
+            .filter(
+                GameDuel.id == duel_id,
+                GameDuel.game_id == player.game_id,
+            )
+            .first()
+        )
+        if not duel:
+            return {"ok": False, "message": "Дуэль не найдена"}
+        if duel.target_house_id != player.house_id:
+            return {"ok": False, "message": "Принять или отклонить вызов может только Лорд/Леди Дома-цели."}
+
+        result = _accept_duel(db=db, duel=duel, payload=payload)
+        if not result.get("ok"):
+            db.rollback()
+            return _fix_text_map(result)
+
+        db.commit()
+        return _fix_text_map(result)
+    finally:
+        db.close()
+
+
+@router.post("/duels/refuse/{player_id}/{duel_id}")
+def refuse_player_duel(player_id: int, duel_id: int, payload: dict = Body(default={})):
+    db: Session = SessionLocal()
+
+    try:
+        if payload is None or not isinstance(payload, dict):
+            payload = {}
+
+        player = (
+            db.query(Player)
+            .options(joinedload(Player.role), joinedload(Player.house), joinedload(Player.game))
+            .filter(Player.id == player_id)
+            .first()
+        )
+        if not player:
+            return {"ok": False, "message": "Игрок не найден"}
+        if not player.house:
+            return {"ok": False, "message": "У игрока не найден Дом"}
+        if not player.role or player.role.code != "lord_lady":
+            return {"ok": False, "message": "Только Лорд/Леди может бросать и принимать вызовы."}
+
+        duel = (
+            db.query(GameDuel)
+            .options(
+                joinedload(GameDuel.challenger_house),
+                joinedload(GameDuel.target_house),
+                joinedload(GameDuel.winner_house),
+            )
+            .filter(
+                GameDuel.id == duel_id,
+                GameDuel.game_id == player.game_id,
+            )
+            .first()
+        )
+        if not duel:
+            return {"ok": False, "message": "Дуэль не найдена"}
+        if duel.target_house_id != player.house_id:
+            return {"ok": False, "message": "Принять или отклонить вызов может только Лорд/Леди Дома-цели."}
+
+        result = _refuse_duel(db=db, duel=duel, payload=payload)
+        if not result.get("ok"):
+            db.rollback()
+            return _fix_text_map(result)
+
+        db.commit()
+        return _fix_text_map(result)
     finally:
         db.close()
 

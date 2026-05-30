@@ -478,6 +478,12 @@
         <div id="dealResultBox"></div>
     </section>
 
+    <section class="card" id="duelSection" style="display:none;">
+        <div class="eyebrow">Дуэли Домов</div>
+        <div id="duelControls" class="muted">Подготовка дуэльного блока...</div>
+        <div id="duelResultBox"></div>
+    </section>
+
     <section class="card" id="treasurerDealsSection" style="display:none;">
         <div class="eyebrow">Подтверждение сделок</div>
         <div id="treasurerDealsControls" class="muted">Подготовка списка сделок...</div>
@@ -581,6 +587,7 @@ window.dealDraft = window.dealDraft || {
   offerText: ""
 };
 let dealSubmitBusy = false;
+let duelActionBusy = false;
 let isUserEditingDeal = false;
 let lastUserInteractionAt = 0;
 const PHASE_LABELS = {
@@ -812,6 +819,7 @@ async function loadPlayerState() {
     updatePlayerStateHeader(data);
     renderWhisperFeed(data);
     saveDealDraftFromForm();
+    renderDuelControls(data);
     renderDealControls(data);
     renderTreasurerDealControls(data);
     renderAllianceControls(data);
@@ -880,6 +888,25 @@ function renderDealResult(ok, title, text) {
   `;
 }
 
+function renderDuelResult(ok, title, text) {
+  const resultEl = document.getElementById("duelResultBox");
+  if (!resultEl) return;
+
+  resultEl.innerHTML = `
+    <div class="explore-result ${ok ? "ok" : "error"}">
+      <div class="explore-result-title">${escapeHtml(fixEncoding(title))}</div>
+      <div class="explore-result-text">${escapeHtml(fixEncoding(text))}</div>
+    </div>
+  `;
+}
+
+function clearDuelResult() {
+  const resultEl = document.getElementById("duelResultBox");
+  if (resultEl) {
+    resultEl.innerHTML = "";
+  }
+}
+
 function clearDealResult() {
   const resultEl = document.getElementById("dealResultBox");
   if (resultEl) {
@@ -923,6 +950,103 @@ function renderAllianceControls(data) {
           <div class="muted" style="margin-top:6px;">Предательство: +1 золото, -1 влияние вам, +1 влияние второму Дому</div>
         </div>
       `).join("")}
+    </div>
+  `;
+}
+
+function formatDuelStatus(status) {
+  const normalized = String(status || "").trim().toLowerCase();
+  if (normalized === "challenged") return "Вызов объявлен";
+  if (normalized === "accepted") return "Вызов принят";
+  if (normalized === "refused") return "Вызов отклонён";
+  if (normalized === "resolved") return "Дуэль завершена";
+  return status || "—";
+}
+
+function buildDuelTitle(duel) {
+  const challenger = duel?.challenger_house?.name || `Дом #${duel?.challenger_house_id || "?"}`;
+  const target = duel?.target_house?.name || `Дом #${duel?.target_house_id || "?"}`;
+  return `${fixEncoding(challenger)} против ${fixEncoding(target)}`;
+}
+
+function renderDuelControls(data) {
+  const section = document.getElementById("duelSection");
+  const controls = document.getElementById("duelControls");
+  if (!section || !controls) return;
+
+  const roleCode = data?.role?.code || null;
+  const canUseDuel = hasActivePhase(data, ["duel"]);
+  const houses = Array.isArray(data?.available_duel_houses) ? data.available_duel_houses : [];
+  const activeDuels = Array.isArray(data?.active_house_duels) ? data.active_house_duels : [];
+  const incomingDuels = Array.isArray(data?.incoming_house_duels) ? data.incoming_house_duels : [];
+  const isLord = roleCode === "lord_lady";
+
+  if (!canUseDuel) {
+    section.style.display = "none";
+    controls.innerHTML = "";
+    clearDuelResult();
+    return;
+  }
+
+  section.style.display = "";
+
+  if (!isLord) {
+    controls.innerHTML = `
+      <div class="action-box">
+        <div class="big-text">Вызовами управляет Лорд / Леди Дома.</div>
+        <div class="muted">На этапе дуэлей именно Лорд / Леди бросает вызов, принимает его или отклоняет. Остальным игрокам важно координироваться и готовить Дом к сцене.</div>
+      </div>
+    `;
+    return;
+  }
+
+  controls.innerHTML = `
+    <div class="action-box">
+      <div class="big-text">Бросьте вызов другому Дому</div>
+      <div class="muted">Дом сам объявляет конфликт. Ведущий по-прежнему только фиксирует победителя и исход сцены.</div>
+      <div class="field">
+        <label class="field-label" for="duelTargetHouse">Кому бросаем вызов</label>
+        <select id="duelTargetHouse" class="field-control">
+          <option value="">Выберите Дом</option>
+          ${houses.map(house => `<option value="${house.id}">${escapeHtml(fixEncoding(house.name || house.house_key || `Дом #${house.id}`))}</option>`).join("")}
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label" for="duelStakeGold">Ставка золотом</label>
+        <input id="duelStakeGold" class="field-control" type="number" min="1" step="1" value="3" />
+      </div>
+      <div class="expedition-inline-actions">
+        <button type="button" class="btn" id="duelChallengeBtn" onclick="createHouseDuel()" ${(duelActionBusy || !houses.length) ? "disabled" : ""}>${duelActionBusy ? "Отправляю вызов..." : "Бросить вызов"}</button>
+      </div>
+      ${incomingDuels.length ? `
+        <div class="big-text" style="font-size:18px;margin-top:14px;">Входящие вызовы</div>
+        <div class="expedition-inline-actions">
+          ${incomingDuels.map(duel => `
+            <div class="warning-box">
+              <div class="big-text" style="font-size:16px;">${escapeHtml(buildDuelTitle(duel))}</div>
+              <div class="muted" style="margin-top:6px;">Статус: ${escapeHtml(formatDuelStatus(duel?.status))}</div>
+              <div class="muted" style="margin-top:6px;">Ставка: ${escapeHtml(duel?.stake_gold ?? "—")} золота</div>
+              <div class="expedition-inline-actions">
+                <button type="button" class="btn" onclick="acceptHouseDuel(${Number(duel?.id || 0)})" ${duelActionBusy ? "disabled" : ""}>Принять</button>
+                <button type="button" class="btn" onclick="refuseHouseDuel(${Number(duel?.id || 0)})" ${duelActionBusy ? "disabled" : ""}>Отклонить</button>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      ` : `<div class="muted" style="margin-top:14px;">Пока никто не бросил вашему Дому вызов.</div>`}
+      ${activeDuels.length ? `
+        <div class="big-text" style="font-size:18px;margin-top:14px;">Текущие дуэли вашего Дома</div>
+        <div class="expedition-inline-actions">
+          ${activeDuels.map(duel => `
+            <div class="warning-box">
+              <div class="big-text" style="font-size:16px;">${escapeHtml(buildDuelTitle(duel))}</div>
+              <div class="muted" style="margin-top:6px;">Статус: ${escapeHtml(formatDuelStatus(duel?.status))}</div>
+              <div class="muted" style="margin-top:6px;">Ставка: ${escapeHtml(duel?.stake_gold ?? "—")} золота</div>
+              ${duel?.live_bonus_label ? `<div class="muted" style="margin-top:6px;">Бонус сцены: ${escapeHtml(fixEncoding(duel.live_bonus_label))}</div>` : ""}
+            </div>
+          `).join("")}
+        </div>
+      ` : ""}
     </div>
   `;
 }
@@ -1488,6 +1612,92 @@ async function createExpedition() {
   } catch (e) {
     console.error("create expedition error", e);
     renderExpeditionResult(false, "Действие не выполнено", "Не удалось назначить экспедицию");
+  }
+}
+
+async function createHouseDuel() {
+  if (duelActionBusy) return;
+  const playerId = window.PLAYER_ID;
+  const targetHouseId = Number(document.getElementById("duelTargetHouse")?.value || 0);
+  const stakeGold = Number(document.getElementById("duelStakeGold")?.value || 0);
+  const button = document.getElementById("duelChallengeBtn");
+
+  duelActionBusy = true;
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Отправляю вызов...";
+  }
+
+  try {
+    const res = await fetch(`/player/duels/challenge/${playerId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        target_house_id: targetHouseId,
+        stake_gold: stakeGold
+      })
+    });
+    const data = await res.json();
+    renderDuelResult(!!data?.ok, data?.ok ? "Вызов отправлен" : "Действие не выполнено", fixEncoding(data?.message || data?.detail || "Ошибка"));
+    await loadPlayerState();
+  } catch (e) {
+    console.error("create duel error", e);
+    renderDuelResult(false, "Действие не выполнено", "Не удалось создать вызов на дуэль");
+  } finally {
+    duelActionBusy = false;
+    await loadPlayerState();
+  }
+}
+
+async function acceptHouseDuel(duelId) {
+  if (duelActionBusy) return;
+  const playerId = window.PLAYER_ID;
+  duelActionBusy = true;
+
+  try {
+    const res = await fetch(`/player/duels/accept/${playerId}/${duelId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({})
+    });
+    const data = await res.json();
+    renderDuelResult(!!data?.ok, data?.ok ? "Вызов принят" : "Действие не выполнено", fixEncoding(data?.message || data?.detail || "Ошибка"));
+    await loadPlayerState();
+  } catch (e) {
+    console.error("accept duel error", e);
+    renderDuelResult(false, "Действие не выполнено", "Не удалось принять вызов");
+  } finally {
+    duelActionBusy = false;
+    await loadPlayerState();
+  }
+}
+
+async function refuseHouseDuel(duelId) {
+  if (duelActionBusy) return;
+  const playerId = window.PLAYER_ID;
+  duelActionBusy = true;
+
+  try {
+    const res = await fetch(`/player/duels/refuse/${playerId}/${duelId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({})
+    });
+    const data = await res.json();
+    renderDuelResult(!!data?.ok, data?.ok ? "Вызов отклонён" : "Действие не выполнено", fixEncoding(data?.message || data?.detail || "Ошибка"));
+    await loadPlayerState();
+  } catch (e) {
+    console.error("refuse duel error", e);
+    renderDuelResult(false, "Действие не выполнено", "Не удалось отклонить вызов");
+  } finally {
+    duelActionBusy = false;
+    await loadPlayerState();
   }
 }
 
