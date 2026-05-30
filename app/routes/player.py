@@ -438,6 +438,32 @@ def _build_last_whisper_state_for_player(db: Session, player: Player) -> dict | 
     }
 
 
+
+def _get_single_influence_leader(db: Session, game_id: int) -> House | None:
+    houses = (
+        db.query(House)
+        .filter(House.game_id == game_id)
+        .order_by(House.id.asc())
+        .all()
+    )
+    if not houses:
+        return None
+
+    leaders = sorted(
+        houses,
+        key=lambda house: int(getattr(house, "resource_influence", 0) or 0),
+        reverse=True,
+    )
+    top_value = int(getattr(leaders[0], "resource_influence", 0) or 0)
+    top_houses = [
+        house
+        for house in leaders
+        if int(getattr(house, "resource_influence", 0) or 0) == top_value
+    ]
+    if len(top_houses) != 1:
+        return None
+    return top_houses[0]
+
 def _load_expedition_locations_catalog() -> dict[str, dict]:
     catalog = {}
     try:
@@ -2301,6 +2327,22 @@ def apply_last_whisper_action(player_id: int, payload: dict = Body(default={})):
             effect_result = _apply_house_effect(db, target_house, {"influence": 1})
             resources_changed = effect_result.get("resources_changed") if isinstance(effect_result, dict) else {}
             tv_text = f"{target_house.name} получил +1 влияние благодаря тайной поддержке"
+        elif action_code == "crown_tax":
+            target_house = _get_single_influence_leader(db, player.game_id)
+            if target_house is None:
+                tv_text = "Корона не нашла единственного носителя. Влияние не изменилось."
+            else:
+                effect_result = _apply_house_effect(db, target_house, {"influence": -1})
+                resources_changed = effect_result.get("resources_changed") if isinstance(effect_result, dict) else {}
+                influence_change = resources_changed.get("influence") if isinstance(resources_changed, dict) else {}
+                actual_delta = 0
+                if isinstance(influence_change, dict):
+                    actual_delta = int(influence_change.get("delta") or 0)
+                if actual_delta == -1:
+                    tv_text = f"Корона стала тяжелее. {target_house.name} потерял 1 влияние."
+                else:
+                    zero_target_name = f"Дома {target_house.name[4:]}" if isinstance(target_house.name, str) and target_house.name.startswith("Дом ") else f"Дома {target_house.name}"
+                    tv_text = f"Корона стала тяжелее, но влияние {zero_target_name} уже не может быть уменьшено."
         else:
             tv_text = action_meta["tv_text"].format(house_name=player.house.name if player.house else "Р”РѕРј")
 
@@ -2321,6 +2363,7 @@ def apply_last_whisper_action(player_id: int, payload: dict = Body(default={})):
             "action_code": action_meta["code"],
             "action_label": action_meta["label"],
             "tv_text": action_meta["tv_text"].format(house_name=player.house.name if player.house else "Дом"),
+            "resources_changed": resources_changed,
         }
 
         phase.payload = {

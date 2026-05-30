@@ -973,12 +973,16 @@ function renderLastWhisperInfo(data) {
   }
 
   const quietSupportAction = availableActions.find(action => String(action?.code || "").trim() === "quiet_support") || null;
-  const otherActions = availableActions.filter(action => String(action?.code || "").trim() !== "quiet_support");
+  const crownTaxAction = availableActions.find(action => String(action?.code || "").trim() === "crown_tax") || null;
+  const otherActions = availableActions.filter(action => {
+    const code = String(action?.code || "").trim();
+    return code !== "quiet_support" && code !== "crown_tax";
+  });
 
   controls.innerHTML = `
     <div class="action-box">
       <div class="big-text">Действие Мастера шепота</div>
-      <div class="muted">Только Тихая поддержка уже даёт реальный эффект: выбранный Дом получает +1 влияние.</div>
+      <div class="muted">Тихая поддержка усиливает выбранный Дом, а Налог на корону бьёт по единоличному лидеру по влиянию.</div>
       ${quietSupportAction ? `
         <div style="margin-top:12px;">
           <label class="muted" for="lastWhisperTargetHouse">Дом для тайной поддержки</label>
@@ -996,6 +1000,16 @@ function renderLastWhisperInfo(data) {
             onclick="submitLastWhisperAction('quiet_support')"
             ${(lastWhisperActionBusy || !availableTargetHouses.length) ? "disabled" : ""}
           >${lastWhisperActionBusy ? "Фиксирую..." : escapeHtml(fixEncoding(quietSupportAction.label || "Тихая поддержка"))}</button>
+        </div>
+      ` : ""}
+      ${crownTaxAction ? `
+        <div class="expedition-inline-actions" style="margin-top:12px;">
+          <button
+            type="button"
+            class="btn"
+            onclick="submitLastWhisperAction('crown_tax')"
+            ${lastWhisperActionBusy ? "disabled" : ""}
+          >${lastWhisperActionBusy ? "Фиксирую..." : escapeHtml(fixEncoding(crownTaxAction.label || "Налог на корону"))}</button>
         </div>
       ` : ""}
       ${otherActions.length ? `
