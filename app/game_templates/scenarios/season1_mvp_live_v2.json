@@ -42,7 +42,9 @@
           "content": {
             "time_limit_sec": 15
           },
-          "reward": {},
+          "reward": {
+            "influence": 1
+          },
           "fail_effect": {}
         }
       ]
@@ -87,7 +89,9 @@
             "is_media_question": false,
             "difficulty": "easy"
           },
-          "reward": {},
+          "reward": {
+            "influence": 1
+          },
           "fail_effect": {}
         },
         {
@@ -113,7 +117,9 @@
             "is_media_question": false,
             "difficulty": "easy"
           },
-          "reward": {},
+          "reward": {
+            "influence": 1
+          },
           "fail_effect": {}
         },
         {
@@ -139,7 +145,9 @@
             "is_media_question": false,
             "difficulty": "easy"
           },
-          "reward": {},
+          "reward": {
+            "influence": 1
+          },
           "fail_effect": {}
         },
         {
@@ -165,7 +173,9 @@
             "is_media_question": false,
             "difficulty": "easy"
           },
-          "reward": {},
+          "reward": {
+            "influence": 1
+          },
           "fail_effect": {}
         },
         {
@@ -191,7 +201,9 @@
             "is_media_question": false,
             "difficulty": "easy"
           },
-          "reward": {},
+          "reward": {
+            "influence": 1
+          },
           "fail_effect": {}
         }
       ]
@@ -238,7 +250,9 @@
             "is_media_question": false,
             "difficulty": "easy"
           },
-          "reward": {},
+          "reward": {
+            "influence": 1
+          },
           "fail_effect": {}
         },
         {
@@ -266,7 +280,9 @@
             "is_media_question": false,
             "difficulty": "easy"
           },
-          "reward": {},
+          "reward": {
+            "influence": 1
+          },
           "fail_effect": {}
         },
         {
@@ -294,7 +310,9 @@
             "is_media_question": false,
             "difficulty": "easy"
           },
-          "reward": {},
+          "reward": {
+            "influence": 1
+          },
           "fail_effect": {}
         },
         {
@@ -322,7 +340,9 @@
             "is_media_question": false,
             "difficulty": "easy"
           },
-          "reward": {},
+          "reward": {
+            "influence": 1
+          },
           "fail_effect": {}
         },
         {

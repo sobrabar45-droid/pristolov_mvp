@@ -186,6 +186,41 @@
             line-height: 1.45;
         }
 
+        .answer-feedback {
+            margin-top: 12px;
+            border-radius: 14px;
+            padding: 12px;
+            border: 1px solid var(--line);
+            background: var(--panel-2);
+        }
+
+        .answer-feedback.ok {
+            background: linear-gradient(180deg, rgba(78,165,107,0.14), rgba(78,165,107,0.05));
+            border-color: rgba(78,165,107,0.24);
+        }
+
+        .answer-feedback.info {
+            background: linear-gradient(180deg, rgba(76,139,245,0.14), rgba(76,139,245,0.05));
+            border-color: rgba(76,139,245,0.24);
+        }
+
+        .answer-feedback.error {
+            background: linear-gradient(180deg, rgba(180,83,83,0.14), rgba(180,83,83,0.05));
+            border-color: rgba(180,83,83,0.24);
+        }
+
+        .answer-feedback-title {
+            font-size: 16px;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+
+        .answer-feedback-text {
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.45;
+        }
+
         .expedition-choice-grid {
             display: grid;
             gap: 8px;
@@ -511,6 +546,7 @@
     <section class="card">
         <div class="eyebrow">Активные задания</div>
         <div id="assignmentsContainer" class="muted">Загрузка заданий...</div>
+        <div id="assignmentFeedbackBox"></div>
     </section>
 
     <section class="card">
@@ -1614,6 +1650,71 @@ async function loadAssignments() {
 window.playerIsEditingAnswer = window.playerIsEditingAnswer || false;
 window.answerDrafts = window.answerDrafts || {};
 window.latestPlayerState = window.latestPlayerState || null;
+window.latestAssignmentFeedback = window.latestAssignmentFeedback || null;
+
+function renderAssignmentFeedback(feedback) {
+  const box = document.getElementById("assignmentFeedbackBox");
+  if (!box) return;
+
+  if (!feedback) {
+    box.innerHTML = "";
+    return;
+  }
+
+  const tone = feedback.tone || "info";
+  const title = fixEncoding(feedback.title || "Ответ принят");
+  const text = fixEncoding(feedback.text || "");
+  const extra = fixEncoding(feedback.extra || "");
+
+  box.innerHTML = `
+    <div class="answer-feedback ${escapeHtml(tone)}">
+      <div class="answer-feedback-title">${escapeHtml(title)}</div>
+      <div class="answer-feedback-text">${escapeHtml(text)}</div>
+      ${extra ? `<div class="explore-result-extra">${escapeHtml(extra)}</div>` : ""}
+    </div>
+  `;
+}
+
+function buildAssignmentFeedbackFromAnswerResponse(data) {
+  const resultPayload = data?.result_payload && typeof data.result_payload === "object" ? data.result_payload : {};
+  const assignment = data?.assignment && typeof data.assignment === "object" ? data.assignment : {};
+  const resourcesChanged = resultPayload?.resources_changed && typeof resultPayload.resources_changed === "object"
+    ? resultPayload.resources_changed
+    : {};
+  const influenceChange = resourcesChanged?.influence;
+  const influenceDelta = Number(
+    typeof influenceChange === "object" && influenceChange !== null
+      ? influenceChange.delta
+      : influenceChange || 0
+  );
+  const isCorrect = assignment?.is_correct === true || resultPayload?.is_correct === true;
+  const isWrong = assignment?.is_correct === false || resultPayload?.is_correct === false;
+
+  if (isCorrect && influenceDelta > 0) {
+    return {
+      tone: "ok",
+      title: "Правильно",
+      text: "Дом усилил позиции.",
+      extra: `+${influenceDelta} влияние`
+    };
+  }
+
+  if (isWrong) {
+    return {
+      tone: "info",
+      title: "Ответ принят",
+      text: "Неверный ответ не изменил влияние Дома.",
+      extra: "0 влияния"
+    };
+  }
+
+  return {
+    tone: "info",
+    title: "Ответ принят",
+    text: "Результат ответа зафиксирован.",
+    extra: influenceDelta > 0 ? `+${influenceDelta} влияние` : ""
+  };
+}
 
 function renderAssignments(data) {
   const container = document.getElementById("assignmentsContainer");
@@ -1629,11 +1730,15 @@ function renderAssignments(data) {
       container.innerHTML = roleCode === "lord_lady"
         ? `<div class="muted">Суд Домов: ожидается подтверждение позиции Дома</div>`
         : `<div class="muted">Суд Домов: решение принимает Лорд / Леди</div>`;
+      renderAssignmentFeedback(window.latestAssignmentFeedback);
       return;
     }
     container.innerHTML = `<div class="muted">Нет активных заданий</div>`;
+    renderAssignmentFeedback(window.latestAssignmentFeedback);
     return;
   }
+
+  renderAssignmentFeedback(window.latestAssignmentFeedback);
 
   const a = issued[0];
 
@@ -1838,6 +1943,8 @@ async function submitAnswer(assignmentId, code) {
       alert(fixEncoding(data?.message || "Не удалось отправить ответ"));
       return;
     }
+
+    window.latestAssignmentFeedback = buildAssignmentFeedbackFromAnswerResponse(data);
 
     await loadAssignments();
     await loadPlayerState();
