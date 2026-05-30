@@ -1,0 +1,297 @@
+version: 1
+registry_status: passive
+runtime_consumed: false
+created_from_audit: docs/ROLE_ACTION_REGISTRY_MIGRATION_AUDIT.md
+notes:
+  - "This file documents frozen V1 role actions only."
+  - "Runtime permission gates still live in existing routes, templates, and services."
+  - "Do not expose new role mechanics from this registry without a separate implementation patch and smoke coverage."
+
+actions:
+  - action_code: quiet_support
+    role_code: whisper_master
+    label: "Тихая поддержка"
+    phase_or_context: last_whisper
+    route_or_source: "POST /player/last-whisper/action/{player_id}"
+    mutates_state: true
+    smoke_covered: true
+    smoke_script: scripts/smoke_last_whisper_quiet_support.py
+    status: v1_frozen
+    notes: "Adds +1 influence to a selected target House and records a Last Whisper event."
+
+  - action_code: crown_tax
+    role_code: whisper_master
+    label: "Налог на корону"
+    phase_or_context: last_whisper
+    route_or_source: "POST /player/last-whisper/action/{player_id}"
+    mutates_state: true
+    smoke_covered: true
+    smoke_script: scripts/smoke_last_whisper_crown_tax.py
+    status: v1_frozen
+    notes: "Reduces the single influence leader by 1 when possible; tie and zero-delta cases are handled honestly."
+
+  - action_code: break_alliance
+    role_code: whisper_master
+    label: "Разрыв союза"
+    phase_or_context: last_whisper
+    route_or_source: "POST /player/last-whisper/action/{player_id}"
+    mutates_state: true
+    smoke_covered: true
+    smoke_script: scripts/smoke_last_whisper_break_alliance.py
+    status: v1_frozen
+    notes: "Breaks one selected active alliance through existing GameDeal status and Last Whisper event path."
+
+  - action_code: duel_challenge
+    role_code: lord_lady
+    label: "Бросить вызов"
+    phase_or_context: duel
+    route_or_source: "POST /player/duels/challenge/{player_id}"
+    mutates_state: true
+    smoke_covered: true
+    smoke_script: scripts/smoke_player_duel_lifecycle.py
+    status: v1_frozen
+    notes: "Creates a player-side duel challenge for another House."
+
+  - action_code: duel_accept
+    role_code: lord_lady
+    label: "Принять вызов"
+    phase_or_context: duel
+    route_or_source: "POST /player/duels/accept/{player_id}/{duel_id}"
+    mutates_state: true
+    smoke_covered: true
+    smoke_script: scripts/smoke_player_duel_lifecycle.py
+    status: v1_frozen
+    notes: "Target House Lord/Lady accepts an incoming duel challenge."
+
+  - action_code: duel_refuse
+    role_code: lord_lady
+    label: "Отклонить вызов"
+    phase_or_context: duel
+    route_or_source: "POST /player/duels/refuse/{player_id}/{duel_id}"
+    mutates_state: true
+    smoke_covered: true
+    smoke_script: scripts/smoke_player_duel_lifecycle.py
+    status: v1_frozen
+    notes: "Target House Lord/Lady refuses an incoming duel challenge."
+
+  - action_code: duel_host_resolve
+    surface: master_operator
+    label: "Зафиксировать победителя дуэли"
+    phase_or_context: duel
+    route_or_source: "POST /dev/games/{room_code}/duels/{duel_id}/resolve"
+    mutates_state: true
+    smoke_covered: true
+    smoke_script: scripts/smoke_player_duel_lifecycle.py
+    status: v1_frozen
+    notes: "Host/operator resolves the accepted duel; player side does not resolve winners."
+
+  - action_code: expedition_create
+    role_code: lord_lady
+    label: "Создать экспедицию"
+    phase_or_context: "map/free_play"
+    route_or_source: "POST /player/expedition/create/{player_id}"
+    mutates_state: true
+    smoke_covered: true
+    smoke_script: scripts/smoke_expedition_lifecycle.py
+    status: v1_frozen
+    notes: "Creates a House expedition and expedition plan metadata."
+
+  - action_code: expedition_choose_location
+    role_code: expedition_party
+    label: "Выбрать маршрут экспедиции"
+    phase_or_context: expedition_active
+    route_or_source: "POST /player/expedition/{expedition_id}/choose-location/{player_id}"
+    mutates_state: true
+    smoke_covered: true
+    smoke_script: scripts/smoke_expedition_lifecycle.py
+    status: v1_frozen
+    notes: "Records a location vote/choice for an active expedition."
+
+  - action_code: expedition_resolve
+    role_code: expedition_party
+    label: "Завершить экспедицию"
+    phase_or_context: expedition_active
+    route_or_source: "POST /player/expedition/{expedition_id}/resolve/{player_id}"
+    mutates_state: true
+    smoke_covered: true
+    smoke_script: scripts/smoke_expedition_lifecycle.py
+    status: v1_frozen
+    notes: "Resolves expedition outcome and applies current runtime reward/penalty logic."
+
+  - action_code: assignment_answer
+    role_code: all_roles
+    label: "Ответить на задание"
+    phase_or_context: active_assignment
+    route_or_source: "POST /player/assignments/{assignment_id}/answer"
+    mutates_state: true
+    smoke_covered: true
+    smoke_script: scripts/smoke_assignment_reward_loop.py
+    status: v1_frozen
+    notes: "Shared answer transport for role assignments and question rewards."
+
+  - action_code: treasurer_confirm_deal
+    role_code: treasurer
+    label: "Подтвердить ресурсную сделку"
+    phase_or_context: "diplomacy/free_play"
+    route_or_source: "POST /player/deals/treasurer-confirm/{player_id}"
+    mutates_state: true
+    smoke_covered: true
+    smoke_script: scripts/smoke_treasurer_resource_deal.py
+    status: v1_frozen
+    notes: "Treasurer confirms a resource transfer after counterparty acceptance."
+
+  - action_code: treasurer_reject_deal
+    role_code: treasurer
+    label: "Отклонить ресурсную сделку"
+    phase_or_context: "diplomacy/free_play"
+    route_or_source: "POST /player/deals/treasurer-confirm/{player_id}"
+    mutates_state: true
+    smoke_covered: false
+    smoke_script: null
+    status: v1_partial
+    notes: "Route supports rejection, but focused smoke coverage currently centers on confirmation and repeat-confirm guard."
+
+  - action_code: deal_create
+    role_code: diplomat
+    label: "Создать договорённость"
+    phase_or_context: "diplomacy/free_play"
+    route_or_source: "POST /player/deals/create/{player_id}"
+    mutates_state: true
+    smoke_covered: true
+    smoke_script: scripts/smoke_treasurer_resource_deal.py
+    status: v1_partial
+    notes: "Covered through resource deal and Last Whisper alliance setup; needs dedicated diplomacy lifecycle smoke before expansion."
+
+  - action_code: deal_respond
+    role_code: house_member
+    label: "Ответить на договорённость"
+    phase_or_context: "diplomacy/free_play"
+    route_or_source: "POST /player/deals/respond/{player_id}"
+    mutates_state: true
+    smoke_covered: true
+    smoke_script: scripts/smoke_treasurer_resource_deal.py
+    status: v1_partial
+    notes: "Accept paths are covered indirectly; reject/counter/cancel need dedicated diplomacy lifecycle smoke."
+
+  - action_code: alliance_break_peaceful
+    role_code: lord_lady
+    label: "Мирно разорвать союз"
+    phase_or_context: "diplomacy/free_play"
+    route_or_source: "POST /player/alliances/break/{player_id}"
+    mutates_state: true
+    smoke_covered: false
+    smoke_script: null
+    status: v1_partial
+    notes: "Implemented live route and UI surface; keep frozen/contained until dedicated smoke validates it."
+
+  - action_code: alliance_betrayal
+    role_code: lord_lady
+    label: "Предать союз"
+    phase_or_context: "diplomacy/free_play"
+    route_or_source: "POST /player/alliances/break/{player_id}"
+    mutates_state: true
+    smoke_covered: false
+    smoke_script: null
+    status: v1_partial
+    notes: "Implemented but high trust-risk because it changes gold/influence; do not promote without dedicated smoke and gameplay approval."
+
+  - action_code: scenario_start_next_round
+    surface: master_operator
+    label: "Запустить следующий раунд сценария"
+    phase_or_context: scenario_director
+    route_or_source: "POST /dev/games/{room_code}/scenario/start-next-round"
+    mutates_state: true
+    smoke_covered: true
+    smoke_script: scripts/smoke_scenario_director_advance.py
+    status: v1_frozen
+    notes: "Operator action for scenario director flow."
+
+  - action_code: scenario_advance
+    surface: master_operator
+    label: "Продвинуть сценарий"
+    phase_or_context: scenario_director
+    route_or_source: "POST /dev/games/{room_code}/scenario/advance"
+    mutates_state: true
+    smoke_covered: true
+    smoke_script: scripts/smoke_scenario_director_advance.py
+    status: v1_frozen
+    notes: "Operator action for closing/advancing current scenario stage; Court guard covered by Court smoke."
+
+  - action_code: host_round_open_next_question
+    surface: master_operator
+    label: "Открыть следующий вопрос"
+    phase_or_context: host_round
+    route_or_source: "POST /dev/host-rounds/{host_round_id}/open-next-question"
+    mutates_state: true
+    smoke_covered: true
+    smoke_script: scripts/smoke_assignment_reward_loop.py
+    status: v1_frozen
+    notes: "Operator action for question runtime; also used by scenario director smoke."
+
+  - action_code: host_round_force_close_question
+    surface: master_operator
+    label: "Закрыть текущий вопрос"
+    phase_or_context: host_round
+    route_or_source: "POST /dev/host-rounds/{host_round_id}/force-close-question"
+    mutates_state: true
+    smoke_covered: true
+    smoke_script: scripts/smoke_scenario_director_advance.py
+    status: v1_frozen
+    notes: "Operator action used by current smoke scripts to close host-led questions."
+
+  - action_code: host_round_continue
+    surface: master_operator
+    label: "Продолжить после раунда"
+    phase_or_context: host_round
+    route_or_source: "POST /dev/host-rounds/{host_round_id}/host-continue"
+    mutates_state: true
+    smoke_covered: true
+    smoke_script: scripts/smoke_scenario_director_advance.py
+    status: v1_frozen
+    notes: "Operator action for finishing completed host rounds."
+
+  - action_code: court_lifecycle
+    surface: master_operator
+    label: "Провести Суд Домов до завершения"
+    phase_or_context: court
+    route_or_source: "POST /dev/court/*"
+    mutates_state: true
+    smoke_covered: true
+    smoke_script: scripts/smoke_court_lifecycle.py
+    status: v1_frozen
+    notes: "Grouped operator lifecycle: bracket, pair, question, result, winner confirmation, next pair, court_finished."
+
+deferred_actions:
+  - action_code: embassy_offer
+    status: v2_deferred
+    notes: "Declared in YAML but not promoted to runtime; wait for dedicated diplomacy lifecycle smoke."
+  - action_code: trade_contact
+    status: v2_deferred
+    notes: "Needs payoff contract."
+  - action_code: map_route
+    status: v2_deferred
+    notes: "Requires map/location/expedition contract audit."
+  - action_code: sanction
+    status: v2_deferred
+    notes: "Potential conflict with diplomacy/Court balance."
+  - action_code: alliance_decision
+    status: v2_deferred
+    notes: "Overlaps existing diplomacy routes."
+  - action_code: rumor
+    status: v2_deferred
+    notes: "Do not add new Whisper mechanics immediately."
+  - action_code: hidden_signal
+    status: v2_deferred
+    notes: "Hidden-information design risk."
+  - action_code: blackmail
+    status: v2_deferred
+    notes: "High gameplay/safety risk."
+  - action_code: exchange
+    status: v2_deferred
+    notes: "Reopens unfinished economy layer."
+  - action_code: investment
+    status: v2_deferred
+    notes: "Reopens unfinished economy layer."
+  - action_code: heraldic_step
+    status: v2_deferred
+    notes: "Crest/heraldry payoff disabled in V1."
