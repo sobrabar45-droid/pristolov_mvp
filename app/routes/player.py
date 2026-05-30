@@ -121,6 +121,24 @@ V1_DIPLOMACY_RESOURCE_TYPES = {
     "influence",
 }
 
+LAST_WHISPER_ACTIONS = {
+    "quiet_support": {
+        "code": "quiet_support",
+        "label": "Тихая поддержка",
+        "tv_text": "{house_name} пустил тихую поддержку перед финалом.",
+    },
+    "alliance_break": {
+        "code": "alliance_break",
+        "label": "Разрыв союза",
+        "tv_text": "{house_name} вмешался в союзные договорённости.",
+    },
+    "crown_tax": {
+        "code": "crown_tax",
+        "label": "Налог на корону",
+        "tv_text": "{house_name} потребовал налог на корону.",
+    },
+}
+
 
 def _issue_player_token() -> str:
     return token_urlsafe(24)
@@ -320,6 +338,104 @@ def _get_phase_label(phase_type: str | None) -> str | None:
     if phase_type == "last_whisper":
         return "РџРѕСЃР»РµРґРЅРёР№ РЁС‘РїРѕС‚"
     return phase_labels.get(phase_type, phase_type)
+
+
+def _get_active_last_whisper_phase(db: Session, game_id: int) -> GamePhase | None:
+    return (
+        db.query(GamePhase)
+        .filter(
+            GamePhase.game_id == game_id,
+            GamePhase.phase_type == "last_whisper",
+            GamePhase.status == "active",
+        )
+        .order_by(GamePhase.id.desc())
+        .first()
+    )
+
+
+def _get_last_whisper_actions_from_phase(phase: GamePhase | None) -> list[dict]:
+    if not phase:
+        return []
+    payload = phase.payload if isinstance(phase.payload, dict) else {}
+    actions = payload.get("whisper_actions")
+    if not isinstance(actions, list):
+        return []
+    return [item for item in actions if isinstance(item, dict)]
+
+
+def _serialize_last_whisper_action(raw_action: dict) -> dict:
+    house_name = fix_encoding(str(raw_action.get("house_name") or "").strip())
+    action_code = str(raw_action.get("action_code") or "").strip().lower()
+    action_label = fix_encoding(str(raw_action.get("action_label") or "").strip())
+    tv_text = fix_encoding(str(raw_action.get("tv_text") or "").strip())
+    target_house_name = fix_encoding(str(raw_action.get("target_house_name") or "").strip())
+    return {
+        "order_no": raw_action.get("order_no"),
+        "created_at": raw_action.get("created_at"),
+        "house_id": raw_action.get("house_id"),
+        "house_name": house_name or None,
+        "target_house_id": raw_action.get("target_house_id"),
+        "target_house_name": target_house_name or None,
+        "player_id": raw_action.get("player_id"),
+        "player_name": fix_encoding(str(raw_action.get("player_name") or "").strip()) or None,
+        "action_code": action_code or None,
+        "action_label": action_label or None,
+        "tv_text": tv_text or None,
+        "resources_changed": raw_action.get("resources_changed") if isinstance(raw_action.get("resources_changed"), dict) else {},
+    }
+
+
+def _build_last_whisper_state_for_player(db: Session, player: Player) -> dict | None:
+    phase = _get_active_last_whisper_phase(db, player.game_id)
+    if not phase:
+        return None
+
+    events = [_serialize_last_whisper_action(item) for item in _get_last_whisper_actions_from_phase(phase)]
+    viewer_event = None
+    for item in events:
+        if item.get("house_id") == player.house_id:
+            viewer_event = item
+            break
+
+    available_target_houses = []
+    if player.house_id:
+        other_houses = (
+            db.query(House)
+            .filter(
+                House.game_id == player.game_id,
+                House.id != player.house_id,
+            )
+            .order_by(House.id.asc())
+            .all()
+        )
+        available_target_houses = [
+            {
+                "id": house.id,
+                "name": house.name,
+                "house_key": house.house_key,
+            }
+            for house in other_houses
+        ]
+
+    return {
+        "active": True,
+        "phase_id": phase.id,
+        "opened_at": phase.opened_at.isoformat() if phase.opened_at else None,
+        "viewer_can_act": bool(player.role and player.role.code == "whisper_master" and player.house_id),
+        "viewer_has_acted": viewer_event is not None,
+        "viewer_action": viewer_event,
+        "available_actions": [
+            {
+                "code": item["code"],
+                "label": item["label"],
+                "requires_target_house": item["code"] == "quiet_support",
+            }
+            for item in LAST_WHISPER_ACTIONS.values()
+        ],
+        "available_target_houses": available_target_houses,
+        "events": events,
+        "latest_event": events[-1] if events else None,
+    }
 
 
 def _load_expedition_locations_catalog() -> dict[str, dict]:
@@ -1304,6 +1420,8 @@ def get_player_me(player_token: str):
                 if duel.target_house_id == player.house_id and duel.status == "challenged"
             ]
 
+        last_whisper_state = _build_last_whisper_state_for_player(db, player)
+
         return {
             "ok": True,
             "player": {
@@ -1361,6 +1479,7 @@ def get_player_me(player_token: str):
             "active_house_duels": [_serialize_player_duel(duel) for duel in active_house_duels],
             "incoming_house_duels": [_serialize_player_duel(duel) for duel in incoming_house_duels],
             "whisper_feed": _build_whisper_feed(db, player),
+            "last_whisper": last_whisper_state,
         }
 
     finally:
@@ -2115,6 +2234,108 @@ def refuse_player_duel(player_id: int, duel_id: int, payload: dict = Body(defaul
 
         db.commit()
         return _fix_text_map(result)
+    finally:
+        db.close()
+
+
+@router.post("/last-whisper/action/{player_id}")
+def apply_last_whisper_action(player_id: int, payload: dict = Body(default={})):
+    db: Session = SessionLocal()
+
+    try:
+        if payload is None:
+            payload = {}
+        if not isinstance(payload, dict):
+            return {
+                "ok": False,
+                "message": "РўРµР»Рѕ Р·Р°РїСЂРѕСЃР° РґРѕР»Р¶РЅРѕ Р±С‹С‚СЊ JSON-РѕР±СЉРµРєС‚РѕРј",
+            }
+
+        player = (
+            db.query(Player)
+            .options(joinedload(Player.role), joinedload(Player.house), joinedload(Player.game))
+            .filter(Player.id == player_id)
+            .first()
+        )
+        if not player:
+            return {"ok": False, "message": "РРіСЂРѕРє РЅРµ РЅР°Р№РґРµРЅ"}
+        if not player.house:
+            return {"ok": False, "message": "РЈ РёРіСЂРѕРєР° РЅРµ РЅР°Р№РґРµРЅ Р”РѕРј"}
+        if not player.role or player.role.code != "whisper_master":
+            return {"ok": False, "message": "Только Мастер шепота может действовать в этот момент."}
+
+        phase = _get_active_last_whisper_phase(db, player.game_id)
+        if not phase:
+            return {"ok": False, "message": "Окно Последнего Шёпота сейчас недоступно."}
+
+        action_code = str(payload.get("action_code") or "").strip().lower()
+        action_meta = LAST_WHISPER_ACTIONS.get(action_code)
+        if not action_meta:
+            return {"ok": False, "message": "Выберите одно из доступных действий Мастера шепота."}
+
+        phase_payload = phase.payload if isinstance(phase.payload, dict) else {}
+        raw_actions = _get_last_whisper_actions_from_phase(phase)
+        for item in raw_actions:
+            if item.get("house_id") == player.house_id:
+                return {"ok": False, "message": "Мастер шепота уже сделал ход."}
+
+        target_house = None
+        target_house_id = payload.get("target_house_id")
+        resources_changed = {}
+
+        if action_code == "quiet_support":
+            if not isinstance(target_house_id, int):
+                return {"ok": False, "message": "Выберите Дом, который получит тайную поддержку."}
+            if target_house_id == player.house_id:
+                return {"ok": False, "message": "Нельзя направить тайную поддержку своему Дому."}
+            target_house = (
+                db.query(House)
+                .filter(
+                    House.id == target_house_id,
+                    House.game_id == player.game_id,
+                )
+                .first()
+            )
+            if not target_house:
+                return {"ok": False, "message": "Целевой Дом не найден в этой игре."}
+            effect_result = _apply_house_effect(db, target_house, {"influence": 1})
+            resources_changed = effect_result.get("resources_changed") if isinstance(effect_result, dict) else {}
+            tv_text = f"{target_house.name} получил +1 влияние благодаря тайной поддержке"
+        else:
+            tv_text = action_meta["tv_text"].format(house_name=player.house.name if player.house else "Р”РѕРј")
+
+        action_meta = {
+            **action_meta,
+            "tv_text": tv_text,
+        }
+
+        event_payload = {
+            "order_no": len(raw_actions) + 1,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "house_id": player.house_id,
+            "house_name": player.house.name if player.house else None,
+            "target_house_id": target_house.id if target_house else None,
+            "target_house_name": target_house.name if target_house else None,
+            "player_id": player.id,
+            "player_name": player.nickname,
+            "action_code": action_meta["code"],
+            "action_label": action_meta["label"],
+            "tv_text": action_meta["tv_text"].format(house_name=player.house.name if player.house else "Дом"),
+        }
+
+        phase.payload = {
+            **phase_payload,
+            "whisper_actions": [*raw_actions, event_payload],
+        }
+        db.add(phase)
+        db.commit()
+
+        return _fix_text_map({
+            "ok": True,
+            "message": "Ход Мастера шепота зафиксирован.",
+            "event": _serialize_last_whisper_action(event_payload),
+            "resources_changed": resources_changed,
+        })
     finally:
         db.close()
 

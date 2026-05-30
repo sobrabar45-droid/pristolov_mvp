@@ -24,6 +24,36 @@ from app.services.court_service import (
 )
 
 
+def _text_quality_score(text):
+    if not isinstance(text, str):
+        return 0
+    cyrillic_count = sum(1 for ch in text if "\u0400" <= ch <= "\u04FF")
+    mojibake_markers = (
+        text.count("Р")
+        + text.count("С")
+        + text.count("Ñ")
+        + text.count("Ð")
+        + text.count("Г‘")
+        + text.count("Гѓ")
+        + text.count("Г‚")
+        + text.count("пїЅ")
+    )
+    return cyrillic_count - (mojibake_markers * 4)
+
+
+def fix_encoding(text):
+    if not isinstance(text, str) or not text:
+        return text
+
+    candidates = [text]
+    for encoding in ("latin1", "cp1251"):
+        try:
+            candidates.append(text.encode(encoding).decode("utf-8"))
+        except Exception:
+            pass
+    return max(candidates, key=_text_quality_score)
+
+
 def _get_tower_class(score: int) -> str:
     if score is None:
         score = 0
@@ -121,6 +151,60 @@ def _build_master_prompt(*, active_host_round, current_question, duels_block, ex
         "title": "Окно перехода",
         "body": f"Можно переводить игру дальше. Сейчас активны: {phase_text}.",
         "severity": "low",
+    }
+
+
+def _get_last_whisper_phase(active_phases):
+    for phase in active_phases or []:
+        if getattr(phase, "phase_type", None) == "last_whisper" and getattr(phase, "status", None) == "active":
+            return phase
+    return None
+
+
+def _serialize_last_whisper_event(raw_event: dict) -> dict:
+    house_name = fix_encoding(str(raw_event.get("house_name") or "").strip())
+    action_label = fix_encoding(str(raw_event.get("action_label") or "").strip())
+    tv_text = fix_encoding(str(raw_event.get("tv_text") or "").strip())
+    player_name = fix_encoding(str(raw_event.get("player_name") or "").strip())
+    target_house_name = fix_encoding(str(raw_event.get("target_house_name") or "").strip())
+    return {
+        "order_no": raw_event.get("order_no"),
+        "created_at": raw_event.get("created_at"),
+        "house_id": raw_event.get("house_id"),
+        "house_name": house_name or None,
+        "target_house_id": raw_event.get("target_house_id"),
+        "target_house_name": target_house_name or None,
+        "player_id": raw_event.get("player_id"),
+        "player_name": player_name or None,
+        "action_code": str(raw_event.get("action_code") or "").strip().lower() or None,
+        "action_label": action_label or None,
+        "tv_text": tv_text or None,
+        "resources_changed": raw_event.get("resources_changed") if isinstance(raw_event.get("resources_changed"), dict) else {},
+    }
+
+
+def _build_last_whisper_payload(active_phases):
+    phase = _get_last_whisper_phase(active_phases)
+    if not phase:
+        return None
+
+    payload = phase.payload if isinstance(phase.payload, dict) else {}
+    raw_events = payload.get("whisper_actions")
+    events = []
+    if isinstance(raw_events, list):
+        events = [
+            _serialize_last_whisper_event(item)
+            for item in raw_events
+            if isinstance(item, dict)
+        ]
+
+    return {
+        "active": True,
+        "phase_id": phase.id,
+        "opened_at": phase.opened_at.isoformat() if phase.opened_at else None,
+        "events": events,
+        "latest_event": events[-1] if events else None,
+        "events_count": len(events),
     }
 
 
@@ -951,6 +1035,7 @@ def get_game_master_state_logic(
         active_host_round=active_host_round,
         current_question_payload=current_question_payload,
     )
+    last_whisper_payload = _build_last_whisper_payload(active_phases)
 
     readiness_payload = {
         "ready_count": len(ready_houses),
@@ -1014,6 +1099,7 @@ def get_game_master_state_logic(
         "readiness": readiness_payload,
         "duels": duels_block,
         "expeditions": expeditions_block,
+        "last_whisper": last_whisper_payload,
         "towers_quick": towers_quick,
         "court_runtime": court_runtime_payload,
         "final_outcome": final_outcome_payload,
@@ -1630,6 +1716,7 @@ def get_game_master_tv_state_logic(
         active_host_round=active_host_round,
         current_question_payload=current_question_payload,
     )
+    last_whisper_payload = _build_last_whisper_payload(active_phases)
 
     return {
         "ok": True,
@@ -1665,6 +1752,7 @@ def get_game_master_tv_state_logic(
             "public_recent": map_events_payload,
         },
         "leaders": leaders,
+        "last_whisper": last_whisper_payload,
         "court_runtime": court_runtime_payload,
         "final_outcome": final_outcome_payload,
         "scenario_director": scenario_director_payload,

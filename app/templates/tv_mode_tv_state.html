@@ -1956,6 +1956,8 @@
 
     function renderLastWhisperActivity(state){
       const phase = safeList(state?.active_phases).find(item => pickText(item?.phase_type).trim().toLowerCase() === "last_whisper") || null;
+      const whisperState = state?.last_whisper && typeof state.last_whisper === "object" ? state.last_whisper : {};
+      const latestEvent = whisperState?.latest_event && typeof whisperState.latest_event === "object" ? whisperState.latest_event : null;
       const openedAt = Date.parse(pickText(phase?.opened_at));
       let countdown = "05:00";
       if (Number.isFinite(openedAt)) {
@@ -1964,6 +1966,7 @@
         const seconds = remainingSec % 60;
         countdown = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
       }
+      const latestEventText = pickText(latestEvent?.tv_text) || "Слухи ещё не оформились в явный ход, но напряжение в зале растёт.";
 
       return `
         <div class="court-scene">
@@ -1982,6 +1985,10 @@
               <div class="court-pair-item">
                 <span>Сцена</span>
                 <strong>Сейчас зал живёт слухами, паузой и ожиданием развязки</strong>
+              </div>
+              <div class="court-pair-item">
+                <span>Последний ход</span>
+                <strong>${escapeHtml(latestEventText)}</strong>
               </div>
               <div class="court-pair-item">
                 <span>Что дальше</span>

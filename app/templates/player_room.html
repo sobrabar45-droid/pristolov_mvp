@@ -487,6 +487,8 @@
     <section class="card" id="lastWhisperSection" style="display:none;">
         <div class="eyebrow">Последний Шёпот</div>
         <div id="lastWhisperInfo" class="muted">Дома плетут интриги перед финалом.</div>
+        <div id="lastWhisperControls" class="muted" style="margin-top:10px;"></div>
+        <div id="lastWhisperResultBox"></div>
     </section>
 
     <section class="card" id="treasurerDealsSection" style="display:none;">
@@ -593,6 +595,7 @@ window.dealDraft = window.dealDraft || {
 };
 let dealSubmitBusy = false;
 let duelActionBusy = false;
+let lastWhisperActionBusy = false;
 let isUserEditingDeal = false;
 let lastUserInteractionAt = 0;
 const PHASE_LABELS = {
@@ -913,24 +916,160 @@ function renderDealResult(ok, title, text) {
 function renderLastWhisperInfo(data) {
   const section = document.getElementById("lastWhisperSection");
   const info = document.getElementById("lastWhisperInfo");
+  const controls = document.getElementById("lastWhisperControls");
   if (!section || !info) return;
 
   const isActive = hasActivePhase(data, ["last_whisper"]);
   section.style.display = isActive ? "" : "none";
-  if (!isActive) return;
+  if (!isActive) {
+    if (controls) controls.innerHTML = "";
+    clearLastWhisperResult();
+    return;
+  }
 
   const phase = getActivePhaseEntry(data, "last_whisper");
   const countdown = formatCountdownFromIso(phase?.opened_at, 5 * 60);
   const countdownText = countdown
     ? `До финального сигнала: ${countdown}.`
     : "Окно интриг открыто на 5 минут.";
+  const whisperState = data?.last_whisper && typeof data.last_whisper === "object" ? data.last_whisper : {};
+  const viewerAction = whisperState?.viewer_action && typeof whisperState.viewer_action === "object" ? whisperState.viewer_action : null;
+  const latestEvent = whisperState?.latest_event && typeof whisperState.latest_event === "object" ? whisperState.latest_event : null;
+  const availableActions = Array.isArray(whisperState?.available_actions) ? whisperState.available_actions : [];
+  const availableTargetHouses = Array.isArray(whisperState?.available_target_houses) ? whisperState.available_target_houses : [];
+  const roleCode = String(data?.role?.code || "").trim();
+  const viewerCanAct = whisperState?.viewer_can_act === true && roleCode === "whisper_master";
+  const viewerHasActed = whisperState?.viewer_has_acted === true;
 
   info.innerHTML = `
     <div class="big-text" style="font-size:16px;">ПОСЛЕДНИЙ ШЁПОТ</div>
     <div class="muted" style="margin-top:6px;">Дома плетут интриги перед финалом.</div>
     <div class="muted" style="margin-top:6px;">${escapeHtml(countdownText)}</div>
-    <div class="muted" style="margin-top:6px;">Сейчас это только информационное окно: ждите сигнала ведущего.</div>
+    <div class="muted" style="margin-top:6px;">${latestEvent?.tv_text ? escapeHtml(fixEncoding(latestEvent.tv_text)) : "Сейчас это короткое окно политического давления перед финалом."}</div>
   `;
+
+  if (!controls) return;
+
+  if (!viewerCanAct) {
+    controls.innerHTML = `
+      <div class="action-box">
+        <div class="big-text">Действиями управляет Мастер шёпота Дома.</div>
+        <div class="muted">Ваш экран пока показывает только информационное состояние окна.</div>
+      </div>
+    `;
+    return;
+  }
+
+  if (viewerHasActed && viewerAction) {
+    controls.innerHTML = `
+      <div class="action-box">
+        <div class="big-text">Ход уже сделан</div>
+        <div class="muted">Ваше действие: ${escapeHtml(fixEncoding(viewerAction.action_label || "Политическое действие"))}.</div>
+        ${viewerAction?.target_house_name ? `<div class="muted" style="margin-top:6px;">Цель: ${escapeHtml(fixEncoding(viewerAction.target_house_name))}.</div>` : ""}
+        <div class="muted" style="margin-top:6px;">Повторный ход в этом окне запрещён.</div>
+      </div>
+    `;
+    return;
+  }
+
+  const quietSupportAction = availableActions.find(action => String(action?.code || "").trim() === "quiet_support") || null;
+  const otherActions = availableActions.filter(action => String(action?.code || "").trim() !== "quiet_support");
+
+  controls.innerHTML = `
+    <div class="action-box">
+      <div class="big-text">Действие Мастера шепота</div>
+      <div class="muted">Только Тихая поддержка уже даёт реальный эффект: выбранный Дом получает +1 влияние.</div>
+      ${quietSupportAction ? `
+        <div style="margin-top:12px;">
+          <label class="muted" for="lastWhisperTargetHouse">Дом для тайной поддержки</label>
+          <select id="lastWhisperTargetHouse" class="select" style="margin-top:6px;">
+            <option value="">Выберите Дом</option>
+            ${availableTargetHouses.map(house => `
+              <option value="${escapeHtml(String(house.id))}">${escapeHtml(fixEncoding(house.name || house.house_key || `Дом #${house.id}`))}</option>
+            `).join("")}
+          </select>
+        </div>
+        <div class="expedition-inline-actions" style="margin-top:12px;">
+          <button
+            type="button"
+            class="btn"
+            onclick="submitLastWhisperAction('quiet_support')"
+            ${(lastWhisperActionBusy || !availableTargetHouses.length) ? "disabled" : ""}
+          >${lastWhisperActionBusy ? "Фиксирую..." : escapeHtml(fixEncoding(quietSupportAction.label || "Тихая поддержка"))}</button>
+        </div>
+      ` : ""}
+      ${otherActions.length ? `
+        <div class="muted" style="margin-top:12px;">Остальные действия пока только показываются как зарезервированные слоты без эффекта:</div>
+        <div class="expedition-inline-actions" style="margin-top:12px;">
+        ${otherActions.map(action => `
+          <button
+            type="button"
+            class="btn"
+            disabled
+          >${escapeHtml(fixEncoding(action.label || "Действие"))}</button>
+        `).join("")}
+        </div>
+      ` : ""}
+    </div>
+  `;
+}
+
+function renderLastWhisperResult(ok, title, text) {
+  const resultEl = document.getElementById("lastWhisperResultBox");
+  if (!resultEl) return;
+  resultEl.innerHTML = `
+    <div class="explore-result ${ok ? "ok" : "error"}">
+      <div class="explore-result-title">${escapeHtml(fixEncoding(title))}</div>
+      <div class="explore-result-text">${escapeHtml(fixEncoding(text))}</div>
+    </div>
+  `;
+}
+
+function clearLastWhisperResult() {
+  const resultEl = document.getElementById("lastWhisperResultBox");
+  if (resultEl) resultEl.innerHTML = "";
+}
+
+async function submitLastWhisperAction(actionCode) {
+  if (lastWhisperActionBusy) return;
+  const playerId = window.PLAYER_ID;
+  lastWhisperActionBusy = true;
+  await loadPlayerState();
+
+  try {
+    const payload = {
+      action_code: actionCode
+    };
+    if (actionCode === "quiet_support") {
+      const targetEl = document.getElementById("lastWhisperTargetHouse");
+      const targetHouseId = Number(targetEl?.value || 0);
+      if (!targetHouseId) {
+        renderLastWhisperResult(false, "Действие не выполнено", "Сначала выберите Дом для тайной поддержки");
+        return;
+      }
+      payload.target_house_id = targetHouseId;
+    }
+    const res = await fetch(`/player/last-whisper/action/${playerId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    renderLastWhisperResult(
+      !!data?.ok,
+      data?.ok ? "Политический ход зафиксирован" : "Действие не выполнено",
+      fixEncoding(data?.message || data?.detail || "Ошибка")
+    );
+    await loadPlayerState();
+  } catch (e) {
+    console.error("last whisper action error", e);
+    renderLastWhisperResult(false, "Действие не выполнено", "Не удалось зафиксировать ход Мастера шепота");
+  } finally {
+    lastWhisperActionBusy = false;
+    await loadPlayerState();
+  }
 }
 
 function renderDuelResult(ok, title, text) {

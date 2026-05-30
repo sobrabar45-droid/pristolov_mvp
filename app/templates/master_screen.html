@@ -5779,6 +5779,32 @@ function renderFinalScene(state = null) {
 function renderLastWhisperScene(state) {
     const phase = getLastWhisperPhaseState(state);
     const countdownText = getCountdownTextFromIso(phase?.opened_at, 5 * 60);
+    const whisperState = state?.last_whisper && typeof state.last_whisper === "object" ? state.last_whisper : {};
+    const events = Array.isArray(whisperState?.events) ? whisperState.events : [];
+    const latestEvent = whisperState?.latest_event && typeof whisperState.latest_event === "object" ? whisperState.latest_event : null;
+    const eventLogMarkup = events.length
+        ? `
+            <div class="ps-final-outcome" style="margin-top:12px;">
+                <div class="ps-final-outcome-title">Уже сделанные ходы</div>
+                <div class="ps-final-outcome-body">
+                    ${events.map(item => `
+                        <div style="margin-top:8px;">
+                            <strong>#${escapeHtml(String(item?.order_no ?? "—"))}</strong>
+                            ${escapeHtml(pickText(item?.house_name) || "Дом")} —
+                            ${escapeHtml(pickText(item?.action_label) || "Политическое действие")}
+                            ${item?.target_house_name ? `→ ${escapeHtml(pickText(item?.target_house_name))}` : ""}
+                            ${item?.tv_text ? `<div class="muted" style="margin-top:4px;">${escapeHtml(pickText(item?.tv_text))}</div>` : ""}
+                        </div>
+                    `).join("")}
+                </div>
+            </div>
+        `
+        : `
+            <div class="ps-final-outcome" style="margin-top:12px;">
+                <div class="ps-final-outcome-title">Политические ходы ещё не зафиксированы</div>
+                <div class="ps-final-outcome-body">Окно открыто, но Мастера шёпота ещё не сделали выбор.</div>
+            </div>
+        `;
     return `
         <div class="ps-card ps-stage-panel ps-scene-object">
             <div class="ps-card-kicker">Переход к финалу</div>
@@ -5793,12 +5819,17 @@ function renderLastWhisperScene(state) {
                     <div class="ps-meta-label">Таймер</div>
                     <div class="ps-meta-value">${escapeHtml(countdownText)}</div>
                 </div>
+                <div class="ps-meta-item">
+                    <div class="ps-meta-label">Последний ход</div>
+                    <div class="ps-meta-value">${escapeHtml(pickText(latestEvent?.house_name) || "ещё нет")}</div>
+                </div>
             </div>
             <div class="ps-final-outcome">
                 <div class="ps-final-outcome-title">Интриги перед решением</div>
-                <div class="ps-final-outcome-body">Игровых действий здесь пока нет. Это стабильное окно напряжения перед финальным объявлением.</div>
+                <div class="ps-final-outcome-body">Только Тихая поддержка уже даёт прямой результат: выбранный Дом получает +1 влияние.</div>
                 <div class="ps-final-outcome-note">Когда зал готов, ведущий завершает Последний Шёпот и открывает Финал.</div>
             </div>
+            ${eventLogMarkup}
             <div class="ps-scene-action">
                 <button class="btn-blue" onclick="finishLastWhisperWindow()">Завершить Последний Шёпот</button>
             </div>
