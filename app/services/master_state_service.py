@@ -208,6 +208,155 @@ def _build_last_whisper_payload(active_phases):
     }
 
 
+def _build_recent_events_payload(
+    *,
+    last_whisper_payload=None,
+    broken_alliances_recent=None,
+    duels_block=None,
+    recent_closed_deals=None,
+    event_feed=None,
+    limit: int = 10,
+):
+    events = []
+
+    def add_event(
+        *,
+        event_type: str,
+        title: str,
+        text: str | None,
+        created_at=None,
+        source: str,
+        severity: str = "info",
+        sort_key=None,
+    ):
+        clean_text = fix_encoding(str(text or "").strip())
+        if not clean_text:
+            return
+        clean_title = fix_encoding(str(title or event_type or "event").strip())
+        effective_sort_key = sort_key or created_at or ""
+        events.append(
+            {
+                "type": event_type,
+                "title": clean_title or event_type,
+                "text": clean_text,
+                "created_at": created_at,
+                "sort_key": effective_sort_key,
+                "source": source,
+                "severity": severity,
+            }
+        )
+
+    latest_whisper = None
+    if isinstance(last_whisper_payload, dict):
+        candidate = last_whisper_payload.get("latest_event")
+        if isinstance(candidate, dict):
+            latest_whisper = candidate
+    if latest_whisper:
+        add_event(
+            event_type="last_whisper",
+            title=latest_whisper.get("action_label") or "Последний Шёпот",
+            text=latest_whisper.get("tv_text"),
+            created_at=latest_whisper.get("created_at"),
+            source="last_whisper.latest_event",
+            severity="high",
+            sort_key=latest_whisper.get("created_at") or latest_whisper.get("order_no"),
+        )
+
+    for item in broken_alliances_recent or []:
+        if not isinstance(item, dict):
+            continue
+        house_a = item.get("house_a") or {}
+        house_b = item.get("house_b") or {}
+        fallback_text = None
+        if isinstance(house_a, dict) and isinstance(house_b, dict):
+            house_a_name = house_a.get("name") or "Дом"
+            house_b_name = house_b.get("name") or "Дом"
+            fallback_text = f"{house_a_name} и {house_b_name} больше не связаны союзом."
+        add_event(
+            event_type="alliance_broken",
+            title="Союз разрушен",
+            text=item.get("break_text") or fallback_text,
+            created_at=item.get("broken_at"),
+            source="broken_alliances_recent",
+            severity="high",
+            sort_key=item.get("broken_at") or item.get("id"),
+        )
+
+    for duel in (duels_block or {}).get("recent", [])[:3]:
+        if not isinstance(duel, dict):
+            continue
+        status = str(duel.get("status") or "").strip()
+        challenger = (duel.get("challenger_house") or {}).get("name") if isinstance(duel.get("challenger_house"), dict) else None
+        target = (duel.get("target_house") or {}).get("name") if isinstance(duel.get("target_house"), dict) else None
+        challenger = challenger or duel.get("challenger_house_name") or "Дом"
+        target = target or duel.get("target_house_name") or "Дом"
+        winner = (duel.get("winner_house") or {}).get("name") if isinstance(duel.get("winner_house"), dict) else None
+        if status == "resolved" and winner:
+            text = f"Победа в дуэли: {winner}"
+            severity = "ok"
+        elif status == "refused":
+            text = f"{target} отказался от дуэли с {challenger}"
+            severity = "warn"
+        elif status == "canceled":
+            text = f"Дуэль {challenger} и {target} отменена"
+            severity = "warn"
+        else:
+            text = f"Дуэль {challenger} и {target}: {status}"
+            severity = "info"
+        add_event(
+            event_type="duel",
+            title="Дуэль Домов",
+            text=text,
+            created_at=duel.get("resolved_at") or duel.get("created_at"),
+            source="duels.recent",
+            severity=severity,
+            sort_key=duel.get("resolved_at") or duel.get("created_at") or duel.get("id"),
+        )
+
+    for deal in recent_closed_deals or []:
+        if not isinstance(deal, dict):
+            continue
+        from_house = deal.get("from_house") or {}
+        to_house = deal.get("to_house") or {}
+        from_name = from_house.get("name") if isinstance(from_house, dict) else None
+        to_name = to_house.get("name") if isinstance(to_house, dict) else None
+        status = str(deal.get("status") or "").strip()
+        route_text = f"{from_name or 'Дом'} → {to_name or 'Дом'}"
+        offer_text = deal.get("offer_text") or deal.get("note")
+        if offer_text:
+            route_text = f"{route_text}: {offer_text}"
+        add_event(
+            event_type="deal",
+            title="Дипломатическая сделка",
+            text=route_text,
+            created_at=deal.get("responded_at") or deal.get("created_at"),
+            source="deals.recent_closed",
+            severity="ok" if status in {"accepted", "completed"} else "info",
+            sort_key=deal.get("responded_at") or deal.get("created_at") or deal.get("id"),
+        )
+
+    for item in event_feed or []:
+        if not isinstance(item, dict):
+            continue
+        add_event(
+            event_type=item.get("type") or "event",
+            title=item.get("title") or "Событие",
+            text=item.get("text"),
+            created_at=item.get("created_at"),
+            source="event_feed",
+            severity=item.get("severity") or "info",
+            sort_key=item.get("created_at"),
+        )
+
+    def event_sort_key(item):
+        key = item.get("sort_key")
+        if key is None:
+            return ""
+        return str(key)
+
+    return sorted(events, key=event_sort_key, reverse=True)[:limit]
+
+
 def _build_runtime_question_payload(runtime_question):
     if not runtime_question:
         return None
@@ -639,6 +788,11 @@ def get_game_master_state_logic(
 
     active_deals = [deal for deal in deals_payload if deal["status"] == "pending"]
     countered_deals = [deal for deal in deals_payload if deal["status"] == "countered"]
+    recent_closed_deals = [
+        deal
+        for deal in reversed(deals_payload)
+        if deal["status"] in {"accepted", "rejected", "cancelled", "completed"}
+    ][:5]
     alliances_payload = [
         {
             "id": deal.id,
@@ -1036,6 +1190,13 @@ def get_game_master_state_logic(
         current_question_payload=current_question_payload,
     )
     last_whisper_payload = _build_last_whisper_payload(active_phases)
+    recent_events = _build_recent_events_payload(
+        last_whisper_payload=last_whisper_payload,
+        broken_alliances_recent=broken_alliances_recent,
+        duels_block=duels_block,
+        recent_closed_deals=recent_closed_deals,
+        event_feed=event_feed,
+    )
 
     readiness_payload = {
         "ready_count": len(ready_houses),
@@ -1106,6 +1267,7 @@ def get_game_master_state_logic(
         "scenario_director": scenario_director_payload,
         "master_prompt": master_prompt,
         "event_feed": event_feed,
+        "recent_events": recent_events,
     }
 
 
@@ -1717,6 +1879,12 @@ def get_game_master_tv_state_logic(
         current_question_payload=current_question_payload,
     )
     last_whisper_payload = _build_last_whisper_payload(active_phases)
+    recent_events = _build_recent_events_payload(
+        last_whisper_payload=last_whisper_payload,
+        broken_alliances_recent=broken_alliances_recent,
+        duels_block=duels_block,
+        recent_closed_deals=recent_closed_deals,
+    )
 
     return {
         "ok": True,
@@ -1753,6 +1921,7 @@ def get_game_master_tv_state_logic(
         },
         "leaders": leaders,
         "last_whisper": last_whisper_payload,
+        "recent_events": recent_events,
         "court_runtime": court_runtime_payload,
         "final_outcome": final_outcome_payload,
         "scenario_director": scenario_director_payload,
