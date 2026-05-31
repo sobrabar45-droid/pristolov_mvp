@@ -149,6 +149,8 @@ DATABASE_URL=postgresql+psycopg2://pristolov_app:<password>@127.0.0.1:5432/prist
 ADMIN_ROUTE_TOKEN=<long-random-secret>
 ```
 
+Use `.env.production.example` as the committed non-secret template for production environment setup.
+
 Do not commit production env files.
 
 If `ADMIN_ROUTE_TOKEN` is empty, `/dev/*` and `/gold/*` remain open for local/dev compatibility. Public VPS deployment without `ADMIN_ROUTE_TOKEN` is a no-go.
