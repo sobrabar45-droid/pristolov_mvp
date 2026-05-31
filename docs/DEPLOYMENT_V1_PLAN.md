@@ -128,6 +128,7 @@ Runtime-required:
 | Variable | Required | Purpose |
 |---|---:|---|
 | `DATABASE_URL` | yes | SQLAlchemy database connection string |
+| `ADMIN_ROUTE_TOKEN` | yes for public VPS | app-level guard token for `/dev/*` and `/gold/*` |
 
 Currently observed in local `.env` keys:
 
@@ -139,14 +140,18 @@ Currently observed in local `.env` keys:
 | `DEBUG` | not required by current app config | do not rely on it for production safety |
 | `DATABASE_URL` | required | must be set |
 | `SECRET_KEY` | not required by current app config | reserve for future auth/session work |
+| `ADMIN_ROUTE_TOKEN` | required for public VPS | must be set before exposing `/dev/*` or `/gold/*` |
 
 Recommended production env file:
 
 ```text
 DATABASE_URL=postgresql+psycopg2://pristolov_app:<password>@127.0.0.1:5432/pristolov_v1
+ADMIN_ROUTE_TOKEN=<long-random-secret>
 ```
 
 Do not commit production env files.
+
+If `ADMIN_ROUTE_TOKEN` is empty, `/dev/*` and `/gold/*` remain open for local/dev compatibility. Public VPS deployment without `ADMIN_ROUTE_TOKEN` is a no-go.
 
 ## 5. Reverse Proxy / HTTPS Requirements
 
@@ -234,10 +239,13 @@ Must be protected before any public VPS launch:
 Recommended V1 strategy:
 
 1. Protect `/dev/*` and `/gold/*` at reverse proxy level.
-2. Use HTTP Basic Auth for fastest safe V1 deployment.
-3. If venue operator IPs are known, add IP allowlist on top of Basic Auth.
-4. If available, use VPN/Tailscale for admin access.
-5. Keep TV protected unless it must run unauthenticated on a fixed display device.
+2. Set `ADMIN_ROUTE_TOKEN` so the FastAPI app also blocks `/dev/*` and `/gold/*`.
+3. Forward the protected header only after successful proxy auth:
+   - `X-Admin-Token: <token>`
+4. Use HTTP Basic Auth for fastest safe V1 deployment.
+5. If venue operator IPs are known, add IP allowlist on top of Basic Auth.
+6. If available, use VPN/Tailscale for admin access.
+7. Keep TV protected unless it must run unauthenticated on a fixed display device.
 
 Recommended split:
 
@@ -252,6 +260,7 @@ Recommended split:
 
 No-go:
 
+- do not deploy public VPS without `ADMIN_ROUTE_TOKEN`;
 - do not expose `/dev/games/{room_code}/reset-runtime`;
 - do not expose `/dev/reset-delegations/{room_code}`;
 - do not expose `/dev/games/{room_code}/seed-technical-run`;
@@ -337,7 +346,7 @@ Recommended sequence:
 7. Create virtual environment.
 8. Install `requirements.txt`.
 9. Create PostgreSQL database/user.
-10. Create production env file with `DATABASE_URL`.
+10. Create production env file with `DATABASE_URL` and `ADMIN_ROUTE_TOKEN`.
 11. Start app manually bound to `127.0.0.1:8000` for first schema check.
 12. Verify `/health` locally.
 13. Install systemd unit.
@@ -497,6 +506,7 @@ These must be decided before deployment starts:
 Deployment is not ready if any item is false:
 
 - PostgreSQL `DATABASE_URL` is configured and verified.
+- `ADMIN_ROUTE_TOKEN` is configured and not empty.
 - Uvicorn binds only to `127.0.0.1`.
 - Service runs without `--reload`.
 - `/dev/*` is protected externally.

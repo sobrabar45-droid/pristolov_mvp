@@ -1,11 +1,13 @@
 from pathlib import Path
+from secrets import compare_digest
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import text
 
+from app.config import settings
 from app.database import engine
 from app.models import Base
 import app.models  # noqa: F401
@@ -24,8 +26,30 @@ from app.services.duel_service import ensure_duel_schema
 BASE_DIR = Path(__file__).resolve().parent
 QUESTIONS_MEDIA_DIR = BASE_DIR / "static" / "questions_media"
 QUESTIONS_MEDIA_DIR.mkdir(parents=True, exist_ok=True)
+PROTECTED_ROUTE_PREFIXES = ("/dev", "/gold")
+ADMIN_TOKEN_HEADER = "X-Admin-Token"
 
 app = FastAPI(title="приСтолов Digital MVP")
+
+def _is_protected_route(path: str) -> bool:
+    return any(
+        path == prefix or path.startswith(f"{prefix}/")
+        for prefix in PROTECTED_ROUTE_PREFIXES
+    )
+
+
+@app.middleware("http")
+async def protect_operator_routes(request: Request, call_next):
+    admin_token = (settings.ADMIN_ROUTE_TOKEN or "").strip()
+
+    # Local/dev remains usable without a token; public VPS deployment must set ADMIN_ROUTE_TOKEN.
+    if admin_token and _is_protected_route(request.url.path):
+        supplied_token = request.headers.get(ADMIN_TOKEN_HEADER, "")
+        if not supplied_token or not compare_digest(supplied_token, admin_token):
+            return PlainTextResponse("Admin route token required", status_code=403)
+
+    return await call_next(request)
+
 
 app.mount("/static/questions_media", StaticFiles(directory=str(QUESTIONS_MEDIA_DIR)), name="questions_media")
 app.mount("/static", StaticFiles(directory="static"), name="static")
