@@ -167,6 +167,14 @@ Expected behavior:
 - `/dev/tv-screen/*` is blocked;
 - Uvicorn remains private on `127.0.0.1:8000`.
 
+Browser-friendly admin access:
+
+- the operator opens `/dev/master-screen/<room_code>` or `/dev/tv-mode/<room_code>` normally in the browser;
+- Nginx shows the Basic Auth prompt;
+- after successful Basic Auth, Nginx injects `X-Admin-Token` to the upstream app;
+- the operator never manually enters or sees `ADMIN_ROUTE_TOKEN`;
+- API/internal smoke calls may still use `X-Admin-Token` directly against the app or protected upstream.
+
 Install shape:
 
 ```bash
@@ -217,6 +225,14 @@ Recommended production pattern:
 ```text
 X-Admin-Token: <ADMIN_ROUTE_TOKEN>
 ```
+
+Recommended option evaluation:
+
+| Option | Verdict | Reason |
+|---|---|---|
+| Nginx Basic Auth + upstream `X-Admin-Token` | preferred for V1 | browser-friendly, minimal, no runtime auth refactor, preserves app guard |
+| Secure cookie/session | defer | requires session state, cookie settings, expiry, CSRF/auth lifecycle decisions |
+| Admin login page | defer | effectively starts a new auth system and expands V1 scope |
 
 No-go:
 

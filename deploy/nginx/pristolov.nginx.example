@@ -20,6 +20,9 @@ server {
     }
 
     location /dev/ {
+        # Browser-friendly admin access:
+        # the operator enters Basic Auth credentials in the browser,
+        # then Nginx injects X-Admin-Token for the app-level /dev guard.
         auth_basic "PRISTOLOV operator";
         auth_basic_user_file /etc/nginx/.htpasswd_pristolov;
 
@@ -32,6 +35,8 @@ server {
     }
 
     location /gold/ {
+        # Keep gold/economy controls behind the same browser-friendly gate.
+        # Do not expose X-Admin-Token to public routes or client-side JS.
         auth_basic "PRISTOLOV operator";
         auth_basic_user_file /etc/nginx/.htpasswd_pristolov;
 
