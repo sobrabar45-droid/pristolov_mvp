@@ -1,5 +1,6 @@
 import random
 import secrets
+from io import BytesIO
 from pathlib import Path
 from urllib.parse import quote
 
@@ -75,7 +76,7 @@ def _build_join_qr_assets(join_url: str | None, invite_code: str | None = None) 
         light="#ffffff",
     )
     return {
-        "join_url_qr_src": f"/house/{invite_code}/join-qr.svg" if invite_code else None,
+        "join_url_qr_src": f"/house/{invite_code}/join-qr.png" if invite_code else None,
         "join_url_qr_data_uri": "data:image/svg+xml;utf8," + quote(svg_text),
     }
 
@@ -730,6 +731,30 @@ def house_join_qr_svg(request: Request, invite_code: str):
         qr = segno.make(join_url, error="M", micro=False)
         svg_text = qr.svg_inline(scale=8, border=2, dark="#111111", light="#ffffff")
         return Response(content=svg_text, media_type="image/svg+xml")
+    finally:
+        db.close()
+
+
+@router.get("/house/{invite_code}/join-qr.png")
+def house_join_qr_png(request: Request, invite_code: str):
+    db: Session = SessionLocal()
+
+    try:
+        clean_invite_code = invite_code.strip().upper()
+        house = db.query(House).filter(House.invite_code == clean_invite_code).first()
+        if not house:
+            return Response(status_code=404, content="Р”РѕРј РЅРµ РЅР°Р№РґРµРЅ")
+
+        game = db.query(Game).filter(Game.id == house.game_id).first()
+        if not game:
+            return Response(status_code=404, content="РРіСЂР° РЅРµ РЅР°Р№РґРµРЅР°")
+
+        base_url = str(request.base_url).rstrip("/")
+        join_url = f"{base_url}/delegation/join?game_code={game.room_code}&invite_code={house.invite_code}"
+        qr = segno.make(join_url, error="M", micro=False)
+        output = BytesIO()
+        qr.save(output, kind="png", scale=8, border=2, dark="#111111", light="#ffffff")
+        return Response(content=output.getvalue(), media_type="image/png")
     finally:
         db.close()
 
