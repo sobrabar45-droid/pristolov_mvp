@@ -480,8 +480,8 @@
             <div class="qr-card">
                 <div class="qr-kicker">Быстрый вход по QR</div>
                 <div class="qr-frame">
-                    {% if join_url_qr_data_uri or join_url_qr_src %}
-                    <img src="{{ join_url_qr_data_uri or join_url_qr_src }}" alt="QR входа в Дом" loading="eager" decoding="sync" referrerpolicy="no-referrer">
+                    {% if join_url_qr_src or join_url_qr_data_uri %}
+                    <img src="{{ join_url_qr_src or join_url_qr_data_uri }}" alt="QR входа в Дом" loading="eager" decoding="sync" referrerpolicy="no-referrer">
                     {% else %}
                     <div class="muted" style="padding:16px;text-align:center;">QR появится, когда экран открыт по реальному адресу игры</div>
                     {% endif %}

@@ -60,7 +60,7 @@ def _build_public_expedition_locations() -> list[dict[str, str]]:
     return locations
 
 
-def _build_join_qr_assets(join_url: str | None) -> dict[str, str | None]:
+def _build_join_qr_assets(join_url: str | None, invite_code: str | None = None) -> dict[str, str | None]:
     if not join_url:
         return {
             "join_url_qr_src": None,
@@ -75,7 +75,7 @@ def _build_join_qr_assets(join_url: str | None) -> dict[str, str | None]:
         light="#ffffff",
     )
     return {
-        "join_url_qr_src": None,
+        "join_url_qr_src": f"/house/{invite_code}/join-qr.svg" if invite_code else None,
         "join_url_qr_data_uri": "data:image/svg+xml;utf8," + quote(svg_text),
     }
 
@@ -344,7 +344,7 @@ def delegation_start_submit(
 
         join_url = f"/delegation/join?game_code={game.room_code}&invite_code={house.invite_code}"
         join_url_absolute = f"{str(request.base_url).rstrip('/')}{join_url}"
-        qr_assets = _build_join_qr_assets(join_url_absolute)
+        qr_assets = _build_join_qr_assets(join_url_absolute, house.invite_code)
 
         return templates.TemplateResponse(
             request=request,
@@ -916,7 +916,7 @@ def _build_house_lobby_context(db: Session, invite_code: str, base_url: str | No
     active_phase_label = phase_name_map.get(active_phase_type, active_phase_type) if active_phase_type else None
     join_url = f"/delegation/join?game_code={game.room_code}&invite_code={house.invite_code}" if game else None
     join_url_absolute = f"{base_url}{join_url}" if base_url and join_url else join_url
-    qr_assets = _build_join_qr_assets(join_url_absolute)
+    qr_assets = _build_join_qr_assets(join_url_absolute, house.invite_code)
 
     return {
         "error": None,
