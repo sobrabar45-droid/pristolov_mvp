@@ -198,7 +198,7 @@ def grant_gold_from_check(
         source_type="check",
         source_id=check_id,
         reason=f"Начисление по чеку {amount_rub} ₽",
-        comment="Формула: 1500 ₽ = 3 золота",
+        comment="Формула: 500 ₽ = 1 золото",
         performed_by_player_id=performed_by_player_id,
     )
 
