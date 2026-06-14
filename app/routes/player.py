@@ -27,6 +27,11 @@ from app.services.duel_service import (
     refuse_duel as _refuse_duel,
     serialize_duel as _serialize_duel,
 )
+from app.services.gold_service import (
+    GoldError,
+    GoldInsufficientFundsError,
+    spend_gold_for_action,
+)
 
 # Временный мост: используем уже существующую игровую логику ответов
 from app.services.resource_service import apply_house_effect as _apply_house_effect, build_house_resources_snapshot as _build_house_resources_snapshot
@@ -136,6 +141,30 @@ LAST_WHISPER_ACTIONS = {
         "code": "crown_tax",
         "label": "Налог на корону",
         "tv_text": "{house_name} потребовал налог на корону.",
+    },
+}
+
+TREASURER_SHOP_ACTIONS = {
+    "set_bar": {
+        "code": "set_bar",
+        "label": "Сет у стойки",
+        "cost": 5,
+        "requires_ally": False,
+        "event_text": "Дом {actor} заказал \"Сет у стойки\" за 5 золота. За столом стало громче.",
+    },
+    "giraffe": {
+        "code": "giraffe",
+        "label": "Жираф",
+        "cost": 10,
+        "requires_ally": False,
+        "event_text": "Дом {actor} заказал \"Жирафа\" за 10 золота. Пир набирает силу.",
+    },
+    "gift_to_ally": {
+        "code": "gift_to_ally",
+        "label": "Подарок союзнику",
+        "cost": 15,
+        "requires_ally": True,
+        "event_text": "Дом {actor} угостил союзников из Дома {ally}. Оба Дома получают +1 влияние.",
     },
 }
 
@@ -1357,6 +1386,44 @@ def _get_houses_with_alliance_bonus_history(
     return used_house_ids
 
 
+def _find_active_alliance_between_houses(
+    db: Session,
+    *,
+    game_id: int,
+    house_a_id: int,
+    house_b_id: int,
+) -> GameDeal | None:
+    if not game_id or not house_a_id or not house_b_id or house_a_id == house_b_id:
+        return None
+
+    deals = (
+        db.query(GameDeal)
+        .options(joinedload(GameDeal.from_house), joinedload(GameDeal.to_house))
+        .filter(
+            GameDeal.game_id == game_id,
+            GameDeal.status == "alliance_active",
+            (
+                (
+                    (GameDeal.from_house_id == house_a_id)
+                    & (GameDeal.to_house_id == house_b_id)
+                )
+                | (
+                    (GameDeal.from_house_id == house_b_id)
+                    & (GameDeal.to_house_id == house_a_id)
+                )
+            ),
+        )
+        .order_by(GameDeal.id.desc())
+        .all()
+    )
+
+    for deal in deals:
+        offer = deal.offer if isinstance(deal.offer, dict) else {}
+        if str(offer.get("type") or "").strip() == "alliance":
+            return deal
+    return None
+
+
 @router.get("/me/{player_token}")
 def get_player_me(player_token: str):
     db: Session = SessionLocal()
@@ -2308,6 +2375,147 @@ def refuse_player_duel(player_id: int, duel_id: int, payload: dict = Body(defaul
 
         db.commit()
         return _fix_text_map(result)
+    finally:
+        db.close()
+
+
+@router.post("/treasurer-shop/{player_id}/purchase")
+def purchase_treasurer_shop_item(player_id: int, payload: dict = Body(default={})):
+    db: Session = SessionLocal()
+
+    try:
+        if payload is None:
+            payload = {}
+        if not isinstance(payload, dict):
+            return {
+                "ok": False,
+                "message": "Тело запроса должно быть JSON-объектом",
+            }
+
+        player = (
+            db.query(Player)
+            .options(joinedload(Player.role), joinedload(Player.house), joinedload(Player.game))
+            .filter(Player.id == player_id)
+            .first()
+        )
+        if not player:
+            return {"ok": False, "message": "Игрок не найден"}
+        if not player.game:
+            return {"ok": False, "message": "Игра не найдена"}
+        if not player.house:
+            return {"ok": False, "message": "У игрока не найден Дом"}
+        if not player.role or player.role.code != "treasurer":
+            return {
+                "ok": False,
+                "message": "Только Мастер золота может совершать покупки.",
+            }
+
+        action_code = str(payload.get("action_code") or "").strip().lower()
+        action_meta = TREASURER_SHOP_ACTIONS.get(action_code)
+        if not action_meta:
+            return {
+                "ok": False,
+                "message": "Выберите доступную покупку Мастера золота.",
+            }
+
+        target_house = None
+        alliance_granted = False
+        resources_changed = {}
+
+        if action_meta.get("requires_ally"):
+            target_house_id = payload.get("target_house_id")
+            if not isinstance(target_house_id, int):
+                return {
+                    "ok": False,
+                    "message": "Выберите союзный Дом для подарка.",
+                }
+            if target_house_id == player.house_id:
+                return {
+                    "ok": False,
+                    "message": "Подарок союзнику нельзя отправить своему Дому.",
+                }
+            target_house = (
+                db.query(House)
+                .filter(
+                    House.id == target_house_id,
+                    House.game_id == player.game_id,
+                )
+                .first()
+            )
+            if not target_house:
+                return {
+                    "ok": False,
+                    "message": "Союзный Дом не найден в этой игре.",
+                }
+            active_alliance = _find_active_alliance_between_houses(
+                db,
+                game_id=player.game_id,
+                house_a_id=player.house_id,
+                house_b_id=target_house.id,
+            )
+            if not active_alliance:
+                return {
+                    "ok": False,
+                    "message": "Подарок можно отправить только активному союзнику.",
+                }
+
+        cost = int(action_meta["cost"])
+        actor_name = player.house.name or "Дом"
+        ally_name = target_house.name if target_house else ""
+        event_text = action_meta["event_text"].format(actor=actor_name, ally=ally_name)
+
+        try:
+            spend_result = spend_gold_for_action(
+                db,
+                house=player.house,
+                amount=cost,
+                reason=event_text,
+                source_type="treasurer_shop",
+                performed_by_player_id=player.id,
+            )
+        except GoldInsufficientFundsError as exc:
+            db.rollback()
+            return {
+                "ok": False,
+                "message": "Недостаточно золота для этой покупки.",
+                "detail": str(exc),
+            }
+        except GoldError as exc:
+            db.rollback()
+            return {
+                "ok": False,
+                "message": str(exc),
+            }
+
+        if action_code == "gift_to_ally" and target_house:
+            actor_effect = _apply_house_effect(db, player.house, {"influence": 1})
+            ally_effect = _apply_house_effect(db, target_house, {"influence": 1})
+            resources_changed = {
+                "actor": actor_effect.get("resources_changed") if isinstance(actor_effect, dict) else {},
+                "ally": ally_effect.get("resources_changed") if isinstance(ally_effect, dict) else {},
+            }
+            alliance_granted = True
+
+        db.commit()
+        db.refresh(player.house)
+        if target_house:
+            db.refresh(target_house)
+
+        return _fix_text_map({
+            "ok": True,
+            "action_code": action_code,
+            "house_id": player.house_id,
+            "house_name": player.house.name,
+            "target_house_id": target_house.id if target_house else None,
+            "target_house_name": target_house.name if target_house else None,
+            "gold_before": spend_result.balance_before,
+            "gold_after": spend_result.balance_after,
+            "delta": -cost,
+            "event_text": event_text,
+            "alliance_granted": alliance_granted,
+            "resources_changed": resources_changed,
+            "transaction_id": spend_result.transaction_id,
+        })
     finally:
         db.close()
 

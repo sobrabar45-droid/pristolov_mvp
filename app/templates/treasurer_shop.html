@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Treasurer Shop — {{ room_code }}</title>
+    <style>
+        :root {
+            --bg: #08090f;
+            --panel: #121721;
+            --panel-soft: #1b2230;
+            --text: #eef2ff;
+            --muted: #a7b2c7;
+            --gold: #e6b75f;
+            --green: #35d0a3;
+            --red: #ffb4b4;
+            --border: rgba(255,255,255,0.10);
+            --shadow: 0 14px 30px rgba(0,0,0,0.34);
+            --radius: 8px;
+            --font: "Inter","Segoe UI",Arial,sans-serif;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background:
+                linear-gradient(135deg, rgba(230,183,95,0.13), transparent 32%),
+                linear-gradient(225deg, rgba(53,208,163,0.10), transparent 30%),
+                var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+        }
+
+        .page {
+            max-width: 1040px;
+            margin: 0 auto;
+            padding: 24px 14px 42px;
+        }
+
+        .topbar,
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        .topbar {
+            padding: 16px;
+        }
+
+        .eyebrow {
+            color: var(--gold);
+            font-size: 12px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            margin: 6px 0 0;
+            font-size: 34px;
+            line-height: 1.05;
+        }
+
+        .sub {
+            margin: 8px 0 0;
+            color: #cbd5ea;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        button {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 13px;
+            color: var(--text);
+            background: #202838;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        button.primary {
+            background: linear-gradient(135deg, #f0c574, #c99d4d);
+            color: #241703;
+            font-weight: 800;
+            border-color: rgba(230,183,95,0.55);
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.55;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+            gap: 14px;
+            margin-top: 14px;
+        }
+
+        .panel {
+            padding: 16px;
+        }
+
+        label {
+            display: block;
+            color: var(--muted);
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        select,
+        input {
+            width: 100%;
+            box-sizing: border-box;
+            background: #0f1521;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            padding: 10px 12px;
+            font-size: 14px;
+        }
+
+        .field {
+            margin-top: 12px;
+        }
+
+        .balance {
+            margin-top: 14px;
+            padding: 12px;
+            border-radius: 8px;
+            background: #0f1521;
+            border: 1px solid var(--border);
+            color: var(--gold);
+            font-size: 20px;
+            font-weight: 800;
+        }
+
+        .shop-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .shop-item {
+            display: grid;
+            gap: 8px;
+            padding: 12px;
+            border-radius: 8px;
+            background: var(--panel-soft);
+            border: 1px solid var(--border);
+        }
+
+        .shop-title {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            font-weight: 800;
+        }
+
+        .cost {
+            color: var(--gold);
+            white-space: nowrap;
+        }
+
+        .hint,
+        .result {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        .result {
+            margin-top: 14px;
+            min-height: 48px;
+            padding: 12px;
+            border-radius: 8px;
+            background: #0f1521;
+            border: 1px solid var(--border);
+            color: #d8f7e7;
+        }
+
+        @media (max-width: 760px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <section class="topbar">
+        <div class="eyebrow">Treasurer Shop / {{ room_code }}</div>
+        <h1>Барная полка Мастера золота</h1>
+        <p class="sub">Золото тратится через действующий ledger. Барные покупки создают событие для Master/TV, подарок союзнику также даёт +1 влияние обоим Домам.</p>
+        <div class="actions">
+            <button onclick="window.location.href='/dev/master-screen/{{ room_code }}'">Назад к Master</button>
+            <button onclick="window.location.href='/dev/gold-desk/{{ room_code }}'">Gold Desk</button>
+            <button onclick="loadState(true)">Обновить</button>
+        </div>
+    </section>
+
+    <div class="grid">
+        <section class="panel">
+            <div class="eyebrow">Кто тратит</div>
+            <div class="field">
+                <label for="treasurerSelect">Мастер золота</label>
+                <select id="treasurerSelect" onchange="handleTreasurerChange()">
+                    <option value="">Загрузка...</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="allySelect">Союзник для подарка</label>
+                <select id="allySelect" disabled>
+                    <option value="">Сначала выберите Мастера золота</option>
+                </select>
+            </div>
+            <div class="balance" id="balanceBox">Баланс: —</div>
+            <p class="hint">Для первых двух покупок союзник не нужен. Для подарка система проверяет активный союз между Домами.</p>
+        </section>
+
+        <section class="panel">
+            <div class="eyebrow">Покупки V1</div>
+            <div class="shop-list" id="shopList"></div>
+            <div class="result" id="resultBox">Здесь появится результат покупки.</div>
+        </section>
+    </div>
+</div>
+
+<script>
+    const ROOM_CODE = "{{ room_code }}";
+    const SHOP_ITEMS = [
+        {
+            code: "set_bar",
+            label: "Сет у стойки",
+            cost: 5,
+            description: "Барное событие без влияния и без прямого эффекта на победу."
+        },
+        {
+            code: "giraffe",
+            label: "Жираф / угощение стола",
+            cost: 10,
+            description: "Большой социальный жест для атмосферы в зале."
+        },
+        {
+            code: "gift_to_ally",
+            label: "Подарок союзнику",
+            cost: 15,
+            description: "Только активному союзнику. Оба Дома получают +1 влияние."
+        }
+    ];
+
+    let latestState = null;
+    let busy = false;
+
+    const treasurerSelect = document.getElementById("treasurerSelect");
+    const allySelect = document.getElementById("allySelect");
+    const balanceBox = document.getElementById("balanceBox");
+    const shopList = document.getElementById("shopList");
+    const resultBox = document.getElementById("resultBox");
+
+    function setResult(message, isError = false) {
+        resultBox.style.color = isError ? "var(--red)" : "#d8f7e7";
+        resultBox.textContent = message;
+    }
+
+    function getHouse(houseId) {
+        const houses = Array.isArray(latestState?.houses) ? latestState.houses : [];
+        return houses.find(house => Number(house.id) === Number(houseId)) || null;
+    }
+
+    function getTreasurers() {
+        const players = Array.isArray(latestState?.players) ? latestState.players : [];
+        return players.filter(player => player.role_code === "treasurer" && player.house_id);
+    }
+
+    function getSelectedTreasurer() {
+        const playerId = Number(treasurerSelect.value || 0);
+        return getTreasurers().find(player => Number(player.id) === playerId) || null;
+    }
+
+    function getAlliedHousesFor(actorHouseId) {
+        const alliances = Array.isArray(latestState?.alliances) ? latestState.alliances : [];
+        return alliances
+            .map(alliance => {
+                const a = alliance.house_a || {};
+                const b = alliance.house_b || {};
+                if (Number(a.id) === Number(actorHouseId)) return b;
+                if (Number(b.id) === Number(actorHouseId)) return a;
+                return null;
+            })
+            .filter(Boolean);
+    }
+
+    function renderTreasurers() {
+        const treasurers = getTreasurers();
+        treasurerSelect.innerHTML = "";
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = treasurers.length ? "Выберите Мастера золота" : "Нет игроков с ролью Мастер золота";
+        treasurerSelect.appendChild(placeholder);
+
+        treasurers.forEach(player => {
+            const option = document.createElement("option");
+            option.value = String(player.id);
+            option.textContent = `${player.nickname || `Игрок #${player.id}`} / ${player.house_name || `Дом #${player.house_id}`}`;
+            treasurerSelect.appendChild(option);
+        });
+    }
+
+    function renderAllies() {
+        const treasurer = getSelectedTreasurer();
+        allySelect.innerHTML = "";
+        allySelect.disabled = true;
+
+        if (!treasurer) {
+            const option = document.createElement("option");
+            option.value = "";
+            option.textContent = "Сначала выберите Мастера золота";
+            allySelect.appendChild(option);
+            return;
+        }
+
+        const allies = getAlliedHousesFor(treasurer.house_id);
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = allies.length ? "Выберите союзный Дом" : "Нет активных союзников";
+        allySelect.appendChild(placeholder);
+
+        allies.forEach(house => {
+            const option = document.createElement("option");
+            option.value = String(house.id);
+            option.textContent = house.name || house.house_key || `Дом #${house.id}`;
+            allySelect.appendChild(option);
+        });
+
+        allySelect.disabled = !allies.length;
+    }
+
+    function renderBalance() {
+        const treasurer = getSelectedTreasurer();
+        const house = treasurer ? getHouse(treasurer.house_id) : null;
+        const gold = house?.resources?.gold;
+        balanceBox.textContent = house ? `Баланс ${house.name || "Дома"}: ${Number(gold || 0)} золота` : "Баланс: —";
+    }
+
+    function renderShopItems() {
+        const treasurer = getSelectedTreasurer();
+        const house = treasurer ? getHouse(treasurer.house_id) : null;
+        const gold = Number(house?.resources?.gold || 0);
+        const hasAllies = treasurer ? getAlliedHousesFor(treasurer.house_id).length > 0 : false;
+
+        shopList.innerHTML = SHOP_ITEMS.map(item => {
+            const needsAlly = item.code === "gift_to_ally";
+            const disabled = busy || !treasurer || gold < item.cost || (needsAlly && !hasAllies);
+            let reason = "";
+            if (!treasurer) reason = "Выберите Мастера золота.";
+            else if (gold < item.cost) reason = "Недостаточно золота.";
+            else if (needsAlly && !hasAllies) reason = "Нужен активный союзник.";
+            return `
+                <div class="shop-item">
+                    <div class="shop-title">
+                        <span>${item.label}</span>
+                        <span class="cost">${item.cost} золота</span>
+                    </div>
+                    <div class="hint">${item.description}</div>
+                    ${reason ? `<div class="hint">${reason}</div>` : ""}
+                    <button class="primary" onclick="purchaseItem('${item.code}')" ${disabled ? "disabled" : ""}>
+                        Купить
+                    </button>
+                </div>
+            `;
+        }).join("");
+    }
+
+    function renderAll() {
+        renderTreasurers();
+        handleTreasurerChange(false);
+    }
+
+    function handleTreasurerChange(clearResult = true) {
+        renderAllies();
+        renderBalance();
+        renderShopItems();
+        if (clearResult) setResult("Выберите покупку.");
+    }
+
+    async function loadState(showHint = false) {
+        try {
+            const res = await fetch(`/dev/game-master/${ROOM_CODE}/state`);
+            const data = await res.json();
+            if (!res.ok || data?.ok === false) {
+                throw new Error(data?.detail || data?.message || `HTTP ${res.status}`);
+            }
+            const previousTreasurer = treasurerSelect.value;
+            latestState = data;
+            renderTreasurers();
+            if (previousTreasurer) {
+                treasurerSelect.value = previousTreasurer;
+            }
+            handleTreasurerChange(false);
+            if (showHint) setResult("Данные обновлены.");
+        } catch (err) {
+            setResult(String(err?.message || err), true);
+        }
+    }
+
+    async function purchaseItem(actionCode) {
+        const treasurer = getSelectedTreasurer();
+        if (!treasurer) {
+            setResult("Сначала выберите Мастера золота.", true);
+            return;
+        }
+
+        const payload = { action_code: actionCode };
+        if (actionCode === "gift_to_ally") {
+            const targetHouseId = Number(allySelect.value || 0);
+            if (!targetHouseId) {
+                setResult("Выберите союзный Дом для подарка.", true);
+                return;
+            }
+            payload.target_house_id = targetHouseId;
+        }
+
+        busy = true;
+        renderShopItems();
+        try {
+            const res = await fetch(`/player/treasurer-shop/${treasurer.id}/purchase`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json().catch(() => null);
+            if (!res.ok || data?.ok === false) {
+                throw new Error(data?.message || data?.detail || `HTTP ${res.status}`);
+            }
+            setResult(`${data.event_text || "Покупка выполнена."} Баланс: ${data.gold_before} → ${data.gold_after}.`);
+            await loadState(false);
+        } catch (err) {
+            setResult(String(err?.message || err), true);
+        } finally {
+            busy = false;
+            renderShopItems();
+        }
+    }
+
+    loadState();
+</script>
+</body>
+</html>

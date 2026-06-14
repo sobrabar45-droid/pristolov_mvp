@@ -15,6 +15,7 @@ from app.models.game_duel import GameDuel
 from app.models.game_expedition import GameExpedition
 from app.models.game_map_visit import GameMapVisit
 from app.models.game_house_tower import GameHouseTower
+from app.models.house_gold_transaction import HouseGoldTransaction
 from app.models.round_template import RoundTemplate
 from app.models.round_question_template import RoundQuestionTemplate
 from app.services.scenario_service import get_scenario_director_logic
@@ -208,12 +209,43 @@ def _build_last_whisper_payload(active_phases):
     }
 
 
+def _build_treasurer_shop_events(db: Session, *, game_id: int, limit: int = 5) -> list[dict]:
+    if not game_id:
+        return []
+
+    rows = (
+        db.query(HouseGoldTransaction)
+        .filter(
+            HouseGoldTransaction.game_id == game_id,
+            HouseGoldTransaction.source_type == "treasurer_shop",
+        )
+        .order_by(HouseGoldTransaction.id.desc())
+        .limit(limit)
+        .all()
+    )
+    return [
+        {
+            "id": row.id,
+            "type": "treasurer_shop",
+            "title": "Покупка Мастера золота",
+            "text": row.reason,
+            "house_id": row.house_id,
+            "gold_delta": row.amount,
+            "gold_before": row.balance_before,
+            "gold_after": row.balance_after,
+            "created_at": row.created_at.isoformat() if row.created_at else None,
+        }
+        for row in rows
+    ]
+
+
 def _build_recent_events_payload(
     *,
     last_whisper_payload=None,
     broken_alliances_recent=None,
     duels_block=None,
     recent_closed_deals=None,
+    treasurer_shop_events=None,
     event_feed=None,
     limit: int = 10,
 ):
@@ -333,6 +365,19 @@ def _build_recent_events_payload(
             source="deals.recent_closed",
             severity="ok" if status in {"accepted", "completed"} else "info",
             sort_key=deal.get("responded_at") or deal.get("created_at") or deal.get("id"),
+        )
+
+    for item in treasurer_shop_events or []:
+        if not isinstance(item, dict):
+            continue
+        add_event(
+            event_type="treasurer_shop",
+            title=item.get("title") or "Покупка Мастера золота",
+            text=item.get("text"),
+            created_at=item.get("created_at"),
+            source="treasurer_shop.purchase",
+            severity="ok",
+            sort_key=item.get("created_at") or item.get("id"),
         )
 
     for item in event_feed or []:
@@ -1190,11 +1235,13 @@ def get_game_master_state_logic(
         current_question_payload=current_question_payload,
     )
     last_whisper_payload = _build_last_whisper_payload(active_phases)
+    treasurer_shop_events = _build_treasurer_shop_events(db, game_id=game.id)
     recent_events = _build_recent_events_payload(
         last_whisper_payload=last_whisper_payload,
         broken_alliances_recent=broken_alliances_recent,
         duels_block=duels_block,
         recent_closed_deals=recent_closed_deals,
+        treasurer_shop_events=treasurer_shop_events,
         event_feed=event_feed,
     )
 
@@ -1261,6 +1308,7 @@ def get_game_master_state_logic(
         "duels": duels_block,
         "expeditions": expeditions_block,
         "last_whisper": last_whisper_payload,
+        "treasurer_shop_events": treasurer_shop_events,
         "towers_quick": towers_quick,
         "court_runtime": court_runtime_payload,
         "final_outcome": final_outcome_payload,
@@ -1879,11 +1927,13 @@ def get_game_master_tv_state_logic(
         current_question_payload=current_question_payload,
     )
     last_whisper_payload = _build_last_whisper_payload(active_phases)
+    treasurer_shop_events = _build_treasurer_shop_events(db, game_id=game.id)
     recent_events = _build_recent_events_payload(
         last_whisper_payload=last_whisper_payload,
         broken_alliances_recent=broken_alliances_recent,
         duels_block=duels_block,
         recent_closed_deals=recent_closed_deals,
+        treasurer_shop_events=treasurer_shop_events,
     )
 
     return {
@@ -1921,6 +1971,7 @@ def get_game_master_tv_state_logic(
         },
         "leaders": leaders,
         "last_whisper": last_whisper_payload,
+        "treasurer_shop_events": treasurer_shop_events,
         "recent_events": recent_events,
         "court_runtime": court_runtime_payload,
         "final_outcome": final_outcome_payload,

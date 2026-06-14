@@ -4103,6 +4103,17 @@ async def gold_desk_page(request: Request, room_code: str):
             "room_code": room_code,
         },
     )
+
+
+@router.get("/treasurer-shop/{room_code}", response_class=HTMLResponse)
+async def treasurer_shop_page(request: Request, room_code: str):
+    return templates.TemplateResponse(
+        request,
+        "treasurer_shop.html",
+        {
+            "room_code": room_code,
+        },
+    )
 # =========================
 # HOST CONTROL v6 DEBUG API
 # =========================
