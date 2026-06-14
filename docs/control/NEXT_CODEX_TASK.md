@@ -14,24 +14,19 @@ The current state marks Treasurer Shop V1 implementation as complete.
 
 ## Next recommended task
 
-Role/player action surface audit completed
+Decide Treasurer Shop entrypoint strategy (V1) completed: Option A chosen.
 
-Findings:
-- player_room exposes most role action surfaces, including treasurer deal confirmations.
-- Treasurer Shop is isolated in `/dev/treasurer-shop/{room_code}` (separate screen).
-- No runtime patch was made for this change.
+Decision:
+- V1 Treasurer Shop remains separate operator/dev screen at `/dev/treasurer-shop/{room_code}`.
+- player_room will not get Treasurer Shop purchase buttons in this phase.
+- Future player_room work may add only informational discovery, but no runtime action buttons are planned in this task.
 
 Next task:
 
-Decide Treasurer Shop entrypoint strategy
-
-Options:
-- A) Keep Treasurer Shop as operator/dev screen and document the intentional split.
-- B) Expose Treasurer Shop entry/discovery in player_room for treasurer role.
+Document role/action surface split and prepare next runtime candidate
 
 Recommended model:
-- Codex 5.3 for decision/docs work.
-- Codex 5.5 only after entrypoint strategy is chosen.
+- Codex 5.3 docs/audit only.
 
 ### Decision mode
 
