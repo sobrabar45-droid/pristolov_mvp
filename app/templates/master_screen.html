@@ -7093,12 +7093,51 @@ function renderTowerQuick(state) {
     root.innerHTML = "";
 }
 
+function buildMasterEventFeedItems(state) {
+    const items = Array.isArray(state?.event_feed) ? [...state.event_feed] : [];
+    const seen = new Set();
+
+    function eventKey(item) {
+        return [
+            item?.type || "event",
+            item?.created_at || "",
+            item?.text || ""
+        ].join("|");
+    }
+
+    items.forEach(item => seen.add(eventKey(item)));
+
+    function addTreasurerShopEvents(rawItems, sourceLabel) {
+        if (!Array.isArray(rawItems)) return;
+        rawItems.forEach(item => {
+            if (!item || typeof item !== "object") return;
+            if ((item.type || "") !== "treasurer_shop") return;
+            const normalized = {
+                ...item,
+                type: "treasurer_shop",
+                source: item.source || sourceLabel,
+                title: item.title || "Покупка Мастера золота",
+                text: item.text || item.reason || item.event_text || "",
+                severity: item.severity || "ok",
+            };
+            const key = eventKey(normalized);
+            if (seen.has(key)) return;
+            seen.add(key);
+            items.push(normalized);
+        });
+    }
+
+    addTreasurerShopEvents(state?.recent_events, "recent_events");
+    addTreasurerShopEvents(state?.treasurer_shop_events, "treasurer_shop_events");
+    return items;
+}
+
 function renderEventFeed(state) {
     const root = document.getElementById("eventFeedList");
     if (!root) return;
     root.innerHTML = "";
 
-    const items = state?.event_feed || [];
+    const items = buildMasterEventFeedItems(state);
     if (!items.length) {
         root.innerHTML = `<div class="event-item">Пока без событий</div>`;
         return;
@@ -7110,7 +7149,7 @@ function renderEventFeed(state) {
         div.innerHTML = `
             <div class="event-title">${item?.title || "Событие"}</div>
             <div class="event-text">${item?.text || "—"}</div>
-            <div class="event-meta">${item?.type || "event"} · ${item?.created_at || "сейчас"}</div>
+            <div class="event-meta">${item?.source || item?.type || "event"} · ${item?.created_at || "сейчас"}</div>
         `;
         root.appendChild(div);
     });
