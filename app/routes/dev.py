@@ -4092,6 +4092,17 @@ async def master_screen_page(request: Request, room_code: str):
             "room_code": room_code,
         },
     )
+
+
+@router.get("/gold-desk/{room_code}", response_class=HTMLResponse)
+async def gold_desk_page(request: Request, room_code: str):
+    return templates.TemplateResponse(
+        request,
+        "gold_desk.html",
+        {
+            "room_code": room_code,
+        },
+    )
 # =========================
 # HOST CONTROL v6 DEBUG API
 # =========================

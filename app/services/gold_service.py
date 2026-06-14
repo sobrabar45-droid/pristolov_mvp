@@ -149,8 +149,8 @@ def transfer_gold_between_houses(
 def calculate_gold_from_check(amount_rub: int) -> int:
     if amount_rub <= 0:
         return 0
-    # Утверждённая формула: 1500 ₽ = 3 золота
-    return (amount_rub // 1500) * 3
+    # Утверждённая формула: 500 ₽ = 1 золото
+    return amount_rub // 500
 
 
 def grant_start_gold_for_house(
