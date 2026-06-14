@@ -128,3 +128,10 @@ Recommended next decision after this checkpoint:
 
 - move to the next approved P1 item, or
 - polish Master/TV/Treasurer Shop presentation if live rehearsal shows the event visibility is not strong enough.
+
+## Post-checkpoint event feed polish
+
+- Master visibility patch commit: `94fdfc7 Show Treasurer Shop events on master screen`
+- Master smoke result: event feed shows clear Treasurer Shop rows on Master with one-row-per-purchase behavior in `recent_events`.
+- TV smoke result: `treasurer_shop` is present in TV `recent_events` with readable text and no duplicates observed.
+- Decision: no TV patch needed.
