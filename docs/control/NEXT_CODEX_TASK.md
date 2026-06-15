@@ -1,4 +1,4 @@
-﻿# NEXT_CODEX_TASK
+# NEXT_CODEX_TASK
 
 ## Treasurer Shop V1: CLOSED
 
@@ -16,6 +16,8 @@ Implemented and smoke-verified in these commits:
 - `153d319` Select Treasurer Shop V1.1 bar shelf candidates
 - `2832eaa` Add Treasurer Shop V1.1 bar shelf items
 - `50d2a01` Add Treasurer Shop V1.1 checkpoint
+- `3bc9e5f` Add standalone cashier Gold Desk screen
+- `f360c49` Add cashier Gold Desk checkpoint
 
 The current state marks Treasurer Shop V1 implementation as complete.
 
@@ -23,12 +25,13 @@ The current state marks Treasurer Shop V1 implementation as complete.
 
 Standalone cashier Gold Desk runtime closed in:
 - `3bc9e5f` Add standalone cashier Gold Desk screen.
+- `f360c49` Add cashier Gold Desk checkpoint.
 
 ## Next recommended task
 
-- Verify pristolov.ru production access path for cashier route before any new runtime changes.
-- Complete external access policy checklist (proxy auth vs header injection vs VPN/allowlist).
-- Keep this task in docs/audit mode now; defer further runtime changes until rollout policy is approved.
+- Run external/proxy deployment verification on pristolov.ru for `/cashier/gold-desk/{room_code}`.
+- Validate auth gate, `X-Admin-Token` header forwarding, and public route denylist.
+- Keep task in docs/audit mode; no runtime patch in this step.
 
 Recommended model:
 - Codex 5.3 for access-policy docs and rollout checklist.
