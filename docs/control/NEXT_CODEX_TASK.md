@@ -19,25 +19,20 @@ Implemented and smoke-verified in these commits:
 
 The current state marks Treasurer Shop V1 implementation as complete.
 
+## Cashier Gold Desk status
+
+Standalone cashier Gold Desk runtime closed in:
+- `3bc9e5f` Add standalone cashier Gold Desk screen.
+
 ## Next recommended task
 
-Standalone Gold Desk access strategy is selected for V1.
-
-Decision:
-- Use external cashier entrypoint `GET /cashier/gold-desk/{room_code}` on pristolov.ru.
-- Keep `/dev/gold-desk/{room_code}` internal-only (do not expose as cashier path).
-- `/cashier` and `/gold` must be protected by operator-level guard in V1.
-- `X-Admin-Token` is not auto-sent by browser requests, so V1 should rely on reverse-proxy auth/allowlist and/or header injection in front of these paths.
-
-Next task:
-
-- Codex 5.5 runtime patch (minimal): add standalone `/cashier` route + protection alignment and cashier-safe Gold Desk template updates.
-- No app-level cashier login in this cycle.
+- Verify pristolov.ru production access path for cashier route before any new runtime changes.
+- Complete external access policy checklist (proxy auth vs header injection vs VPN/allowlist).
+- Keep this task in docs/audit mode now; defer further runtime changes until rollout policy is approved.
 
 Recommended model:
-- Access decision and hardening docs: **Codex 5.3**.
-- Minimal runtime patch: **Codex 5.5**.
+- Codex 5.3 for access-policy docs and rollout checklist.
 
 ### Decision mode
 
-Do runtime patch only for minimal standalone cashier enablement after docs signoff.
+No runtime patch in this step.
