@@ -21,24 +21,23 @@ The current state marks Treasurer Shop V1 implementation as complete.
 
 ## Next recommended task
 
-Gold Desk access hardening decision (documentation + operator policy).
+Standalone Gold Desk access strategy is selected for V1.
 
 Decision:
-- Keep `Gold Desk` under operator route path model until we define external policy.
-- Use `docs/control/GOLD_DESK_CASHIER_ACCESS.md` as the source of truth.
-- Next cycle is docs-first audit/selection; no runtime patch in this task.
-
-Recommended model:
-- **Codex 5.3** for access decision and docs update.
-- **Codex 5.5** only if/when enforcing runtime guard/route hardening (e.g., token-required policy changes or role/session checks).
+- Use external cashier entrypoint `GET /cashier/gold-desk/{room_code}` on pristolov.ru.
+- Keep `/dev/gold-desk/{room_code}` internal-only (do not expose as cashier path).
+- `/cashier` and `/gold` must be protected by operator-level guard in V1.
+- `X-Admin-Token` is not auto-sent by browser requests, so V1 should rely on reverse-proxy auth/allowlist and/or header injection in front of these paths.
 
 Next task:
 
-- Choose one deployment mode for V1 cashier use and complete rollout checklist:
-  1) local Wi‑Fi rehearsal policy,
-  2) temporary tunnel policy, or
-  3) VPS/domain HTTPS policy with guard/IP strategy.
+- Codex 5.5 runtime patch (minimal): add standalone `/cashier` route + protection alignment and cashier-safe Gold Desk template updates.
+- No app-level cashier login in this cycle.
+
+Recommended model:
+- Access decision and hardening docs: **Codex 5.3**.
+- Minimal runtime patch: **Codex 5.5**.
 
 ### Decision mode
 
-No new runtime patch yet; selection/plan only.
+Do runtime patch only for minimal standalone cashier enablement after docs signoff.
