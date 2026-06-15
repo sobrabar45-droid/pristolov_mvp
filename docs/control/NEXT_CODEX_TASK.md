@@ -21,21 +21,24 @@ The current state marks Treasurer Shop V1 implementation as complete.
 
 ## Next recommended task
 
-Treasurer Shop V1.1 runtime patch is closed.
+Gold Desk access hardening decision (documentation + operator policy).
 
 Decision:
-- V1 Treasurer Shop remains separate operator/dev screen at `/dev/treasurer-shop/{room_code}`.
-- player_room will not get Treasurer Shop purchase buttons in this phase.
-- Future player_room work may add only informational discovery, but no runtime action buttons are planned in this task.
+- Keep `Gold Desk` under operator route path model until we define external policy.
+- Use `docs/control/GOLD_DESK_CASHIER_ACCESS.md` as the source of truth.
+- Next cycle is docs-first audit/selection; no runtime patch in this task.
+
+Recommended model:
+- **Codex 5.3** for access decision and docs update.
+- **Codex 5.5** only if/when enforcing runtime guard/route hardening (e.g., token-required policy changes or role/session checks).
 
 Next task:
 
-- Select next narrow Treasurer Shop runtime/product candidate (audit-only).
-- No runtime patch in this task.
-
-Recommended model:
-- Audit-only for next narrow candidate (no runtime changes in this task).
+- Choose one deployment mode for V1 cashier use and complete rollout checklist:
+  1) local Wi‑Fi rehearsal policy,
+  2) temporary tunnel policy, or
+  3) VPS/domain HTTPS policy with guard/IP strategy.
 
 ### Decision mode
 
-No full runtime rollout now; candidate-limited implementation only.
+No new runtime patch yet; selection/plan only.
