@@ -23,7 +23,14 @@ Decision:
 
 Next task:
 
-Document role/action surface split and prepare next runtime candidate
+Select next runtime candidate (documentation decision first): Treasurer Shop bar shelf V1.1 candidate.
+
+- Keep V1 runtime unchanged and operator-mediated.
+- Use this as a product decision artifact before any runtime implementation.
+- Scope of next candidate:
+  - map product labels to stable `action_code` values,
+  - define whether each item triggers only bar/social events or also influence changes,
+  - prepare public/legal wording checks for alcohol labels.
 
 Recommended model:
 - Codex 5.3 docs/audit only.
