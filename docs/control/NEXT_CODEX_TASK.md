@@ -14,7 +14,7 @@ The current state marks Treasurer Shop V1 implementation as complete.
 
 ## Next recommended task
 
-Decide Treasurer Shop entrypoint strategy (V1) completed: Option A chosen.
+Treasurer Shop V1.1 runtime patch is complete.
 
 Decision:
 - V1 Treasurer Shop remains separate operator/dev screen at `/dev/treasurer-shop/{room_code}`.
@@ -23,20 +23,15 @@ Decision:
 
 Next task:
 
-Select next runtime candidate:
+Next task:
 
-- Codex 5.5 runtime patch for Treasurer Shop Bar Shelf V1.1.
-- Scope-limited implementation: add only these items now:
-  - `author_tea` (3 gold, bar/social only)
-  - `lemonade_02` (2 gold, bar/social only)
-  - `sobranie_pizza` (6 gold, bar/social only)
-  - `anna_pavlova` (2 gold, bar/social only)
-- Keep V1 runtime unchanged and operator-mediated for all other items.
-- Defer alcohol-named items (`champagne_premier`, `tincture_set`, `shihan_beer_giraffe`, `beer_set_any`) and related wording/legal checks to a later candidate.
-- Keep `gift_to_ally` as existing political/social action only; not treated as a bar shelf SKU in this batch.
+- Select next narrow Treasurer Shop runtime/product candidate (audit-only).
+- Keep `codex` recommendation doc-driven.
+- Candidate is for decisioning only: scope, legality wording, and implementation prerequisites.
+- No runtime patch in this task.
 
 Recommended model:
-- Codex 5.5 runtime patch only (first batch, no court/final changes).
+- Audit-only for next narrow candidate (no runtime changes in this task).
 
 ### Decision mode
 
