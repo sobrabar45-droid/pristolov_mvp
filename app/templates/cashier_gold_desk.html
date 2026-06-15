@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gold Desk — {{ room_code }}</title>
+    <style>
+        :root {
+            --bg: #0b0d10;
+            --panel: #171b20;
+            --panel-soft: #20262d;
+            --text: #f3f0e8;
+            --muted: #b7afa1;
+            --gold: #efc15a;
+            --green: #5fe1b7;
+            --red: #ffb3a7;
+            --border: rgba(255,255,255,0.12);
+            --radius: 8px;
+            --shadow: 0 14px 34px rgba(0,0,0,0.34);
+            --font: "Segoe UI", "Noto Sans", Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            color: var(--text);
+            font-family: var(--font);
+            background:
+                linear-gradient(120deg, rgba(239,193,90,0.18), transparent 32%),
+                linear-gradient(210deg, rgba(95,225,183,0.12), transparent 28%),
+                var(--bg);
+        }
+
+        .page {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 22px 14px 34px;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 18px;
+        }
+
+        .eyebrow {
+            color: var(--gold);
+            font-size: 12px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            margin: 6px 0 8px;
+            font-size: 30px;
+            line-height: 1.1;
+        }
+
+        p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.45;
+        }
+
+        .grid {
+            display: grid;
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        label {
+            display: block;
+            color: var(--muted);
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        select,
+        input {
+            width: 100%;
+            box-sizing: border-box;
+            color: var(--text);
+            background: #101418;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 12px;
+            font-size: 16px;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 12px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .button {
+            width: 100%;
+            border: 1px solid rgba(239,193,90,0.55);
+            border-radius: var(--radius);
+            padding: 13px 14px;
+            font-size: 16px;
+            font-weight: 700;
+            color: #231703;
+            background: linear-gradient(135deg, #ffd978, #d6a43d);
+            cursor: pointer;
+        }
+
+        .button:disabled {
+            cursor: not-allowed;
+            opacity: 0.55;
+        }
+
+        .result {
+            min-height: 48px;
+            margin-top: 14px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--panel-soft);
+            color: var(--green);
+            line-height: 1.35;
+        }
+
+        .result.error {
+            color: var(--red);
+        }
+
+        @media (min-width: 620px) {
+            .grid.two {
+                grid-template-columns: 1fr 220px;
+            }
+        }
+    </style>
+</head>
+<body>
+<main class="page">
+    <section class="panel">
+        <div class="eyebrow">Cashier Gold Desk / {{ room_code }}</div>
+        <h1>Начисление золота с чека</h1>
+        <p>Кассир выбирает Дом, вводит сумму чека и начисляет золото по формуле 500 ₽ = 1 золото.</p>
+
+        <div class="grid two">
+            <div>
+                <label for="houseSelect">Дом</label>
+                <select id="houseSelect">
+                    {% if game_found and houses %}
+                        <option value="">Выберите Дом</option>
+                        {% for house in houses %}
+                            <option value="{{ house.id }}">{{ house.name or house.house_key }} · {{ house.gold }} золота</option>
+                        {% endfor %}
+                    {% elif game_found %}
+                        <option value="">В комнате пока нет Домов</option>
+                    {% else %}
+                        <option value="">Комната {{ room_code }} не найдена</option>
+                    {% endif %}
+                </select>
+            </div>
+            <div>
+                <label for="amountInput">Сумма чека (₽)</label>
+                <input id="amountInput" type="number" min="0" step="1" value="0" inputmode="numeric" />
+            </div>
+        </div>
+
+        <div class="status-row">
+            <span id="preview">К начислению: 0 золота</span>
+            <span>500 ₽ = 1 золото</span>
+        </div>
+
+        <div class="grid">
+            <button class="button" id="grantButton" type="button">Начислить золото</button>
+        </div>
+
+        <div class="result" id="resultBox">Ожидаю ввод чека.</div>
+    </section>
+</main>
+
+<script>
+    const houses = {{ houses | tojson }};
+    const houseSelect = document.getElementById("houseSelect");
+    const amountInput = document.getElementById("amountInput");
+    const preview = document.getElementById("preview");
+    const grantButton = document.getElementById("grantButton");
+    const resultBox = document.getElementById("resultBox");
+
+    function calculatedGold() {
+        const amountRub = Number(amountInput.value || 0);
+        if (!Number.isFinite(amountRub)) return 0;
+        return Math.floor(Math.max(0, amountRub) / 500);
+    }
+
+    function setResult(message, isError = false) {
+        resultBox.textContent = message;
+        resultBox.classList.toggle("error", isError);
+    }
+
+    function selectedHouseName() {
+        const houseId = Number(houseSelect.value || 0);
+        const house = houses.find(item => Number(item.id) === houseId);
+        return house?.name || house?.house_key || `Дом #${houseId}`;
+    }
+
+    function updatePreview() {
+        preview.textContent = `К начислению: ${calculatedGold()} золота`;
+    }
+
+    async function issueGoldFromCheck() {
+        const houseId = Number(houseSelect.value || 0);
+        const amountRub = Number(amountInput.value || 0);
+
+        if (!houseId) {
+            setResult("Сначала выберите Дом.", true);
+            return;
+        }
+
+        if (!Number.isFinite(amountRub) || amountRub < 500) {
+            setResult("Сумма чека должна быть не меньше 500 ₽.", true);
+            return;
+        }
+
+        grantButton.disabled = true;
+        setResult("Начисляю золото...");
+
+        try {
+            const response = await fetch(`/gold/houses/${houseId}/grant-from-check`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    amount_rub: Math.floor(amountRub)
+                })
+            });
+
+            const payload = await response.json().catch(() => null);
+            if (!response.ok) {
+                throw new Error(payload?.detail || `HTTP ${response.status}`);
+            }
+
+            setResult(`Дому ${selectedHouseName()} начислено ${calculatedGold()} золота. Баланс: ${payload?.gold_after ?? "обновлён"}.`);
+        } catch (err) {
+            setResult(String(err?.message || err), true);
+        } finally {
+            grantButton.disabled = false;
+        }
+    }
+
+    amountInput.addEventListener("input", updatePreview);
+    grantButton.addEventListener("click", issueGoldFromCheck);
+    updatePreview();
+</script>
+</body>
+</html>

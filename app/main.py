@@ -13,6 +13,7 @@ from app.models import Base
 import app.models  # noqa: F401
 
 from app.routes.dev import router as dev_router
+from app.routes.cashier import router as cashier_router
 from app.routes.join import router as join_router
 from app.routes.delegation import router as delegation_router
 from app.routes.player import router as player_router
@@ -26,7 +27,7 @@ from app.services.duel_service import ensure_duel_schema
 BASE_DIR = Path(__file__).resolve().parent
 QUESTIONS_MEDIA_DIR = BASE_DIR / "static" / "questions_media"
 QUESTIONS_MEDIA_DIR.mkdir(parents=True, exist_ok=True)
-PROTECTED_ROUTE_PREFIXES = ("/dev", "/gold")
+PROTECTED_ROUTE_PREFIXES = ("/dev", "/gold", "/cashier")
 ADMIN_TOKEN_HEADER = "X-Admin-Token"
 
 app = FastAPI(title="приСтолов Digital MVP")
@@ -65,6 +66,7 @@ ensure_duel_schema(engine)
 # ВАЖНО:
 # dev роутер подключаем только ОДИН раз и только с префиксом /dev
 app.include_router(dev_router, prefix="/dev", tags=["dev"])
+app.include_router(cashier_router)
 app.include_router(join_router)
 app.include_router(delegation_router)
 app.include_router(player_router)
