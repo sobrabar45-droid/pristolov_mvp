@@ -9,12 +9,19 @@ Implemented and smoke-verified in these commits:
 - `52bab30` Align gold formula wording
 - `94fdfc7` Show Treasurer Shop events on master screen
 - `4be1656` Update Treasurer Shop event feed checkpoint
+- `ba99c6f` Update next Codex task after Treasurer Shop V1
+- `2627254` Update next task after role action surface audit
+- `9111c84` Record Treasurer Shop entrypoint decision
+- `c78c9c9` Document Treasurer Shop bar shelf prices
+- `153d319` Select Treasurer Shop V1.1 bar shelf candidates
+- `2832eaa` Add Treasurer Shop V1.1 bar shelf items
+- `50d2a01` Add Treasurer Shop V1.1 checkpoint
 
 The current state marks Treasurer Shop V1 implementation as complete.
 
 ## Next recommended task
 
-Treasurer Shop V1.1 runtime patch is complete.
+Treasurer Shop V1.1 runtime patch is closed.
 
 Decision:
 - V1 Treasurer Shop remains separate operator/dev screen at `/dev/treasurer-shop/{room_code}`.
@@ -23,11 +30,7 @@ Decision:
 
 Next task:
 
-Next task:
-
 - Select next narrow Treasurer Shop runtime/product candidate (audit-only).
-- Keep `codex` recommendation doc-driven.
-- Candidate is for decisioning only: scope, legality wording, and implementation prerequisites.
 - No runtime patch in this task.
 
 Recommended model:
