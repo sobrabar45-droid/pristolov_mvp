@@ -23,18 +23,21 @@ Decision:
 
 Next task:
 
-Select next runtime candidate (documentation decision first): Treasurer Shop bar shelf V1.1 candidate.
+Select next runtime candidate:
 
-- Keep V1 runtime unchanged and operator-mediated.
-- Use this as a product decision artifact before any runtime implementation.
-- Scope of next candidate:
-  - map product labels to stable `action_code` values,
-  - define whether each item triggers only bar/social events or also influence changes,
-  - prepare public/legal wording checks for alcohol labels.
+- Codex 5.5 runtime patch for Treasurer Shop Bar Shelf V1.1.
+- Scope-limited implementation: add only these items now:
+  - `author_tea` (3 gold, bar/social only)
+  - `lemonade_02` (2 gold, bar/social only)
+  - `sobranie_pizza` (6 gold, bar/social only)
+  - `anna_pavlova` (2 gold, bar/social only)
+- Keep V1 runtime unchanged and operator-mediated for all other items.
+- Defer alcohol-named items (`champagne_premier`, `tincture_set`, `shihan_beer_giraffe`, `beer_set_any`) and related wording/legal checks to a later candidate.
+- Keep `gift_to_ally` as existing political/social action only; not treated as a bar shelf SKU in this batch.
 
 Recommended model:
-- Codex 5.3 docs/audit only.
+- Codex 5.5 runtime patch only (first batch, no court/final changes).
 
 ### Decision mode
 
-No runtime patch now; architecture/product decision only.
+No full runtime rollout now; candidate-limited implementation only.

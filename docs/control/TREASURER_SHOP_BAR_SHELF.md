@@ -32,6 +32,26 @@
 - The next runtime patch must explicitly decide which items only trigger bar/social events and which, if any, also modify influence.
 - Public/legal wording should be reviewed separately before using any alcohol names in public-facing materials.
 
+## V1.1 runtime candidate selection
+
+First safe runtime batch (non-alcohol, bar/social only):
+
+- `author_tea` — 3 gold — bar/social only
+- `lemonade_02` — 2 gold — bar/social only
+- `sobranie_pizza` — 6 gold — bar/social only
+- `anna_pavlova` — 2 gold — bar/social only
+
+Deferred to later runtime candidate (pending wording/legal/public-display decision):
+
+- `champagne_premier`
+- `tincture_set`
+- `shihan_beer_giraffe`
+- `beer_set_any`
+
+Control note:
+
+- `gift_to_ally` remains a political/social action and is not a normal bar shelf SKU.
+
 ## Out of scope (this doc)
 
 - Do not replace the current Treasurer Shop V1 runtime menu yet.
