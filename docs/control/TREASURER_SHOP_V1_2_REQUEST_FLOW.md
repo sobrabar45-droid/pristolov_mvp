@@ -75,6 +75,32 @@
   - Or embedded state in existing room/house action history (less visible, harder to scale).
   - Decision required before any runtime implementation.
 
+## Implementation strategy V1.2
+
+- Selected storage for V1.2 first batch: `GameDeal` (existing model), not a new table.
+- Player request records use:
+  - `offer.type` = `treasurer_shop_request`
+  - strict `offer_code`/`item_code` payload inside offer JSON
+  - statuses: `pending` (created by player), `accepted_waiting_treasurer` (awaiting cashier confirmation), `completed` (cashier confirmed and gold spent), `treasurer_rejected` (cashier rejected), optional `declined` path if target-stage rejection remains.
+- Gold ledger rule:
+  - no gold movement on request creation or treasury acceptance stage.
+  - `HouseGoldTransaction` is created only when cashier confirmation executes transfer/spend.
+- Strict filtering is required so shop records never mix with diplomacy/resource deals:
+  - all `GameDeal` queries for V1.2 flow include `offer.type == treasurer_shop_request`.
+  - generic deal queues/streams exclude this type unless explicitly needed.
+- Source of truth for request payload:
+  - `offer` stores ordered items with `action_code`, `item_label`, `cost_gold`, quantity if needed.
+  - status transition stays minimal and explicit.
+
+- Scope guardrails for this patch:
+  - safe shelf only: `author_tea`, `lemonade_02`, `sobranie_pizza`, `anna_pavlova`.
+  - defer 18+ expansion and all alcohol items.
+  - defer dedicated `ShopRequest` model and advanced cleanup/expiry lifecycle.
+
+- TV/Master visibility:
+  - readable event on confirmed spend only.
+  - no user-visible event while request is still pending.
+
 ## V1.2 runtime guardrails (for later patch)
 
 - Do not spend gold on browse or pre-confirm actions.
