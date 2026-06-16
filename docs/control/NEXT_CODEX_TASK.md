@@ -30,8 +30,8 @@ Standalone cashier Gold Desk runtime closed in:
 ## Next recommended task
 
 - Align Master of Whisper role behavior with `docs/control/WHISPER_MASTER_V1_CONTRACT.md`.
-- Choose: product decision lock (no runtime changes) or small Codex 5.5 runtime patch limited to messaging/no-op clarity.
-- If runtime changes are approved, apply after this contract is accepted.
+- Choose: product decision lock (no runtime changes) first, then narrow Codex 5.5 messaging/no-op clarity patch only if accepted.
+- If runtime changes are approved, run only a narrow Codex 5.5 patch after this contract is accepted: player_room messaging/no-op clarity only; no balance changes, no Court/Final touches, and no role-behavior expansion.
 
 Recommended model:
 - Codex 5.3 for access-policy/docs decisions and small role polish in V1.
@@ -39,3 +39,5 @@ Recommended model:
 ### Decision mode
 
 No runtime patch until contract acceptance.
+
+
