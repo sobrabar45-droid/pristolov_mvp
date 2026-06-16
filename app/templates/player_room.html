@@ -444,10 +444,10 @@
                 </div>
 
             {% elif role.code == "whisper_master" %}
-                <div class="big-text">Вы отвечаете за скрытые действия и тонкие ходы.</div>
+                <div class="big-text">Вы отвечаете за поздний политический ход Дома.</div>
                 <div class="muted">
-                    Ваша зона — слухи, интриги и скрытая информация.
-                    В следующих версиях здесь появятся тайные задачи и специальные действия.
+                    Ваша зона — Последний Шёпот: короткое окно перед финалом, где один точный выбор
+                    может поддержать союзника, ослабить лидера или разорвать активный союз.
                 </div>
 
             {% elif role.code == "house_sworn" %}
@@ -543,9 +543,9 @@
             </div>
 
         {% elif role.code == "whisper_master" %}
-            <div class="big-text">Держите внимание на скрытых возможностях.</div>
+            <div class="big-text">Берегите ход до окна Последнего Шёпота.</div>
             <div class="muted">
-                В дальнейшем здесь появятся ваши тайные действия.
+                Когда фаза откроется, у Дома будет одно действие Мастера шёпота. Выберите его внимательно.
             </div>
 
         {% else %}
@@ -944,7 +944,7 @@ function renderLastWhisperInfo(data) {
 
   info.innerHTML = `
     <div class="big-text" style="font-size:16px;">ПОСЛЕДНИЙ ШЁПОТ</div>
-    <div class="muted" style="margin-top:6px;">Дома плетут интриги перед финалом.</div>
+    <div class="muted" style="margin-top:6px;">Поздняя политическая фаза: Мастер шёпота может сделать один скрытый ход за Дом.</div>
     <div class="muted" style="margin-top:6px;">${escapeHtml(countdownText)}</div>
     <div class="muted" style="margin-top:6px;">${latestEvent?.tv_text ? escapeHtml(fixEncoding(latestEvent.tv_text)) : "Сейчас это короткое окно политического давления перед финалом."}</div>
   `;
@@ -955,7 +955,7 @@ function renderLastWhisperInfo(data) {
     controls.innerHTML = `
       <div class="action-box">
         <div class="big-text">Действиями управляет Мастер шёпота Дома.</div>
-        <div class="muted">Ваш экран пока показывает только информационное состояние окна.</div>
+        <div class="muted">Ваш экран показывает состояние окна. Кнопки действий видны только игроку с ролью Мастера шёпота.</div>
       </div>
     `;
     return;
@@ -968,7 +968,7 @@ function renderLastWhisperInfo(data) {
         <div class="big-text">Ход уже сделан</div>
         <div class="muted">Ваше действие: ${escapeHtml(fixEncoding(viewerAction.action_label || "Политическое действие"))}.</div>
         ${targetText ? `<div class="muted" style="margin-top:6px;">Цель: ${escapeHtml(fixEncoding(targetText))}.</div>` : ""}
-        <div class="muted" style="margin-top:6px;">Повторный ход в этом окне запрещён.</div>
+        <div class="muted" style="margin-top:6px;">Правило окна: один ход Мастера шёпота на Дом. Повторное действие недоступно до следующего окна.</div>
       </div>
     `;
     return;
@@ -984,8 +984,9 @@ function renderLastWhisperInfo(data) {
 
   controls.innerHTML = `
     <div class="action-box">
-      <div class="big-text">Действие Мастера шепота</div>
-      <div class="muted">Тихая поддержка усиливает выбранный Дом, Налог на корону бьёт по лидеру, а Разрыв союза снимает один активный союз до финала.</div>
+      <div class="big-text">Выберите один ход Мастера шёпота</div>
+      <div class="muted">Это позднее политическое окно перед финалом. У Дома есть одно действие, поэтому выбор стоит делать осознанно.</div>
+      <div class="muted" style="margin-top:8px;">Тихая поддержка тайно даёт другому Дому +1 влияние. Налог на корону давит на единственного лидера влияния и снимает 1 влияние, если такой лидер есть. Разрыв союза ломает выбранный активный союз.</div>
       ${quietSupportAction ? `
         <div style="margin-top:12px;">
           <label class="muted" for="lastWhisperTargetHouse">Дом для тайной поддержки</label>
@@ -995,6 +996,7 @@ function renderLastWhisperInfo(data) {
               <option value="${escapeHtml(String(house.id))}">${escapeHtml(fixEncoding(house.name || house.house_key || `Дом #${house.id}`))}</option>
             `).join("")}
           </select>
+          ${availableTargetHouses.length ? "" : `<div class="muted" style="margin-top:8px;">Сейчас нет доступного другого Дома для тайной поддержки.</div>`}
         </div>
         <div class="expedition-inline-actions" style="margin-top:12px;">
           <button
@@ -1006,6 +1008,7 @@ function renderLastWhisperInfo(data) {
         </div>
       ` : ""}
       ${crownTaxAction ? `
+        <div class="muted" style="margin-top:12px;">Налог на корону сработает только при единственном лидере влияния. Если лидера нет или влияние уже нельзя снизить, система объяснит результат без изменения баланса.</div>
         <div class="expedition-inline-actions" style="margin-top:12px;">
           <button
             type="button"
@@ -1024,7 +1027,7 @@ function renderLastWhisperInfo(data) {
               <option value="${escapeHtml(String(item.deal_id || ""))}">${escapeHtml(fixEncoding(item.label || `Союз #${item.deal_id}`))}</option>
             `).join("")}
           </select>
-          ${availableAlliances.length ? "" : `<div class="muted" style="margin-top:8px;">Сейчас нет активных союзов для разрыва.</div>`}
+          ${availableAlliances.length ? `<div class="muted" style="margin-top:8px;">Можно выбрать только активный союз из списка.</div>` : `<div class="muted" style="margin-top:8px;">Сейчас нет активных союзов для разрыва.</div>`}
         </div>
         <div class="expedition-inline-actions" style="margin-top:12px;">
           <button
