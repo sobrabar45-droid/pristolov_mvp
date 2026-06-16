@@ -35,9 +35,9 @@ Standalone cashier Gold Desk runtime closed in:
 
 ## Next recommended task
 
-- Current learning pack in progress: `DEVELOPMENT_LEARNING_PACK_CASHIER_PRODUCTION_ROLLOUT`.
-- After pack completion: select next contour, audit-only first.
-- No runtime patch at this stage; documentation/audit only.
+- Visibility matrix is completed: `SCREEN_VISIBILITY_PRE_LIVE.md`.
+- Next task: pre-live smoke execution protocol.
+- No runtime patch at this stage; docs-led verification and smoke only.
 
 Recommended model:
 - Codex 5.3 for audit/control decision updates.
