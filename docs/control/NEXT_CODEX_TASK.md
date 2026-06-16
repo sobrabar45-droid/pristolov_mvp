@@ -27,18 +27,23 @@ Standalone cashier Gold Desk runtime closed in:
 - `3bc9e5f` Add standalone cashier Gold Desk screen.
 - `f360c49` Add cashier Gold Desk checkpoint.
 
+## Cashier rollout status
+
+- PRISTOLOV.ru cashier rollout is closed in production (`/cashier/gold-desk/{room_code}`).
+- Nginx `/cashier/` protection is active; `/dev` remains internal.
+- Next work is audit-only; no runtime patch now.
+
 ## Next recommended task
 
-- Align Master of Whisper role behavior with `docs/control/WHISPER_MASTER_V1_CONTRACT.md`.
-- Choose: product decision lock (no runtime changes) first, then narrow Codex 5.5 messaging/no-op clarity patch only if accepted.
-- If runtime changes are approved, run only a narrow Codex 5.5 patch after this contract is accepted: player_room messaging/no-op clarity only; no balance changes, no Court/Final touches, and no role-behavior expansion.
+- Perform next candidate-selection audit with no immediate runtime changes.
+- After that selection is accepted, continue with Codex-planned docs/runtime work in order.
 
 Recommended model:
-- Codex 5.3 for access-policy/docs decisions and small role polish in V1.
+- Codex 5.3 for audit/control decision updates.
 
 ### Decision mode
 
-No runtime patch until contract acceptance is confirmed against deployed copy; after that: optional Codex 5.5 runtime follow-up for no-op wording/messages only if needed (no balance changes).
+Do not add runtime patches yet.
 
 
 
