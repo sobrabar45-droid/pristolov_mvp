@@ -35,8 +35,9 @@ Standalone cashier Gold Desk runtime closed in:
 
 ## Next recommended task
 
-- Perform next candidate-selection audit with no immediate runtime changes.
-- After that selection is accepted, continue with Codex-planned docs/runtime work in order.
+- Current block is closed: Cashier production rollout + Treasurer Shop V1/V1.1 + Whisper Master V1.1 messaging.
+- Next task: `DEVELOPMENT_LEARNING_PACK`.
+- No runtime patch at this stage; documentation/audit only.
 
 Recommended model:
 - Codex 5.3 for audit/control decision updates.
