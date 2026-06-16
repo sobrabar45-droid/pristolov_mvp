@@ -115,6 +115,23 @@
             opacity: 0.55;
         }
 
+        .manual-section {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .manual-title {
+            margin: 0 0 6px;
+            font-size: 18px;
+            line-height: 1.2;
+        }
+
+        .manual-copy {
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
         .result {
             min-height: 48px;
             margin-top: 14px;
@@ -175,6 +192,12 @@
             <button class="button" id="grantButton" type="button">Начислить золото</button>
         </div>
 
+        <div class="manual-section">
+            <h2 class="manual-title">Ручное начисление</h2>
+            <p class="manual-copy">Для дозаказов: посчитайте дельту вручную и нажмите +1 нужное количество раз.</p>
+            <button class="button" id="manualGrantButton" type="button">+1 золото</button>
+        </div>
+
         <div class="result" id="resultBox">Ожидаю ввод чека.</div>
     </section>
 </main>
@@ -185,6 +208,7 @@
     const amountInput = document.getElementById("amountInput");
     const preview = document.getElementById("preview");
     const grantButton = document.getElementById("grantButton");
+    const manualGrantButton = document.getElementById("manualGrantButton");
     const resultBox = document.getElementById("resultBox");
 
     function calculatedGold() {
@@ -202,6 +226,22 @@
         const houseId = Number(houseSelect.value || 0);
         const house = houses.find(item => Number(item.id) === houseId);
         return house?.name || house?.house_key || `Дом #${houseId}`;
+    }
+
+    function selectedHouse() {
+        const houseId = Number(houseSelect.value || 0);
+        return houses.find(item => Number(item.id) === houseId);
+    }
+
+    function updateSelectedHouseGold(goldAfter) {
+        const house = selectedHouse();
+        if (!house || goldAfter === undefined || goldAfter === null) return;
+
+        house.gold = goldAfter;
+        const option = houseSelect.options[houseSelect.selectedIndex];
+        if (option) {
+            option.textContent = `${house.name || house.house_key} · ${goldAfter} золота`;
+        }
     }
 
     function updatePreview() {
@@ -242,6 +282,7 @@
             }
 
             setResult(`Дому ${selectedHouseName()} начислено ${calculatedGold()} золота. Баланс: ${payload?.gold_after ?? "обновлён"}.`);
+            updateSelectedHouseGold(payload?.gold_after);
         } catch (err) {
             setResult(String(err?.message || err), true);
         } finally {
@@ -249,8 +290,47 @@
         }
     }
 
+    async function issueManualGold() {
+        const houseId = Number(houseSelect.value || 0);
+
+        if (!houseId) {
+            setResult("Сначала выберите Дом.", true);
+            return;
+        }
+
+        manualGrantButton.disabled = true;
+        setResult("Начисляю +1 золото...");
+
+        try {
+            const response = await fetch(`/gold/houses/${houseId}/grant`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    amount: 1,
+                    source_type: "cashier_manual",
+                    reason: "Ручное начисление кассиром: +1 золото"
+                })
+            });
+
+            const payload = await response.json().catch(() => null);
+            if (!response.ok) {
+                throw new Error(payload?.detail || `HTTP ${response.status}`);
+            }
+
+            updateSelectedHouseGold(payload?.gold_after);
+            setResult(`Дому ${selectedHouseName()} начислено +1 золото. Баланс: ${payload?.gold_after ?? "обновлён"}.`);
+        } catch (err) {
+            setResult(String(err?.message || err), true);
+        } finally {
+            manualGrantButton.disabled = false;
+        }
+    }
+
     amountInput.addEventListener("input", updatePreview);
     grantButton.addEventListener("click", issueGoldFromCheck);
+    manualGrantButton.addEventListener("click", issueManualGold);
     updatePreview();
 </script>
 </body>
