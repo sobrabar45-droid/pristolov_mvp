@@ -38,6 +38,7 @@ Recommended model:
 
 ### Decision mode
 
-No runtime patch until contract acceptance.
+No runtime patch until contract acceptance is confirmed against deployed copy; after that: optional Codex 5.5 runtime follow-up for no-op wording/messages only if needed (no balance changes).
+
 
 
