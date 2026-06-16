@@ -36,7 +36,8 @@ Standalone cashier Gold Desk runtime closed in:
 ## Next recommended task
 
 - Visibility matrix is completed: `SCREEN_VISIBILITY_PRE_LIVE.md`.
-- Next task: pre-live smoke execution protocol.
+- Current task: pre-live smoke execution protocol.
+- Next step after protocol: run pre-live smoke before game.
 - No runtime patch at this stage; docs-led verification and smoke only.
 
 Recommended model:
