@@ -35,8 +35,8 @@ Standalone cashier Gold Desk runtime closed in:
 
 ## Next recommended task
 
-- Current block is closed: Cashier production rollout + Treasurer Shop V1/V1.1 + Whisper Master V1.1 messaging.
-- Next task: `DEVELOPMENT_LEARNING_PACK`.
+- Current learning pack in progress: `DEVELOPMENT_LEARNING_PACK_CASHIER_PRODUCTION_ROLLOUT`.
+- After pack completion: select next contour, audit-only first.
 - No runtime patch at this stage; documentation/audit only.
 
 Recommended model:
