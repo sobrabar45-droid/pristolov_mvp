@@ -29,13 +29,13 @@ Standalone cashier Gold Desk runtime closed in:
 
 ## Next recommended task
 
-- Run external/proxy deployment verification on pristolov.ru for `/cashier/gold-desk/{room_code}`.
-- Validate auth gate, `X-Admin-Token` header forwarding, and public route denylist.
-- Keep task in docs/audit mode; no runtime patch in this step.
+- Align Master of Whisper role behavior with `docs/control/WHISPER_MASTER_V1_CONTRACT.md`.
+- Choose: product decision lock (no runtime changes) or small Codex 5.5 runtime patch limited to messaging/no-op clarity.
+- If runtime changes are approved, apply after this contract is accepted.
 
 Recommended model:
-- Codex 5.3 for access-policy docs and rollout checklist.
+- Codex 5.3 for access-policy/docs decisions and small role polish in V1.
 
 ### Decision mode
 
-No runtime patch in this step.
+No runtime patch until contract acceptance.
