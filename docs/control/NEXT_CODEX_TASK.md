@@ -36,9 +36,9 @@ Standalone cashier Gold Desk runtime closed in:
 ## Next recommended task
 
 - Visibility matrix is completed: `SCREEN_VISIBILITY_PRE_LIVE.md`.
-- Current task: Last Whisper smoke execution protocol.
-- Next task after this protocol: run targeted pre-live smoke before game, then continue operations planning.
-- No runtime patch at this stage; docs-led verification and smoke only.
+- Last Whisper TV copy rollout is closed after production confirmation (`8d91c85`).
+- Next task: select next contour in audit-only mode.
+- No runtime patch at this step.
 
 Recommended model:
 - Codex 5.3 for audit/control decision updates.
