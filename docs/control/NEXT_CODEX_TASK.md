@@ -39,7 +39,9 @@ Standalone cashier Gold Desk runtime closed in:
 - Production rollout for this block is complete.
 - Pre-live full readiness audit completed (contour A in `NEXT_CONTOUR_SELECTION_AFTER_SUPPORT_ROLES_UX.md`) with findings in `PRE_LIVE_READINESS_AUDIT_AFTER_TREASURER_SHOP_V1_2.md`.
 - Result: **conditional no-go pending production smoke/protocol execution** (network/access not available from audit environment).
-- Next step (no runtime patch): execute `PRE_LIVE_SMOKE_EXECUTION_PROTOCOL.md` on the real pre-live room and publish final go/no-go decision.
+- Current task: pre-live production smoke protocol was prepared as `PRODUCTION_SMOKE_PROTOCOL_PRE_LIVE.md`.
+- Codex SSH smoke is pending because SSH execution hung in the Codex environment.
+- Next step (no runtime patch): user runs the manual VPS command block from `PRODUCTION_SMOKE_PROTOCOL_PRE_LIVE.md`, pastes results back, then Codex documents the production smoke result and final go/no-go recommendation.
 - Keep manual visual acceptance for final check only after automated smoke and protocol pass.
 
 
