@@ -196,6 +196,11 @@ TREASURER_SHOP_ACTIONS = {
     },
 }
 
+TREASURER_SHOP_REQUEST_ACTIONS = {
+    code: TREASURER_SHOP_ACTIONS[code]
+    for code in ("author_tea", "lemonade_02", "sobranie_pizza", "anna_pavlova")
+}
+
 
 def _issue_player_token() -> str:
     return token_urlsafe(24)
@@ -1452,6 +1457,11 @@ def _find_active_alliance_between_houses(
     return None
 
 
+def _is_treasurer_shop_request_deal(deal: GameDeal) -> bool:
+    offer = deal.offer if isinstance(deal.offer, dict) else {}
+    return str(offer.get("type") or "").strip().lower() == "treasurer_shop_request"
+
+
 @router.get("/me/{player_token}")
 def get_player_me(player_token: str):
     db: Session = SessionLocal()
@@ -1507,7 +1517,8 @@ def get_player_me(player_token: str):
 
         incoming_deals = []
         if player.house_id:
-            incoming_deals = (
+            incoming_deals = [
+                deal for deal in (
                 db.query(GameDeal)
                 .options(
                     joinedload(GameDeal.from_house),
@@ -1520,7 +1531,9 @@ def get_player_me(player_token: str):
                 )
                 .order_by(GameDeal.id.desc())
                 .all()
-            )
+                )
+                if not _is_treasurer_shop_request_deal(deal)
+            ]
 
         available_deal_houses = []
         available_duel_houses = []
@@ -2543,6 +2556,78 @@ def purchase_treasurer_shop_item(player_id: int, payload: dict = Body(default={}
             "alliance_granted": alliance_granted,
             "resources_changed": resources_changed,
             "transaction_id": spend_result.transaction_id,
+        })
+    finally:
+        db.close()
+
+
+@router.post("/treasurer-shop/request/{player_id}")
+def create_treasurer_shop_request(player_id: int, payload: dict = Body(default={})):
+    db: Session = SessionLocal()
+
+    try:
+        if payload is None:
+            payload = {}
+        if not isinstance(payload, dict):
+            return {
+                "ok": False,
+                "message": "Тело запроса должно быть JSON-объектом",
+            }
+
+        player = (
+            db.query(Player)
+            .options(joinedload(Player.role), joinedload(Player.house), joinedload(Player.game))
+            .filter(Player.id == player_id)
+            .first()
+        )
+        if not player:
+            return {"ok": False, "message": "Игрок не найден"}
+        if not player.game:
+            return {"ok": False, "message": "Игра не найдена"}
+        if not player.house:
+            return {"ok": False, "message": "У игрока не найден Дом"}
+        if not player.role or player.role.code != "treasurer":
+            return {
+                "ok": False,
+                "message": "Заявку в Харчевню может отправить только Мастер золота.",
+            }
+
+        action_code = str(payload.get("action_code") or "").strip().lower()
+        action_meta = TREASURER_SHOP_REQUEST_ACTIONS.get(action_code)
+        if not action_meta:
+            return {
+                "ok": False,
+                "message": "Выберите доступную позицию Харчевни.",
+            }
+
+        deal = GameDeal(
+            game_id=player.game_id,
+            from_house_id=player.house_id,
+            to_house_id=player.house_id,
+            status="pending",
+            offer={
+                "type": "treasurer_shop_request",
+                "action_code": action_code,
+                "item_label": action_meta["label"],
+                "cost_gold": int(action_meta["cost"]),
+                "player_id": player.id,
+            },
+            note="Treasurer Shop request: pending cashier review",
+        )
+        db.add(deal)
+        db.commit()
+        db.refresh(deal)
+
+        return _fix_text_map({
+            "ok": True,
+            "request_id": deal.id,
+            "status": deal.status,
+            "action_code": action_code,
+            "item_label": action_meta["label"],
+            "cost_gold": int(action_meta["cost"]),
+            "house_id": player.house_id,
+            "house_name": player.house.name,
+            "message": "Заявка отправлена кассиру. Золото пока не списано.",
         })
     finally:
         db.close()

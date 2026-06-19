@@ -497,6 +497,12 @@
         <div id="treasurerDealResultBox"></div>
     </section>
 
+    <section class="card" id="treasurerShopSection" style="display:none;">
+        <div class="eyebrow">Харчевня / Магазин</div>
+        <div id="treasurerShopControls" class="muted">Подготовка витрины...</div>
+        <div id="treasurerShopResultBox"></div>
+    </section>
+
     <section class="card" id="alliancesSection" style="display:none;">
         <div class="eyebrow">Союзы Дома</div>
         <div id="alliancesControls" class="muted">Подготовка союзов...</div>
@@ -596,6 +602,7 @@ window.dealDraft = window.dealDraft || {
 let dealSubmitBusy = false;
 let duelActionBusy = false;
 let lastWhisperActionBusy = false;
+let treasurerShopRequestBusy = false;
 let isUserEditingDeal = false;
 let lastUserInteractionAt = 0;
 const PHASE_LABELS = {
@@ -640,6 +647,12 @@ const EXPEDITION_ROLE_LABELS = {
   whisper_master: "Мастер шёпота",
   house_sworn: "Соратник Дома"
 };
+const TREASURER_SHOP_REQUEST_ITEMS = [
+  { code: "author_tea", label: "Авторский чай", cost: 3 },
+  { code: "lemonade_02", label: "Лимонад 0.2", cost: 2 },
+  { code: "sobranie_pizza", label: "Пицца Собрание", cost: 6 },
+  { code: "anna_pavlova", label: "Десерт Анна Павлова", cost: 2 }
+];
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -847,6 +860,7 @@ async function loadPlayerState() {
     renderDuelControls(data);
     renderDealControls(data);
     renderTreasurerDealControls(data);
+    renderTreasurerShopControls(data);
     renderAllianceControls(data);
     renderExpeditionControls(data);
     restoreExpeditionDraft();
@@ -1332,6 +1346,64 @@ function renderTreasurerDealControls(data) {
   `;
 }
 
+function renderTreasurerShopControls(data) {
+  const section = document.getElementById("treasurerShopSection");
+  const controls = document.getElementById("treasurerShopControls");
+  if (!section || !controls) return;
+
+  const roleCode = data?.role?.code || null;
+  if (roleCode !== "treasurer") {
+    section.style.display = "none";
+    controls.innerHTML = "";
+    clearTreasurerShopResult();
+    return;
+  }
+
+  const gold = Number(data?.house?.resources?.gold || 0);
+  section.style.display = "";
+  controls.innerHTML = `
+    <div class="action-box">
+      <div class="big-text">Харчевня / Магазин</div>
+      <div class="muted">Золото Дома: ${escapeHtml(gold)}. Золото спишется после подтверждения кассиром.</div>
+      <div class="expedition-inline-actions" style="margin-top:12px;">
+        ${TREASURER_SHOP_REQUEST_ITEMS.map(item => `
+          <div class="warning-box">
+            <div class="big-text" style="font-size:16px;">${escapeHtml(item.label)}</div>
+            <div class="muted" style="margin-top:6px;">Цена: ${escapeHtml(item.cost)} золота</div>
+            <button
+              type="button"
+              class="btn"
+              style="margin-top:10px;"
+              onclick="createTreasurerShopRequest('${escapeHtml(item.code)}')"
+              ${treasurerShopRequestBusy ? "disabled" : ""}>
+              ${treasurerShopRequestBusy ? "Отправляю..." : "Отправить заявку"}
+            </button>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderTreasurerShopResult(ok, title, text) {
+  const resultEl = document.getElementById("treasurerShopResultBox");
+  if (!resultEl) return;
+
+  resultEl.innerHTML = `
+    <div class="explore-result ${ok ? "ok" : "error"}">
+      <div class="explore-result-title">${escapeHtml(fixEncoding(title))}</div>
+      <div class="explore-result-text">${escapeHtml(fixEncoding(text))}</div>
+    </div>
+  `;
+}
+
+function clearTreasurerShopResult() {
+  const resultEl = document.getElementById("treasurerShopResultBox");
+  if (resultEl) {
+    resultEl.innerHTML = "";
+  }
+}
+
 function saveDealDraftFromForm() {
   const targetEl = document.getElementById("dealTargetHouse");
   const typeEl = document.getElementById("dealType");
@@ -1667,6 +1739,42 @@ async function treasurerConfirmDeal(dealId, action) {
   } catch (e) {
     console.error("treasurer confirm deal error", e);
     renderTreasurerDealResult(false, "Действие не выполнено", "Не удалось обработать подтверждение сделки");
+  }
+}
+
+async function createTreasurerShopRequest(actionCode) {
+  if (treasurerShopRequestBusy) {
+    return;
+  }
+
+  const playerId = window.PLAYER_ID;
+  treasurerShopRequestBusy = true;
+  renderTreasurerShopResult(true, "Отправляю заявку", "Передаю заказ кассиру. Золото пока не списывается.");
+  await loadPlayerState();
+
+  try {
+    const res = await fetch(`/player/treasurer-shop/request/${playerId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        action_code: actionCode
+      })
+    });
+    const data = await res.json();
+
+    renderTreasurerShopResult(
+      !!data?.ok,
+      data?.ok ? "Заявка отправлена" : "Заявка не отправлена",
+      fixEncoding(data?.message || data?.detail || "Ошибка")
+    );
+  } catch (e) {
+    console.error("treasurer shop request error", e);
+    renderTreasurerShopResult(false, "Заявка не отправлена", "Не удалось отправить заявку кассиру");
+  } finally {
+    treasurerShopRequestBusy = false;
+    await loadPlayerState();
   }
 }
 

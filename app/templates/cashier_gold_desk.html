@@ -132,6 +132,51 @@
             font-size: 14px;
         }
 
+        .queue-section {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .queue-title {
+            margin: 0 0 8px;
+            font-size: 20px;
+            line-height: 1.2;
+        }
+
+        .queue-list {
+            display: grid;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .queue-card {
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--panel-soft);
+        }
+
+        .queue-card-title {
+            font-weight: 800;
+            line-height: 1.25;
+        }
+
+        .queue-card-meta {
+            margin-top: 6px;
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .queue-status {
+            display: inline-block;
+            margin-top: 8px;
+            color: var(--gold);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
         .result {
             min-height: 48px;
             margin-top: 14px;
@@ -196,6 +241,27 @@
             <h2 class="manual-title">Ручное начисление</h2>
             <p class="manual-copy">Для дозаказов: посчитайте дельту вручную и нажмите +1 нужное количество раз.</p>
             <button class="button" id="manualGrantButton" type="button">+1 золото</button>
+        </div>
+
+        <div class="queue-section">
+            <h2 class="queue-title">Заявки из Харчевни</h2>
+            <p>Позиции ниже ожидают подтверждения кассиром. Списание золота будет добавлено отдельным шагом.</p>
+            {% if pending_shop_requests %}
+                <div class="queue-list">
+                    {% for item in pending_shop_requests %}
+                        <div class="queue-card">
+                            <div class="queue-card-title">{{ item.house_name or item.house_key or "Дом" }} · {{ item.item_label or "Позиция" }}</div>
+                            <div class="queue-card-meta">Стоимость: {{ item.cost_gold or 0 }} золота · Статус: {{ item.status }}</div>
+                            <span class="queue-status">Ожидает подтверждения</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="queue-card" style="margin-top:12px;">
+                    <div class="queue-card-title">Нет pending-заявок</div>
+                    <div class="queue-card-meta">Когда Мастер золота отправит заказ из player_room, он появится здесь.</div>
+                </div>
+            {% endif %}
         </div>
 
         <div class="result" id="resultBox">Ожидаю ввод чека.</div>
