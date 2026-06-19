@@ -35,9 +35,9 @@ Standalone cashier Gold Desk runtime closed in:
 
 ## Next recommended task
 
-- Treasurer Shop V1.2 production rollout is closed.
-- Next step: create a V1.2 development checkpoint / learning-pack decision before the next contour.
-- No new runtime patch in this step (docs/audit only).
+- Treasurer Shop V1.2 learning pack is completed.
+- Next step: select next contour, audit-only.
+- No new runtime patch in this step.
 - No new model/table for this contour.
 - Safe shelf only: `author_tea`, `lemonade_02`, `sobranie_pizza`, `anna_pavlova`.
 
