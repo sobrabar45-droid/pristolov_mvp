@@ -37,8 +37,8 @@ Standalone cashier Gold Desk runtime closed in:
 
 - Support-role UX polish for `maester`/`house_sworn` was completed (commits: `53c7cf4`, `8524ef0`, `a5e9cae`).
 - Production rollout for this block is complete.
-- Next step (audit-only): document next contour selection in control docs and choose next runtime area.
-- No runtime patch in this step.
+- Next step (audit-only): run **Pre-live full smoke / readiness audit** (contour A in `NEXT_CONTOUR_SELECTION_AFTER_SUPPORT_ROLES_UX.md`).
+- `NO runtime patch` in this selection step. Manual visual checks are only final acceptance after Codex-first automated smoke.
 
 
 
