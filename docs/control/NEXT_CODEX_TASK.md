@@ -37,8 +37,10 @@ Standalone cashier Gold Desk runtime closed in:
 
 - Support-role UX polish for `maester`/`house_sworn` was completed (commits: `53c7cf4`, `8524ef0`, `a5e9cae`).
 - Production rollout for this block is complete.
-- Next step (audit-only): run **Pre-live full smoke / readiness audit** (contour A in `NEXT_CONTOUR_SELECTION_AFTER_SUPPORT_ROLES_UX.md`).
-- `NO runtime patch` in this selection step. Manual visual checks are only final acceptance after Codex-first automated smoke.
+- Pre-live full readiness audit completed (contour A in `NEXT_CONTOUR_SELECTION_AFTER_SUPPORT_ROLES_UX.md`) with findings in `PRE_LIVE_READINESS_AUDIT_AFTER_TREASURER_SHOP_V1_2.md`.
+- Result: **conditional no-go pending production smoke/protocol execution** (network/access not available from audit environment).
+- Next step (no runtime patch): execute `PRE_LIVE_SMOKE_EXECUTION_PROTOCOL.md` on the real pre-live room and publish final go/no-go decision.
+- Keep manual visual acceptance for final check only after automated smoke and protocol pass.
 
 
 
