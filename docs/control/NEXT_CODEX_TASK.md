@@ -35,10 +35,10 @@ Standalone cashier Gold Desk runtime closed in:
 
 ## Next recommended task
 
-- Support-role UX polish for `maester`/`house_sworn` text was completed (commit: `53c7cf4`).
-- Next recommended task: decide and execute deploy/smoke readiness review for the text-only support-role UX patch.
+- Support-role UX polish for `maester`/`house_sworn` text was completed (commits: `53c7cf4`, `8524ef0`, `a5e9cae`).
+- Production rollout for this block is complete.
+- Next step: browser visual smoke for `maester`, `house_sworn`, and phase label; then select next contour.
 - No runtime patch in this step.
-- No new model/table for this contour.
 
 
 
