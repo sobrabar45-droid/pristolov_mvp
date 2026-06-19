@@ -35,9 +35,10 @@ Standalone cashier Gold Desk runtime closed in:
 
 ## Next recommended task
 
-- Treasurer Shop V1.2 request-confirmation patch is closed (`dc9c17a`, `0a03967`).
-- Next step: **treasurer-shop V1.2 production rollout plan and pre-live smoke execution**.
-- docs/audit first, no immediate runtime patch.
+- Treasurer Shop V1.2 confirmation flow is closed (`dc9c17a`, `0a03967`).
+- Next step: execute **Treasurer Shop V1.2 production rollout smoke** using
+  `TREASURER_SHOP_V1_2_PRODUCTION_ROLLOUT_PLAN.md`.
+- No new runtime patch in this step (docs/audit only).
 - No new model/table for this contour.
 - Safe shelf only: `author_tea`, `lemonade_02`, `sobranie_pizza`, `anna_pavlova`.
 
