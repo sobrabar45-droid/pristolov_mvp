@@ -35,18 +35,11 @@ Standalone cashier Gold Desk runtime closed in:
 
 ## Next recommended task
 
-- Visibility matrix is completed: `SCREEN_VISIBILITY_PRE_LIVE.md`.
-- Last Whisper TV copy rollout is closed after production confirmation (`8d91c85`).
-- Next task: Codex 5.5 cashier-confirmation patch for Treasurer Shop V1.2 request queue.
-- No new model/table for this batch.
+- Treasurer Shop V1.2 request-confirmation patch is closed (`dc9c17a`, `0a03967`).
+- Next step: **treasurer-shop V1.2 production rollout plan and pre-live smoke execution**.
+- docs/audit first, no immediate runtime patch.
+- No new model/table for this contour.
 - Safe shelf only: `author_tea`, `lemonade_02`, `sobranie_pizza`, `anna_pavlova`.
-
-Recommended model:
-- Codex 5.5 for V1.2 minimal runtime patch.
-
-### Decision mode
-
-Implement cashier confirmation path so gold is spent only after acceptance, using the existing `GameDeal` request storage strategy above.
 
 
 
