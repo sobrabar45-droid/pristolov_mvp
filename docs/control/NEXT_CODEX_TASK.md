@@ -65,6 +65,16 @@ Standalone cashier Gold Desk runtime closed in:
 - After clean test-room E2E, run LIVE01 final non-destructive readiness checks only.
 - Then publish final go/no-go before game window.
 
+## LIVE01 role-complete rehearsal E2E completed
+
+- Controlled LIVE01 rehearsal was approved because there are no real players yet.
+- Runner added: `scripts/rehearsal_live01_role_e2e.py`.
+- Result documented in `LIVE01_ROLE_COMPLETE_REHEARSAL_E2E_RESULT.md`.
+- Codex-first E2E result: PASS.
+- LIVE01 was intentionally left as a role-complete rehearsal fixture for final browser/manual acceptance.
+- Next step: final manual visual acceptance on player/cashier/master/TV screens, then decide whether to keep rehearsal fixture or rebuild LIVE01 for the real player roster.
+- No runtime patch is currently recommended.
+
 ## Next immediate control task (pre-live, docs-only)
 
 - `42efc36` selected next contour: pre-live readiness audit.
