@@ -43,8 +43,15 @@ Standalone cashier Gold Desk runtime closed in:
 - Codex SSH smoke is pending because SSH execution hung in the Codex environment.
 - Current step completed: VPS production smoke protocol was run manually and documented in `PRODUCTION_SMOKE_RESULT_PRE_LIVE.md`.
 - Result: conditional GO for surface readiness, no-go for full role/action E2E on LIVE01 because required roles are absent.
-- Next recommended task: prepare a controlled test room or role-complete LIVE01 variant, then run role/action E2E smoke (Treasurer, diplomat, whisper_master, house_sworn paths), then publish final go/no-go.
+- Next recommended task: create or validate a role-complete test room (or approved controlled LIVE01 variant), then execute the role/action E2E sequence from `ROLE_COMPLETE_E2E_SMOKE_PLAN_PRE_LIVE.md` and publish final go/no-go.
 - Keep manual visual acceptance for final check only after automated smoke and protocol pass.
 
+## Next immediate control task (pre-live, docs-only)
 
+- `42efc36` selected next contour: pre-live readiness audit.
+- `9bc6639` completed readiness audit with conditional no-go due LIVE01 role incompleteness.
+- `d46c820` prepared production smoke protocol and it is now blocked by external execution constraints.
+- `509c40f` documented live production smoke result and role blocker.
+- New control artifact created: `ROLE_COMPLETE_E2E_SMOKE_PLAN_PRE_LIVE.md`.
+- Next immediate task is to prepare role-complete controlled room and run E2E smoke plan before any other runtime patch.
 
