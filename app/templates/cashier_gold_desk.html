@@ -177,6 +177,10 @@
             font-weight: 700;
         }
 
+        .queue-action {
+            margin-top: 10px;
+        }
+
         .result {
             min-height: 48px;
             margin-top: 14px;
@@ -249,10 +253,11 @@
             {% if pending_shop_requests %}
                 <div class="queue-list">
                     {% for item in pending_shop_requests %}
-                        <div class="queue-card">
+                        <div class="queue-card" id="shopRequest{{ item.id }}">
                             <div class="queue-card-title">{{ item.house_name or item.house_key or "Дом" }} · {{ item.item_label or "Позиция" }}</div>
                             <div class="queue-card-meta">Стоимость: {{ item.cost_gold or 0 }} золота · Статус: {{ item.status }}</div>
                             <span class="queue-status">Ожидает подтверждения</span>
+                            <button class="button queue-action" type="button" data-confirm-shop-request="{{ item.id }}">Заказ принят</button>
                         </div>
                     {% endfor %}
                 </div>
@@ -276,6 +281,7 @@
     const grantButton = document.getElementById("grantButton");
     const manualGrantButton = document.getElementById("manualGrantButton");
     const resultBox = document.getElementById("resultBox");
+    const shopConfirmButtons = Array.from(document.querySelectorAll("[data-confirm-shop-request]"));
 
     function calculatedGold() {
         const amountRub = Number(amountInput.value || 0);
@@ -394,9 +400,43 @@
         }
     }
 
+    async function confirmShopRequest(button) {
+        const requestId = Number(button.dataset.confirmShopRequest || 0);
+        if (!requestId) {
+            setResult("Не найден номер заявки.", true);
+            return;
+        }
+
+        button.disabled = true;
+        setResult("Подтверждаю заказ...");
+
+        try {
+            const response = await fetch(`/cashier/treasurer-shop/requests/${requestId}/confirm`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            });
+
+            const payload = await response.json().catch(() => null);
+            if (!response.ok || !payload?.ok) {
+                throw new Error(payload?.message || payload?.detail || `HTTP ${response.status}`);
+            }
+
+            setResult(`Заказ принят. Золото: ${payload.gold_before} → ${payload.gold_after}.`);
+            window.setTimeout(() => window.location.reload(), 650);
+        } catch (err) {
+            setResult(String(err?.message || err), true);
+            button.disabled = false;
+        }
+    }
+
     amountInput.addEventListener("input", updatePreview);
     grantButton.addEventListener("click", issueGoldFromCheck);
     manualGrantButton.addEventListener("click", issueManualGold);
+    shopConfirmButtons.forEach(button => {
+        button.addEventListener("click", () => confirmShopRequest(button));
+    });
     updatePreview();
 </script>
 </body>
