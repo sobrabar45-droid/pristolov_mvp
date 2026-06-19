@@ -430,10 +430,10 @@
                 </div>
 
             {% elif role.code == "maester" %}
-                <div class="big-text">Вы отвечаете за знания, логику и ответы.</div>
+                <div class="big-text">Вы держите Дом в ясности.</div>
                 <div class="muted">
-                    Ваша зона — интеллектуальные задания, анализ вопросов и точность решений.
-                    В следующих версиях здесь появятся ваши персональные игровые задания.
+                    Читайте подсказки, держите в голове факты раунда, готовьте ответы и советуйте Лорду / Леди.
+                    Если сейчас нет личной кнопки, это не ошибка: в этой фазе Мейстер работает как опора и память Дома.
                 </div>
 
             {% elif role.code == "treasurer" %}
@@ -453,7 +453,8 @@
             {% elif role.code == "house_sworn" %}
                 <div class="big-text">Вы — соратник Дома.</div>
                 <div class="muted">
-                    Ваша задача — выполнять поручения Дома и исследовать возможности.
+                    Помогайте в экспедициях, обсуждениях, поддержке дуэлей и общих решениях.
+                    Дом действует через назначенные роли, поэтому держитесь рядом с Лордом / Леди и помогайте выбрать ход.
                 </div>
 
         {% endif %}
@@ -537,9 +538,10 @@
             </div>
 
         {% elif role.code == "maester" %}
-            <div class="big-text">Следите за текущим раундом и вопросами.</div>
+            <div class="big-text">Соберите факты для решения Дома.</div>
             <div class="muted">
-                Ваша ценность — точность, логика и своевременный ответ.
+                Следите за текущей фазой, формулировками вопросов и тем, что уже известно команде.
+                Даже без отдельной кнопки сейчас вы влияете на качество ответа.
             </div>
 
         {% elif role.code == "treasurer" %}
@@ -552,6 +554,13 @@
             <div class="big-text">Берегите ход до окна Последнего Шёпота.</div>
             <div class="muted">
                 Когда фаза откроется, у Дома будет одно действие Мастера шёпота. Выберите его внимательно.
+            </div>
+
+        {% elif role.code == "house_sworn" %}
+            <div class="big-text">Будьте рядом с решением Дома.</div>
+            <div class="muted">
+                У вас может не быть личной кнопки в этой фазе, но вы участвуете в обсуждении,
+                экспедициях и поддержке назначенных ролей.
             </div>
 
         {% else %}
@@ -2285,6 +2294,16 @@ function renderAssignments(data) {
       container.innerHTML = roleCode === "lord_lady"
         ? `<div class="muted">Суд Домов: ожидается подтверждение позиции Дома</div>`
         : `<div class="muted">Суд Домов: решение принимает Лорд / Леди</div>`;
+      renderAssignmentFeedback(window.latestAssignmentFeedback);
+      return;
+    }
+    if (roleCode === "maester") {
+      container.innerHTML = `<div class="muted">Сейчас у Мейстера нет личного задания. Следите за вопросами, подсказками и помогайте Дому выбрать точный ответ.</div>`;
+      renderAssignmentFeedback(window.latestAssignmentFeedback);
+      return;
+    }
+    if (roleCode === "house_sworn") {
+      container.innerHTML = `<div class="muted">Сейчас нет личного действия. Координируйтесь с Лордом / Леди и поддерживайте роли, которые делают ход Дома.</div>`;
       renderAssignmentFeedback(window.latestAssignmentFeedback);
       return;
     }
