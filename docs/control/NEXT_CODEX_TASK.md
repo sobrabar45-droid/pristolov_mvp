@@ -35,11 +35,10 @@ Standalone cashier Gold Desk runtime closed in:
 
 ## Next recommended task
 
-- Treasurer Shop V1.2 learning pack is completed.
-- Next step: audit Player Room role UX weakness (`maester`, `house_sworn`) and apply text/UX polish only (no runtime changes yet).
-- No new runtime patch in this step (unless audit proves broken behavior).
+- Support-role UX polish for `maester`/`house_sworn` text was completed (commit: `53c7cf4`).
+- Next recommended task: decide and execute deploy/smoke readiness review for the text-only support-role UX patch.
+- No runtime patch in this step.
 - No new model/table for this contour.
-- Safe shelf only: `author_tea`, `lemonade_02`, `sobranie_pizza`, `anna_pavlova`.
 
 
 
