@@ -41,7 +41,9 @@ Standalone cashier Gold Desk runtime closed in:
 - Result: **conditional no-go pending production smoke/protocol execution** (network/access not available from audit environment).
 - Current task: pre-live production smoke protocol was prepared as `PRODUCTION_SMOKE_PROTOCOL_PRE_LIVE.md`.
 - Codex SSH smoke is pending because SSH execution hung in the Codex environment.
-- Next step (no runtime patch): user runs the manual VPS command block from `PRODUCTION_SMOKE_PROTOCOL_PRE_LIVE.md`, pastes results back, then Codex documents the production smoke result and final go/no-go recommendation.
+- Current step completed: VPS production smoke protocol was run manually and documented in `PRODUCTION_SMOKE_RESULT_PRE_LIVE.md`.
+- Result: conditional GO for surface readiness, no-go for full role/action E2E on LIVE01 because required roles are absent.
+- Next recommended task: prepare a controlled test room or role-complete LIVE01 variant, then run role/action E2E smoke (Treasurer, diplomat, whisper_master, house_sworn paths), then publish final go/no-go.
 - Keep manual visual acceptance for final check only after automated smoke and protocol pass.
 
 
