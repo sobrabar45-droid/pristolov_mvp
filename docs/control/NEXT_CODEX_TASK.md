@@ -46,6 +46,25 @@ Standalone cashier Gold Desk runtime closed in:
 - Next recommended task: create or validate a role-complete test room (or approved controlled LIVE01 variant), then execute the role/action E2E sequence from `ROLE_COMPLETE_E2E_SMOKE_PLAN_PRE_LIVE.md` and publish final go/no-go.
 - Keep manual visual acceptance for final check only after automated smoke and protocol pass.
 
+## Audit task result (2026-06-20)
+
+- `7af5f18` selected next contour: pre-live readiness audit.
+- `9bc6639` and `509c40f` confirmed LIVE01 is role-incomplete (no treasurer/diplomat/whisper_master/house_sworn).
+- `84cbf92` documented role-complete E2E plan.
+- `d46c820` prepared production smoke protocol and `509c40f` documented production smoke result.
+- New reset strategy audit created: `LIVE01_RESET_AND_ROLE_E2E_STRATEGY_AUDIT.md`.
+
+## Immediate next recommended control task
+
+- Do **not execute LIVE01 reset/delegations now**.
+- Create/validate a dedicated role-complete test room for destructive E2E setup:
+  - `POST /dev/games/{room_code}/reset-runtime`
+  - optional `GET /dev/reset-delegations/{room_code}`
+  - `POST /dev/games/{room_code}/seed-technical-run`
+  - then execute `ROLE_COMPLETE_E2E_SMOKE_PLAN_PRE_LIVE.md` actions.
+- After clean test-room E2E, run LIVE01 final non-destructive readiness checks only.
+- Then publish final go/no-go before game window.
+
 ## Next immediate control task (pre-live, docs-only)
 
 - `42efc36` selected next contour: pre-live readiness audit.
