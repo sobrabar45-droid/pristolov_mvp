@@ -143,11 +143,20 @@ def dev_reset_delegations(room_code: str):
 
 
 @router.get("/delegation/start", response_class=HTMLResponse)
-def delegation_start_page(request: Request):
+def delegation_start_page(request: Request, game_code: str = "LIVE01", entry_mode: str = "random"):
+    clean_game_code = (game_code or "LIVE01").strip().upper() or "LIVE01"
+    clean_entry_mode = (entry_mode or "random").strip().lower()
+    if clean_entry_mode not in ("quiz", "random"):
+        clean_entry_mode = "random"
+
     return templates.TemplateResponse(
         request=request,
         name="delegation_start.html",
-        context={"error": None},
+        context={
+            "error": None,
+            "default_game_code": clean_game_code,
+            "default_entry_mode": clean_entry_mode,
+        },
     )
 
 
@@ -314,7 +323,7 @@ def delegation_start_submit(
             team_size_declared=team_size_declared,
             invite_code=invite_code,
             entry_mode=clean_entry_mode,
-            resource_gold=11 if clean_entry_mode == "quiz" else 10,
+            resource_gold=11 if clean_entry_mode == "random" else 10,
             resource_influence=0,
             resource_stone=0,
             resource_wood=0,

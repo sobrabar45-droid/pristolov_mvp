@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Создать Дом — приСтолов</title>
+    <title>Создать Дом — PRISTOLOV</title>
     <style>
         :root {
             --bg: #0f1115;
@@ -268,12 +268,12 @@
             <div class="eyebrow">Вход в игру</div>
             <div class="title">Создать Дом</div>
             <div class="muted">
-                Этот путь проходит глава Дома. Здесь вы заявляете делегацию, получаете признанный Дом
-                и верительную грамоту для остальных участников.
+                Этот путь проходит будущий Лорд или Леди Дома. Создайте Дом, выберите его сами
+                или доверьтесь жребию, а затем поделитесь ссылкой с остальными игроками.
             </div>
             <div class="chips">
-                <span class="chip">Код игры: LIVE01</span>
-                <span class="chip">Первый шаг главы Дома</span>
+                <span class="chip">Код игры: {{ default_game_code or "LIVE01" }}</span>
+                <span class="chip">Жребий даёт +1 золото</span>
             </div>
         </section>
 
@@ -282,11 +282,11 @@
                 <div class="form-grid">
                     <div class="field-group">
                         <label class="field-label" for="game_code">Код игры</label>
-                        <input type="text" id="game_code" name="game_code" value="LIVE01" required>
+                        <input type="text" id="game_code" name="game_code" value="{{ default_game_code or 'LIVE01' }}" required>
                     </div>
 
                     <div class="field-group">
-                        <label class="field-label" for="leader_nickname">Имя главы делегации</label>
+                        <label class="field-label" for="leader_nickname">Имя Лорда / Леди</label>
                         <input type="text" id="leader_nickname" name="leader_nickname" required>
                     </div>
 
@@ -306,7 +306,7 @@
                     </div>
 
                     <div class="field-group full">
-                        <div class="section-label">Как ваша делегация вступает в игру?</div>
+                        <div class="section-label">Выберите Дом сами или доверьтесь жребию</div>
                         <div class="entry-mode-grid">
                             <label class="entry-card" for="entry_mode_quiz">
                                 <input
@@ -314,10 +314,11 @@
                                     name="entry_mode"
                                     value="quiz"
                                     id="entry_mode_quiz"
+                                    {% if default_entry_mode == "quiz" %}checked{% endif %}
                                 >
                                 <span>
-                                    <span class="entry-title">Вдумчиво определить путь Дома</span>
-                                    <span class="entry-note">Небольшой ритуал выбора. Даёт +1 золото на старт.</span>
+                                    <span class="entry-title">Выбрать Дом через вопросы</span>
+                                    <span class="entry-note">Несколько коротких вопросов помогут подобрать Дом. Старт: 10 золота.</span>
                                 </span>
                             </label>
 
@@ -327,11 +328,11 @@
                                     name="entry_mode"
                                     value="random"
                                     id="entry_mode_random"
-                                    checked
+                                    {% if default_entry_mode != "quiz" %}checked{% endif %}
                                 >
                                 <span>
-                                    <span class="entry-title">Вверить Дом судьбе</span>
-                                    <span class="entry-note">Быстрый вход в игру. Даёт +1 к событийности.</span>
+                                    <span class="entry-title">Довериться жребию</span>
+                                    <span class="entry-note">Случайный свободный Дом. Жребий даёт +1 золото: старт 11 золота.</span>
                                 </span>
                             </label>
                         </div>
@@ -340,14 +341,14 @@
 
                 <div id="ritual_block" class="ritual-card">
                     <div>
-                        <div class="ritual-title">Ритуал определения</div>
+                        <div class="ritual-title">Выбор Дома</div>
                         <div class="ritual-note">
-                            Коротко ответьте на три вопроса. Это поможет подобрать Дом, который ближе вашей делегации.
+                            Ответьте на три вопроса. Система подберёт свободный Дом, который ближе вашему стилю игры.
                         </div>
                     </div>
 
                     <div class="field-group">
-                        <label class="field-label" for="answer_priority">Что для вашей делегации важнее всего?</label>
+                        <label class="field-label" for="answer_priority">Что для вашего Дома важнее всего?</label>
                         <select id="answer_priority" name="answer_priority">
                             <option value="power">Сила и воля</option>
                             <option value="diplomacy">Союзы и влияние</option>
@@ -384,16 +385,16 @@
                 {% endif %}
 
                 <div style="margin-top: 18px;">
-                    <button type="submit" class="btn">Заявить делегацию</button>
+                    <button type="submit" class="btn">Создать Дом</button>
                 </div>
             </form>
         </section>
 
         <section class="card footer-card">
             <div class="muted">
-                Если у вас уже есть верительная грамота, переходите сразу ко входу в Дом.
+                Если у вас уже есть ссылка или код Дома, переходите сразу ко входу в Дом.
             </div>
-            <a class="footer-link" href="/delegation/join">У меня уже есть верительная грамота</a>
+            <a class="footer-link" href="/delegation/join">У меня уже есть код Дома</a>
         </section>
     </div>
 </div>
