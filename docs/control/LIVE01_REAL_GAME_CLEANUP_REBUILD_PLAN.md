@@ -1,169 +1,171 @@
-# LIVE01 real-game cleanup and rebuild plan
+﻿# LIVE01 real-game cleanup and rebuild plan
 
-## 1) Scope and objective
+## 1. Current state summary (reality check)
 
-- Current base: `LIVE01` currently contains a role-complete rehearsal fixture and rehearsal artifacts.
-- Runtime changes and reset operations are **not** executed by this task.
-- Goal: prepare a safe cleanup + real setup workflow before inviting real players.
-- Refs:
-  - `0112e3b` role-complete rehearsal E2E result
-  - `fb8a8e5` real-game setup readiness audit
-  - `LIVE01_RESET_AND_ROLE_E2E_STRATEGY_AUDIT.md`
+- LIVE01 is currently a role-complete rehearsal fixture from `0112e3b`.
+- It contains rehearsal artifacts and is not clean for real players.
+- This task is docs-only: it prepares the safest cleanup + rebuild sequence.
+- **No reset or DB mutation is performed here.**
 
-## 2) Pre-reset evidence checklist
+## 2. Pre-reset evidence checklist
 
-Run before any destructive action:
+Run these checks before any destructive action:
 
-- Git/service/build:
+- Git/repo evidence:
+  - `git status --short`
   - `git rev-parse --short HEAD`
+- Build/service readiness:
   - `python -m compileall app -q`
-  - production service check on VPS: `systemctl status pristolov --no-pager`
-- LIVE01 inventory snapshot:
-  - `houses_count`, `players_count`, `role_counts`
-  - `gold transaction count`
-  - `deal count`
-  - `active phase count`
-  - `expedition count`
-  - `map visit/state count`
-- Scenario/template presence:
+  - VPS service status: `systemctl status pristolov --no-pager`
+- LIVE01 state snapshot (counts):
+  - houses
+  - players
+  - role counts
+  - HouseGoldTransaction count
+  - GameDeal count
+  - active phases
+  - expeditions
+  - map visits
+- Template/scenario presence:
   - `app/game_templates/scenarios/season1_mvp_live_v2.json` exists/readable
   - `app/game_templates/season1_core_v1/*.yaml` exists/readable
 
-Last captured LIVE01 snapshot (from rehearsal doc, now stale for real setup):
+Known current rehearsal remnants to remove (from docs/audits):
+- test-like gameplay runtime objects
+- treasurer shop technical requests
+- test role/action state and history trails
 
-- Houses: `2`
-- Players: `10`
-- Roles:
-  - `lord_lady: 2`, `diplomat: 2`, `maester: 2`, `treasurer: 1`, `whisper_master: 2`, `house_sworn: 1`
-- Gold transactions: `5`
-- Deals: `2`
-- Active phases: `3`
-- Expeditions: `1`
-- Map visits: `1`
-
-Known route paths for reset-like actions:
-
-- `POST /dev/games/{room_code}/reset-runtime`
-- `GET /dev/reset-delegations/{room_code}`
-
-## 3) Reset execution plan (no execution yet)
-
-**Exact required order**
+## 3. Reset execution plan (exact order; do not execute yet)
 
 1. `POST /dev/games/LIVE01/reset-runtime`
 2. `GET /dev/reset-delegations/LIVE01`
 
-This order is deliberate: first clears gameplay/runtime state, then optionally removes delegations/houses/players.
+Order rationale:
+- first clear runtime simulation artifacts,
+- then optionally clear houses/players/financial rows for real rebuild.
 
-## 4) Expected destructive effects
+Endpoint paths in code:
+- `app/routes/dev.py` (`/dev/games/{room_code}/reset-runtime`)
+- `app/routes/delegation.py` (`/dev/reset-delegations/{room_code}`)
 
-`reset-runtime` removes:
+## 4. Expected destructive effects and post-reset state
 
-- house/round assignments
-- host round questions
-- expeditions and expedition members
-- diplomacy deals
-- duels
-- host rounds and active phases
-- map visits/map state rows
-- treasurer shop request deals
+`reset-runtime` (destructive):
+- clears GameAssignment, GameHostRoundQuestion, GameExpedition, GameExpeditionMember
+- clears GameDeal (including treasurer request deals)
+- clears GameDuel
+- clears GameHostRound and active phases
+- clears GameMapVisit and GameMapState
+- does not clear Role/Game/Scenario metadata
+- does not clear Player/House
+- does not clear HouseGoldTransaction / GameHouseTower
 
-`reset-delegations` removes:
+`reset-delegations`:
+- clears Player
+- clears House
+- clears HouseGoldTransaction
+- clears GameHouseTower
 
-- `Player` rows for LIVE01
-- `House` rows for LIVE01
-- `HouseGoldTransaction` history
-- `GameHouseTower` rows
+Expected after both calls:
+- LIVE01 remains as a game shell,
+- no previous roster,
+- no technical rehearsal traces in gameplay/runtime,
+- manual rebuild required.
 
-## 5) Expected post-reset state after both calls
+Rollback limitation:
+- no automatic rollback; treat as irreversible without backup/restoration plan.
 
-- Game exists (`LIVE01`) and scenario/template references can be present if previously applied.
-- No live roster data (`Player`, `House`) if both calls were run.
-- No rehearsal runtime artifacts listed above.
-- No leftover rehearsal shop queue for technical treasurer requests.
-- No guarantee of role/roster restoration; this must be done via operator setup.
+## 5. Real rebuild required inputs (user/operator)
 
-## 6) Rollback / safety note
+### 5.1 Official house roster
+- Дом Волка
+- Дом Башни
+- Дом Солнца
+- Дом Меча
+- Дом Свитка
+- Дом Печати
+- Дом Ключа
+- Дом Огня
+- Дом Ворона
+- Дом Чаши
 
-- These operations are destructive and do not have automatic rollback.
-- Do not execute until explicit user approval and freeze window.
-- Keep a roster backup (names + roles + house assignment plan) before execution.
-- This plan is **approval-gated** and does not request execution.
+### 5.2 Players and roles
+- Player names / attendance list
+- House-to-player assignment
+- Role assignment to cover these role codes:
+  - `lord_lady`
+  - `treasurer`
+  - `diplomat`
+  - `whisper_master`
+  - `maester`
+  - `house_sworn`
 
-## 7) Real rebuild plan (after approved reset)
+### 5.3 Resource baseline and scenario decisions
+- starting gold/resource values (default behavior: baseline as configured for role start)
+- confirm use of scenario `season1_mvp_live_v2`
+- confirm whether court question import is done before or after first player onboarding
 
-### User-provided data required
+## 6. Rebuild strategy
 
-- Real house list (exact house names) and team mapping.
-- Player names and attendance list by house.
-- Planned role assignment mapping (`role_code` per player).
-- Starting gold/resource baseline (if not default).
-- Decision to continue with:
-  - `season1_mvp_live_v2` as scenario source, and `season1_core_v1` template bundle.
+### What can be automated
+- scenario/template verification after reset,
+- role/action smoke per route/API matrix,
+- cashier/master/tv/player open checks.
 
-### What can be automated after data is provided
+### What is manual
+- roster collection and role map,
+- final house naming and player-card mapping,
+- opening sequence for live session.
 
-- Apply scenario/template checks via existing script (`bootstrap_live01_vps.py`) for LIVE01 baseline integrity:
-  - ensures `season1_mvp_live_v2`
-  - ensures required role records exist
-  - applies template bundles
-- Verify scenario presence/rounds/questions from scenario metadata.
-- Operator performs roster import/assignment through existing delegation/admin workflows.
-- Gold/resource prefill per house through existing operations only.
+### No new script now
+- Avoid new model/script changes at this stage.
+- Existing helpers are only for existing workflows:
+  - `scripts/bootstrap_live01_vps.py` (bootstrap control)
+  - `scripts/rehearsal_live01_role_e2e.py` (rehearsal-only; do not use for real setup).
 
-### What remains manual/operator
+## 7. Question / scenario handling decision
 
-- Register players for real tournament flow.
-- Assign houses and roles to match physical/operational roster plan.
-- Confirm role inventory for the expected mix.
-- Seed/confirm opening phase state and initial game instructions.
+Current scenario base:
+- `season1_mvp_live_v2` from `app/game_templates/scenarios/season1_mvp_live_v2.json`
+- 10 rounds and 13 questions configured in scenario payload.
 
-## 8) Post-rebuild automated smoke checklist
+Question bank context:
+- draft extraction shows 45 clean court questions available
+- external source folder has DOCX + 22 media files and was not imported
 
-- Surface and route smoke:
-  - `/cashier/gold-desk/LIVE01` (protected)
-  - `/dev/master-screen/LIVE01`
-  - `/dev/tv-mode/LIVE01`
-  - `/dev/treasurer-shop/LIVE01`
-- No `/dev` links visible on public-facing pages (`player_room`, cashier).
-- Scenario/phase label readable (including “Последний Шёпот”).
-- Player-room smoke for expected role set.
-- Cashier:
-  - manual +1 visible and works
-  - check amount mode visible and works
-  - request queue is empty by default
-  - no pending legacy rehearsal requests
-- Treasurer Shop V1.2 state:
-  - pending queue absent initially
-  - confirm path works when request created during real play
+Recommendation:
+- **Prefer deferred question import/replacement until after real roster is confirmed**, unless organizers request pre-build replacement earlier.
+- Keep `season1_mvp_live_v2` active for this cleanup/rebuild step.
 
-## 9) Post-rebuild manual acceptance (after automated checks)
+## 8. Post-rebuild automated smoke checklist
 
-- Master sees proper live scenario/room status.
-- TV rendering is clear and stable.
-- Cashier page is usable and free from `/dev` links.
-- One player per role opens expected player_room state for verification.
-- No rehearsal-only wording or fixture artifacts.
+Run and confirm PASS before real players:
+- `GET /cashier/gold-desk/LIVE01` (200, protected path)
+- `GET /dev/master-screen/LIVE01` (200)
+- `GET /dev/tv-mode/LIVE01` (200)
+- player-room open for each required role set where test links are available
+- player room and cashier contain no `/dev` links
+- economy still reads `500 ₽ = 1 золото`
+- no pending treasurer shop requests by default
+- no rehearsal-only deals/delegations/expeditions should be present
+- treasury request confirmation still spends on confirm only (no pre-spend)
 
-## 10) Go / no-go states
+## 9. Final manual acceptance (human verification)
 
-- **Ready to reset**:
-  - explicit approval phrase confirmed
-  - scenario/template files present
-  - no real players already in game
-- **Reset done, waiting roster**:
-  - gameplay reset complete
-  - roster cleared and rebuild setup pending
-- **Rebuild done, waiting final acceptance**:
-  - all automated checks pass
-  - manual acceptance still pending
-- **No-go**:
-  - scenario/questions unavailable
-  - required roles absent after setup
-  - reset/delegations fail or leave unrecoverable state
+- one player-room check per key role (`lord_lady`, `treasurer`, `diplomat`, `whisper_master`, `maester`, `house_sworn`)
+- Master screen and TV are readable and stable
+- cashier Gold Desk works for manual +1 and check-amount flow
+- moderator flow and cheat sheet align with real-room setup
 
-## 11) Required approval phrase
+## 10. Go/No-go and approval gate
 
-- Proceed only after explicit user confirmation:  
-  `APPROVE LIVE01 RESET FOR REAL SETUP`
+- **Ready to reset**: operator approval phrase received + required input package ready.
+- **Reset done, waiting roster**: destructive cleanup done, setup pending.
+- **Rebuild done, waiting acceptance**: checks pass, manual role spot-check pending.
+- **No-Go**: missing scenario/questions, required roles, or approval condition not met.
 
+Proceed only after exact phrase:
+
+`APPROVE LIVE01 RESET FOR REAL SETUP`
+
+No reset is executed by this plan.
