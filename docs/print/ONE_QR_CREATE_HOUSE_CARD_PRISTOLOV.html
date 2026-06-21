@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Создать Дом — PRISTOLOV</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 12mm;
+    }
+    :root {
+      --ink: #152238;
+      --ink-soft: #4b5b6d;
+    }
+    html, body {
+      margin: 0;
+      width: 210mm;
+      height: 297mm;
+      font-family: Arial, sans-serif;
+      color: var(--ink);
+    }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+    }
+    .card {
+      width: 186mm;
+      min-height: 273mm;
+      border: 2px solid #d2d9e2;
+      border-radius: 10px;
+      padding: 14mm 16mm;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 12mm;
+    }
+    .title {
+      margin: 0;
+      font-size: 58px;
+      line-height: 1.1;
+      letter-spacing: 0.3px;
+      text-align: center;
+    }
+    .subtitle {
+      margin: 2mm 0 0;
+      text-align: center;
+      font-size: 30px;
+      color: var(--ink-soft);
+    }
+    .qr-wrap {
+      text-align: center;
+      margin: 0;
+    }
+    .qr {
+      width: 210px;
+      height: 210px;
+      margin: 0 auto;
+      border: 1px solid #d2d9e2;
+      border-radius: 6px;
+      padding: 10px;
+      background: #fff;
+    }
+    .qr img {
+      width: 190px;
+      height: 190px;
+      display: block;
+      margin: 0 auto;
+    }
+    .meta {
+      text-align: center;
+      font-size: 18px;
+      color: var(--ink-soft);
+      margin-top: 1mm;
+    }
+    .steps {
+      margin: 0;
+      padding-left: 18mm;
+      font-size: 28px;
+      line-height: 1.5;
+    }
+    .steps li {
+      margin: 4mm 0;
+    }
+    .footer {
+      font-size: 22px;
+      line-height: 1.35;
+      text-align: center;
+      margin-top: auto;
+    }
+    .url {
+      font-size: 18px;
+      word-break: break-all;
+      color: #1f3c66;
+      margin: 2mm 0 0;
+    }
+    .bold {
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <section class="card">
+    <header>
+      <h1 class="title">Создать Дом</h1>
+      <div class="subtitle">Сканирует Лорд / Леди Дома</div>
+    </header>
+
+    <div class="qr-wrap">
+      <div class="qr">
+        <img src="one_qr_create_house_pristolov.png" alt="QR для создания Дома">
+      </div>
+      <div class="meta">Сканируйте QR для входа</div>
+    </div>
+
+    <ol class="steps">
+      <li>Отсканируйте QR</li>
+      <li>Создайте Дом</li>
+      <li>Выберите Дом сами или доверьтесь жребию</li>
+      <li>Жребий даёт +1 золото</li>
+      <li>Отправьте ссылку игрокам своего Дома</li>
+    </ol>
+
+    <div class="footer">
+      <div><span class="bold">Экономика:</span> 500 ₽ = 1 золото</div>
+      <div><span class="bold">Роль:</span> Лорд / Леди Дома</div>
+      <div class="url">https://pristolov.ru/delegation/start?game_code=LIVE01&entry_mode=random</div>
+    </div>
+  </section>
+</body>
+</html>
