@@ -379,8 +379,18 @@ def _get_blocked_crest_pieces_for_house(
     return sorted(blocked_by_key.values(), key=lambda item: _normalize_deal_text_value(item))
 
 
-def _touch_last_seen(player: Player):
-    player.last_seen_at = datetime.now(timezone.utc)
+LAST_SEEN_TOUCH_INTERVAL_SECONDS = 60
+
+
+def _touch_last_seen(player: Player, *, min_interval_seconds: int = LAST_SEEN_TOUCH_INTERVAL_SECONDS) -> bool:
+    now = datetime.now(timezone.utc)
+    last_seen_at = player.last_seen_at
+    if last_seen_at and last_seen_at.tzinfo is None:
+        last_seen_at = last_seen_at.replace(tzinfo=timezone.utc)
+    if last_seen_at and (now - last_seen_at).total_seconds() < min_interval_seconds:
+        return False
+    player.last_seen_at = now
+    return True
 
 
 def _get_phase_label(phase_type: str | None) -> str | None:
@@ -1474,9 +1484,9 @@ def get_player_me(player_token: str):
                 "message": "Игрок по токену не найден",
             }
 
-        _touch_last_seen(player)
-        db.commit()
-        db.refresh(player)
+        if _touch_last_seen(player):
+            db.commit()
+            db.refresh(player)
 
         active_phases = (
             db.query(GamePhase)
@@ -1680,8 +1690,6 @@ def get_player_assignments(player_token: str):
                 "message": "Игрок по токену не найден",
             }
 
-        _touch_last_seen(player)
-
         assignments = (
             db.query(GameAssignment)
             .options(
@@ -1693,8 +1701,6 @@ def get_player_assignments(player_token: str):
             .order_by(GameAssignment.id.desc())
             .all()
         )
-
-        db.commit()
 
         issued = [a for a in assignments if a.status == "issued"]
         answered = [a for a in assignments if a.status in ["answered", "resolved", "applied"]]
