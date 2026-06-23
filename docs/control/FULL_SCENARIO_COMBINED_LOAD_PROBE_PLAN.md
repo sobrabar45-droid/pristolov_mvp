@@ -280,3 +280,66 @@ python scripts/load_probe_combined_screens.py --room-code LIVE01 --base-url http
 ```
 
 Run journal/nginx checks printed by the helper after the probe.
+
+## 13) Level 1 Execution Result (2026-06-24)
+
+Level 1 was executed on LIVE01 and passed.
+
+Environment:
+
+- commit: `1edfb1c`
+- room: `LIVE01`
+- base URL: `http://127.0.0.1:8000`
+- duration: `300` seconds
+- player clients: `100`
+- screen clients: `1`
+- include cashier: `true`
+- admin token: set
+
+Observed:
+
+- `players_found=22`
+- `tokens_found=22`
+- `player_paths_written=44`
+- `operational_paths_count=3`
+
+Player result:
+
+| metric | value |
+|---|---:|
+| requests_total | `27435` |
+| errors_total | `0` |
+| status_counts | `200:27435` |
+| p50 | `72.4 ms` |
+| p95 | `241.7 ms` |
+| p99 | `311.1 ms` |
+| max | `525.9 ms` |
+
+Operational result:
+
+| metric | value |
+|---|---:|
+| requests_total | `259` |
+| errors_total | `0` |
+| status_counts | `200:259` |
+| p50 | `116.7 ms` |
+| p95 | `374.0 ms` |
+| p99 | `471.2 ms` |
+| max | `686.9 ms` |
+
+Journal result:
+
+- no `Traceback`
+- no `ERROR`
+- no `sqlite locked`
+- no `timeout`
+
+Nginx follow-up:
+
+- one `502` observed on `/dev/games/LIVE01/scenario/director`
+- matched app restart window (`Stopping/started` + upstream connect failure), not persistent error pattern
+
+Next task is still:
+
+- Level 2 phase-transition probe in safe room if available,
+- otherwise product P0 follow-up if no immediate broad-live load test is required.
