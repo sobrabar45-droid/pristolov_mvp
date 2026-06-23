@@ -255,3 +255,28 @@ Scope:
 
 After Level 1 tooling is green, decide whether Level 2 and Level 3 should become separate scripts or manual controlled protocols.
 
+## 12) Level 1 Helper Added
+
+Implemented helper:
+
+- `scripts/load_probe_combined_screens.py`
+
+Scope:
+
+- read-only Level 1 combined passive polling;
+- resolves real room player tokens through `Player.game_id` -> `Game.room_code`;
+- probes player paths and operational state paths in parallel subprocesses;
+- includes Master state and TV state by default;
+- can include cashier Gold Desk GET page with `--include-cashier`;
+- reads admin token only from env var (`ADMIN_ROUTE_TOKEN` by default);
+- refuses non-localhost base URLs unless `--allow-production` is provided.
+
+Recommended first production command after deployment:
+
+```bash
+cd /opt/pristolov/app
+export ADMIN_ROUTE_TOKEN="$(grep '^ADMIN_ROUTE_TOKEN=' /etc/pristolov/pristolov.env | cut -d= -f2-)"
+python scripts/load_probe_combined_screens.py --room-code LIVE01 --base-url http://127.0.0.1:8000 --duration 300 --player-clients 100 --screen-clients 1 --include-cashier
+```
+
+Run journal/nginx checks printed by the helper after the probe.
