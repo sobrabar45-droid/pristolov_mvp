@@ -1497,6 +1497,20 @@ def get_player_me(player_token: str):
             .order_by(GamePhase.id.asc())
             .all()
         )
+        active_phase_types = {
+            str(phase.phase_type or "").strip().lower()
+            for phase in active_phases
+            if phase.phase_type
+        }
+        role_code = player.role.code if player.role else None
+        is_lord = role_code == "lord_lady"
+        is_diplomat = role_code == "diplomat"
+        is_treasurer = role_code == "treasurer"
+        is_whisper_master = role_code == "whisper_master"
+        can_show_deals = is_diplomat and bool(active_phase_types & {"diplomacy", "free_play"})
+        can_show_duels = is_lord and "duel" in active_phase_types
+        can_show_expedition = bool(role_code) and bool(active_phase_types & {"map", "free_play"})
+        can_show_last_whisper = "last_whisper" in active_phase_types
 
         active_host_round = (
             db.query(GameHostRound)
@@ -1517,7 +1531,7 @@ def get_player_me(player_token: str):
             .count()
         )
         active_house_expedition = None
-        if player.house_id:
+        if can_show_expedition and player.house_id:
             active_house_expedition = _build_active_house_expedition_payload(
                 db,
                 _get_active_house_expedition(db, player.game_id, player.house_id),
@@ -1525,7 +1539,7 @@ def get_player_me(player_token: str):
             )
 
         incoming_deals = []
-        if player.house_id:
+        if can_show_deals and player.house_id:
             incoming_deals = [
                 deal for deal in (
                 db.query(GameDeal)
@@ -1546,7 +1560,7 @@ def get_player_me(player_token: str):
 
         available_deal_houses = []
         available_duel_houses = []
-        if player.house_id:
+        if player.house_id and (can_show_deals or can_show_duels):
             other_houses = (
                 db.query(House)
                 .filter(
@@ -1564,21 +1578,17 @@ def get_player_me(player_token: str):
                 }
                 for house in other_houses
             ]
-            available_duel_houses = [
-                {
-                    "id": house.id,
-                    "name": house.name,
-                    "house_key": house.house_key,
-                }
-                for house in other_houses
-            ]
+            if can_show_duels:
+                available_duel_houses = list(available_deal_houses)
+            if not can_show_deals:
+                available_deal_houses = []
 
         treasurer_pending_deals = []
-        if player.role and player.role.code == "treasurer":
+        if is_treasurer:
             treasurer_pending_deals = _get_treasurer_pending_deals(db, player)
 
         active_alliances = []
-        if player.role and player.role.code == "lord_lady" and player.house_id:
+        if is_lord and player.house_id:
             active_alliances = [
                 _serialize_active_alliance(deal, viewer_house_id=player.house_id)
                 for deal in _get_active_alliances_for_house(
@@ -1589,7 +1599,7 @@ def get_player_me(player_token: str):
             ]
 
         blocked_crest_pieces = []
-        if player.house_id:
+        if can_show_deals and player.house_id:
             blocked_crest_pieces = _get_blocked_crest_pieces_for_house(
                 db,
                 game_id=player.game_id,
@@ -1598,7 +1608,7 @@ def get_player_me(player_token: str):
 
         active_house_duels = []
         incoming_house_duels = []
-        if player.house_id:
+        if can_show_duels and player.house_id:
             active_house_duels = _get_house_duels(
                 db,
                 game_id=player.game_id,
@@ -1611,7 +1621,7 @@ def get_player_me(player_token: str):
                 if duel.target_house_id == player.house_id and duel.status == "challenged"
             ]
 
-        last_whisper_state = _build_last_whisper_state_for_player(db, player)
+        last_whisper_state = _build_last_whisper_state_for_player(db, player) if can_show_last_whisper else None
 
         return {
             "ok": True,
