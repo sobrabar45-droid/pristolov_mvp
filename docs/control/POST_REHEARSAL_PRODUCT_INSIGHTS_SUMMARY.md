@@ -34,6 +34,12 @@ Immediate next step:
 - run controlled load probes locally/staging first;
 - decide whether to patch polling, DB writes, worker/process model, DB strategy, server capacity, or client degraded-mode behavior.
 
+Player polling checkpoint status (2026-06-23):
+
+- Closed after production validation in LIVE01 of real player endpoints.
+- Polling with real tokens (`/player/me/{token}`, `/player/me/{token}/assignments`) at 100 clients reached `p95≈221.2 ms`, `p99≈284.0 ms`, `errors=0`.
+- Next contour after checkpoint: combined-role load smoke (Master/TV/cashier/operator) if needed, then gameplay readiness items.
+
 ## Not decided yet
 
 - Whether the main fix is app code, server config, DB architecture, or network operations.
