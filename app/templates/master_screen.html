@@ -3106,11 +3106,17 @@
                 <div class="next-stage-compact">
                     <div class="next-stage-label">Следующий этап</div>
                     <div class="next-stage-phase" id="nextStagePhase">Дипломатия</div>
-                    <div class="next-stage-text" id="nextStageText">
-                        Ожидание перехода к следующей фазе
-                    </div>
+                <div class="next-stage-text" id="nextStageText">
+                    Ожидание перехода к следующей фазе
                 </div>
-            </section>
+                <div class="next-stage-text" id="nextStageRoles">
+                    Роли: весь Дом
+                </div>
+                <div class="next-stage-text" id="nextStageMovement">
+                    Перемещение: ждём сигнала ведущего
+                </div>
+            </div>
+        </section>
 
             <section class="section-card runtime-card">
                 <h2>Текущий вопрос (runtime)</h2>
@@ -3604,6 +3610,15 @@ function safeSetText(id, value) {
 function updateNextStageCompact(state) {
     if (!state) return;
 
+    const briefing = state.stage_briefing || {};
+    if (briefing.title || briefing.instruction) {
+        safeSetText("nextStagePhase", briefing.title || "Ожидание этапа");
+        safeSetText("nextStageText", briefing.instruction || "Ведущий скоро объявит следующий шаг.");
+        safeSetText("nextStageRoles", `Роли: ${briefing.roles || "Весь Дом"}`);
+        safeSetText("nextStageMovement", `Перемещение: ${briefing.movement || "следите за объявлениями"}`);
+        return;
+    }
+
     const director = getDirectorState(state) || {};
     const currentRound = director.current_round || null;
     const nextRound = director.next_round || null;
@@ -3632,6 +3647,8 @@ function updateNextStageCompact(state) {
 
     safeSetText("nextStagePhase", phase);
     safeSetText("nextStageText", text);
+    safeSetText("nextStageRoles", "Роли: смотри текущий этап");
+    safeSetText("nextStageMovement", "Перемещение: по сигналу ведущего");
 }
 
 function getSceneLabel(sceneType) {
@@ -5402,7 +5419,7 @@ function mapRoleToDisplay(roleCode) {
         lord_lady: { label: "Лорд / Леди", icon: "👑" },
         diplomat: { label: "Дипломат", icon: "🤝" },
         maester: { label: "Мейстер", icon: "🧠" },
-        treasurer: { label: "Казначей", icon: "🪙" },
+        treasurer: { label: "Мастер над золотом", icon: "🪙" },
         whisper_master: { label: "Шепчущий", icon: "🕯" },
         house_sworn: { label: "Верный Дому", icon: "🛡" }
     };

@@ -155,6 +155,176 @@ def _build_master_prompt(*, active_host_round, current_question, duels_block, ex
     }
 
 
+STAGE_BRIEFING_COPY = {
+    "opening": {
+        "title": "Открытие игры",
+        "instruction": "Соберите Дом, проверьте роли и готовьтесь к первому раунду.",
+        "roles": "Весь Дом",
+        "movement": "Не расходимся.",
+    },
+    "warmup": {
+        "title": "Быстрый раунд",
+        "instruction": "Слушайте ведущего. Отвечайте быстро, время ограничено.",
+        "roles": "Весь Дом",
+        "movement": "Не расходимся.",
+    },
+    "map": {
+        "title": "Экспедиция",
+        "instruction": "Лорд / Леди назначает участников. Назначенные игроки выбирают направление.",
+        "roles": "Лорд / Леди и участники экспедиции",
+        "movement": "Назначенные игроки остаются на связи.",
+    },
+    "diplomacy": {
+        "title": "Дипломатия",
+        "instruction": "Дипломаты выходят на переговоры. Дома могут заключать союзы.",
+        "roles": "Дипломаты, Лорд / Леди",
+        "movement": "Дипломатам можно перемещаться.",
+    },
+    "free_play": {
+        "title": "Свободная игра",
+        "instruction": "Дома используют доступные действия: переговоры, золото, экспедиции и решения роли.",
+        "roles": "Все активные роли",
+        "movement": "Можно двигаться, но следите за объявлениями.",
+    },
+    "duel": {
+        "title": "Дуэли Домов",
+        "instruction": "Лорд / Леди следит за вызовами. Участники дуэли подходят к месту игры.",
+        "roles": "Лорд / Леди, участники дуэли",
+        "movement": "Не уходите далеко.",
+    },
+    "court": {
+        "title": "Суд Домов",
+        "instruction": "Дома готовятся к парам. Ведущий объявит порядок выступлений.",
+        "roles": "Представители Домов",
+        "movement": "Не расходимся.",
+    },
+    "last_whisper": {
+        "title": "Последний Шёпот",
+        "instruction": "Мастер над шёпотом делает тайный ход перед финалом.",
+        "roles": "Мастер над шёпотом",
+        "movement": "Следите за экраном.",
+    },
+    "final": {
+        "title": "Финал",
+        "instruction": "Один Дом выходит к финальному испытанию против игротехника.",
+        "roles": "Финалисты и весь зал",
+        "movement": "Не расходимся.",
+    },
+}
+
+
+def _stage_briefing_key_from_code(raw_code: str | None) -> str | None:
+    code = str(raw_code or "").strip().lower()
+    if not code:
+        return None
+
+    exact = {
+        "opening": "opening",
+        "intro": "opening",
+        "stage_opening": "opening",
+        "host_round": "warmup",
+        "truth_false": "warmup",
+        "stage_truth_false": "warmup",
+        "stage_warmup": "warmup",
+        "stage_light_questions": "warmup",
+        "stage_map_entry": "map",
+        "map": "map",
+        "expedition": "map",
+        "stage_diplomacy_1": "diplomacy",
+        "diplomacy": "diplomacy",
+        "stage_free_play": "free_play",
+        "free_play": "free_play",
+        "stage_duels": "duel",
+        "duel": "duel",
+        "stage_court": "court",
+        "stage_court_battle": "court",
+        "court": "court",
+        "stage_last_whisper": "last_whisper",
+        "last_whisper": "last_whisper",
+        "stage_final": "final",
+        "stage_final_show": "final",
+        "final": "final",
+    }
+    if code in exact:
+        return exact[code]
+
+    if "diplom" in code:
+        return "diplomacy"
+    if "whisper" in code:
+        return "last_whisper"
+    if "court" in code:
+        return "court"
+    if "duel" in code:
+        return "duel"
+    if "map" in code or "expedition" in code:
+        return "map"
+    if "free" in code:
+        return "free_play"
+    if "final" in code:
+        return "final"
+    if "truth" in code or "warmup" in code or "question" in code or "round" in code:
+        return "warmup"
+    if "open" in code or "intro" in code:
+        return "opening"
+    return None
+
+
+def _build_stage_briefing_payload(*, scenario_director_payload=None, active_host_round=None, active_phases=None):
+    candidate_codes = []
+    if isinstance(active_host_round, dict):
+        candidate_codes.append(active_host_round.get("round_code"))
+        candidate_codes.append(active_host_round.get("phase_code"))
+
+    director = scenario_director_payload if isinstance(scenario_director_payload, dict) else {}
+    for key in ("current_round", "active_host_round", "next_round"):
+        round_payload = director.get(key)
+        if isinstance(round_payload, dict):
+            candidate_codes.append(round_payload.get("round_code"))
+            candidate_codes.append(round_payload.get("phase_code"))
+
+    active_stage = director.get("active_system_stage_phase")
+    if isinstance(active_stage, dict):
+        candidate_codes.append(active_stage.get("phase_type"))
+        payload = active_stage.get("payload")
+        if isinstance(payload, dict):
+            candidate_codes.append(payload.get("round_code"))
+
+    for phase in active_phases or []:
+        candidate_codes.append(getattr(phase, "phase_type", None))
+
+    stage_key = None
+    source_code = None
+    for code in candidate_codes:
+        stage_key = _stage_briefing_key_from_code(code)
+        if stage_key:
+            source_code = str(code or "").strip()
+            break
+
+    if not stage_key:
+        return {
+            "active": False,
+            "stage_key": "waiting",
+            "source_code": None,
+            "title": "Ожидание этапа",
+            "instruction": "Ведущий скоро объявит следующий шаг.",
+            "roles": "Весь Дом",
+            "movement": "Оставайтесь на связи с экраном.",
+            "sound_cue": False,
+        }
+
+    briefing = STAGE_BRIEFING_COPY[stage_key]
+    return {
+        "active": True,
+        "stage_key": stage_key,
+        "source_code": source_code,
+        "title": briefing["title"],
+        "instruction": briefing["instruction"],
+        "roles": briefing["roles"],
+        "movement": briefing["movement"],
+        "sound_cue": True,
+    }
+
+
 def _get_last_whisper_phase(active_phases):
     for phase in active_phases or []:
         if getattr(phase, "phase_type", None) == "last_whisper" and getattr(phase, "status", None) == "active":
@@ -1226,6 +1396,11 @@ def get_game_master_state_logic(
         active_phases=active_phases,
         court_runtime=court_runtime_payload,
     )
+    stage_briefing = _build_stage_briefing_payload(
+        scenario_director_payload=scenario_director_payload,
+        active_host_round=active_host_round,
+        active_phases=active_phases,
+    )
     final_outcome_payload = _build_final_outcome_payload(
         db,
         game=game,
@@ -1314,6 +1489,7 @@ def get_game_master_state_logic(
         "final_outcome": final_outcome_payload,
         "scenario_director": scenario_director_payload,
         "master_prompt": master_prompt,
+        "stage_briefing": stage_briefing,
         "event_feed": event_feed,
         "recent_events": recent_events,
     }
@@ -1918,6 +2094,11 @@ def get_game_master_tv_state_logic(
         current_question_payload,
         court_runtime_allowed=court_runtime_allowed,
     )
+    stage_briefing = _build_stage_briefing_payload(
+        scenario_director_payload=scenario_director_payload,
+        active_host_round=active_host_round,
+        active_phases=active_phases,
+    )
     final_outcome_payload = _build_final_outcome_payload(
         db,
         game=game,
@@ -1976,6 +2157,7 @@ def get_game_master_tv_state_logic(
         "court_runtime": court_runtime_payload,
         "final_outcome": final_outcome_payload,
         "scenario_director": scenario_director_payload,
+        "stage_briefing": stage_briefing,
     }
 
 

@@ -2269,17 +2269,26 @@
       return phases.slice(0,4).map(p => `<span class="phase-badge">${escapeHtml(p.title)}</span>`).join("") || `<span class="phase-badge">Ожидание следующего хода</span>`;
     }
 
-    function renderTop(phases, activeRound, sceneModel = null, state = null){
-      const readyLine = formatReadyLine(state);
-      if (sceneModel){
-        document.getElementById("roundTitle").textContent = pickText(activeRound?.title) || pickText(sceneModel.phaseName) || "Экран двора";
+      function renderTop(phases, activeRound, sceneModel = null, state = null){
+        const readyLine = formatReadyLine(state);
+        const briefing = state?.stage_briefing || {};
+        const hasBriefing = Boolean(briefing?.title || briefing?.instruction);
+        const briefingBadges = hasBriefing
+          ? [
+              briefing.roles ? `<span class="phase-badge">Роли: ${escapeHtml(briefing.roles)}</span>` : "",
+              briefing.movement ? `<span class="phase-badge">${escapeHtml(briefing.movement)}</span>` : ""
+            ].filter(Boolean).join("")
+          : "";
+
+        if (sceneModel){
+        document.getElementById("roundTitle").textContent = pickText(activeRound?.title) || pickText(briefing?.title) || pickText(sceneModel.phaseName) || "Экран двора";
         document.getElementById("phaseLine").textContent = readyLine
-          ? `${sceneModel.phaseLine || "В ожидании фазы"} • ${readyLine}`
-          : (sceneModel.phaseLine || "В ожидании фазы");
-        document.getElementById("phasePillText").textContent = sceneModel.pillText || sceneModel.phaseLine || "Подготовка двора";
-        document.getElementById("phaseName").textContent = sceneModel.phaseName || "ИГРОВАЯ ФАЗА";
-        document.getElementById("phaseSub").textContent = sceneModel.phaseSub || "Двор в движении.";
-        document.getElementById("phaseBadges").innerHTML = sceneModel.phaseBadges || `<span class="phase-badge">Ожидание следующего хода</span>`;
+          ? `${briefing?.title || sceneModel.phaseLine || "В ожидании фазы"} • ${readyLine}`
+          : (briefing?.title || sceneModel.phaseLine || "В ожидании фазы");
+        document.getElementById("phasePillText").textContent = briefing?.title || sceneModel.pillText || sceneModel.phaseLine || "Подготовка двора";
+        document.getElementById("phaseName").textContent = briefing?.title || sceneModel.phaseName || "ИГРОВАЯ ФАЗА";
+        document.getElementById("phaseSub").textContent = briefing?.instruction || sceneModel.phaseSub || "Двор в движении.";
+        document.getElementById("phaseBadges").innerHTML = briefingBadges || sceneModel.phaseBadges || `<span class="phase-badge">Ожидание следующего хода</span>`;
         return;
       }
 
@@ -2293,9 +2302,9 @@
       document.getElementById("roundTitle").textContent = roundTitle;
       document.getElementById("phaseLine").textContent = phaseLine;
       document.getElementById("phasePillText").textContent = phaseLine;
-      document.getElementById("phaseName").textContent = mainPhaseTitle;
-      document.getElementById("phaseSub").textContent = phaseText(mainPhaseCode);
-      document.getElementById("phaseBadges").innerHTML = getPhaseBadges(phases);
+      document.getElementById("phaseName").textContent = briefing?.title || mainPhaseTitle;
+      document.getElementById("phaseSub").textContent = briefing?.instruction || phaseText(mainPhaseCode);
+      document.getElementById("phaseBadges").innerHTML = briefingBadges || getPhaseBadges(phases);
     }
 
     function renderLeaders(leadersBlock, houses){
