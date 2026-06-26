@@ -2401,6 +2401,7 @@ function renderAssignments(data) {
     const questionCode = String(template?.question_code || "").trim();
     const titleText = fixEncoding(template.title || "Вопрос");
     const promptText = fixEncoding(template.prompt || "");
+    const answersOpen = a?.host_round_question?.answers_open !== false;
     const isFreeTextQuestion = answerMode === "text" || template?.ui_template === "free_text";
     const answerDraft = typeof window.answerDrafts?.[a.id] === "string" ? window.answerDrafts[a.id] : "";
     const normalizedTitleText = normalizeTextForCompare(titleText);
@@ -2412,6 +2413,15 @@ function renderAssignments(data) {
     const promptMarkup = shouldShowPrompt
       ? `<div class="muted" style="margin-top:8px">${escapeHtml(promptText)}</div>`
       : "";
+
+      if (!answersOpen) {
+        container.innerHTML = `
+        <div class="big-text">${escapeHtml(titleText)}</div>
+        ${promptMarkup}
+        <div class="muted" style="margin-top:10px">Ведущий читает вопрос. Варианты ответа появятся после сигнала.</div>
+      `;
+        return;
+      }
 
       if (isFreeTextQuestion) {
         container.innerHTML = `

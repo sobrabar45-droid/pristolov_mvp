@@ -3159,7 +3159,6 @@
       return (
         mediaUsage === "clue"
         || mediaUsage === "decorate"
-        || !question?.answers_open
         || pickText(question?.status).toLowerCase() !== "active"
         || Boolean(timerEnded)
       );
@@ -3237,9 +3236,7 @@
     function isQuestionRevealMode(question, timerEnded = false){
       if (!question) return false;
       return (
-        Boolean(timerEnded)
-        || question?.answers_open === false
-        || pickText(question?.status).toLowerCase() !== "active"
+        pickText(question?.status).toLowerCase() !== "active"
       );
     }
 
@@ -3381,16 +3378,9 @@
       progressFillEl.style.width = `${progress}%`;
 
       const timerEnded = rawMsLeft <= 0;
-      if (timerEnded && questionVisualState !== "reveal"){
-        questionVisualState = "reveal";
+      if (timerEnded && questionVisualState !== "hold"){
+        questionVisualState = "hold";
         questionVisualStateUntil = null;
-        if (lastQuestionRenderContext){
-          renderQuestion(
-            lastQuestionRenderContext.activeRound,
-            lastQuestionRenderContext.debugData,
-            lastQuestionRenderContext.forcedSlideKeyOverride
-          );
-        }
       } else if (!timerEnded && questionVisualState !== "active"){
         questionVisualState = "active";
         questionVisualStateUntil = null;
@@ -3404,6 +3394,14 @@
         timerValueEl.classList.add("danger");
         progressFillEl.classList.add("danger-fill");
         timerSubEl.textContent = "Ответы закрыты";
+        cardEl.classList.add("hold-mode");
+        return;
+      }
+
+      if (questionVisualState === "hold"){
+        timerValueEl.classList.add("danger");
+        progressFillEl.classList.add("danger-fill");
+        timerSubEl.textContent = "Время вышло. Ждём решения ведущего";
         cardEl.classList.add("hold-mode");
         return;
       }
@@ -3511,17 +3509,25 @@
         const assignments = runtimeQuestion
           ? (Array.isArray(debugData?.assignments) ? debugData.assignments : [])
           : (Array.isArray(activeQuestionSceneData?.assignments) ? activeQuestionSceneData.assignments : []);
-        const currentQuestionKey = `${q.id || "q"}:${q.sequence_no || 0}`;
+        const currentQuestionKey = `${q.id || "q"}:${q.sequence_no || 0}:${String(q.answers_open)}`;
         if (runtimeQuestion && activeQuestionVisualKey !== currentQuestionKey){
           activeQuestionVisualKey = currentQuestionKey;
           const cq = debugData?.current_question || {};
-          questionTimerDurationSec = num(
-            cq.time_limit_sec ||
-            cq.timer ||
-            cq.duration_sec ||
-            45
-          ) || 45;
-          questionTimerEndsAt = Date.now() + questionTimerDurationSec * 1000;
+          if (cq.answers_open === false){
+            questionTimerDurationSec = null;
+            questionTimerEndsAt = null;
+          } else {
+            questionTimerDurationSec = num(
+              cq.time_limit_sec ||
+              cq.timer ||
+              cq.duration_sec ||
+              45
+            ) || 45;
+            const startedAtMs = cq.started_at ? Date.parse(cq.started_at) : NaN;
+            questionTimerEndsAt = Number.isFinite(startedAtMs)
+              ? startedAtMs + questionTimerDurationSec * 1000
+              : Date.now() + questionTimerDurationSec * 1000;
+          }
         }
 
         const rawTitle = isCourt ? "Суд Домов" : (pickText(q.title) || "Вопрос без названия");
@@ -3539,7 +3545,11 @@
             : (!runtimeQuestion && courtLocked)
               ? false
             : isQuestionRevealMode(questionWithContent, timerEnded);
+        const answersOpen = questionWithContent?.answers_open !== false;
         const hiddenMediaHint = revealMode ? "" : getDeferredQuestionMediaHint(questionWithContent, null, false);
+        const questionOnlyHint = !revealMode && !answersOpen
+          ? `<div class="question-media-hint">Ведущий читает вопрос. Варианты появятся после сигнала.</div>`
+          : "";
 
         activeQuestionSceneData = {
           hostRoundId: activeRound?.id || activeQuestionSceneData?.hostRoundId || null,
@@ -3554,7 +3564,7 @@
             revealMode,
             promptMarkup: revealMode
               ? renderQuestionReveal(questionWithContent, null, stats, activeRound)
-              : `${hiddenMediaHint}${renderQuestionPromptMarkup(
+              : `${hiddenMediaHint}${questionOnlyHint}${renderQuestionPromptMarkup(
                   rawPrompt,
                   questionContent,
                   isVeryLongQuestion ? primaryQuestionText : rawTitle,

@@ -585,12 +585,16 @@ def _build_runtime_question_payload(runtime_question):
             question_content = {}
     if not isinstance(question_content, dict):
         question_content = {}
+    is_reveal = str(runtime_question.status or "").lower() != "active"
+    answers_open = bool(runtime_question.answers_open)
 
     payload = {
         "id": runtime_question.id,
         "sequence_no": runtime_question.sequence_no,
         "status": runtime_question.status,
-        "answers_open": runtime_question.answers_open,
+        "answers_open": answers_open,
+        "reveal_stage": "reveal" if is_reveal else ("options" if answers_open else "question"),
+        "started_at": runtime_question.started_at.isoformat() if runtime_question.started_at else None,
         "title": question_template.title if question_template else f"Вопрос #{runtime_question.sequence_no}",
         "prompt": question_template.prompt if question_template else None,
         "question_code": question_template.question_code if question_template else None,
@@ -599,7 +603,7 @@ def _build_runtime_question_payload(runtime_question):
         "time_limit_sec": getattr(question_template, "time_limit_sec", None) if question_template else None,
         "timer": getattr(question_template, "timer", None) if question_template else None,
         "duration_sec": getattr(question_template, "duration_sec", None) if question_template else None,
-        "content": question_content,
+        "content": _sanitize_question_content_for_stage(question_content, answers_open=answers_open, is_reveal=is_reveal),
         "media_type": question_content.get("media_type"),
         "media_ref": question_content.get("media_ref"),
         "is_media_question": bool(question_content.get("is_media_question")),
@@ -611,6 +615,21 @@ def _build_runtime_question_payload(runtime_question):
     if payload["duration_sec"] is None:
         payload["duration_sec"] = question_content.get("duration_sec")
     return payload
+
+
+def _sanitize_question_content_for_stage(content: dict, *, answers_open: bool, is_reveal: bool) -> dict:
+    safe_content = dict(content or {})
+    if is_reveal:
+        return safe_content
+
+    for key in ("correct_answer", "answer", "explanation"):
+        safe_content.pop(key, None)
+
+    if not answers_open:
+        for key in ("options", "statements", "choices", "variants", "items"):
+            safe_content.pop(key, None)
+
+    return safe_content
 
 
 def _safe_json_dict(value):
@@ -2183,6 +2202,16 @@ def host_round_debug_logic(db: Session, host_round_id: int):
         )
         .first()
     )
+    if current_question is None:
+        current_question = (
+            db.query(GameHostRoundQuestion)
+            .filter(
+                GameHostRoundQuestion.host_round_id == host_round.id,
+                GameHostRoundQuestion.status.in_(["resolved", "closed"]),
+            )
+            .order_by(GameHostRoundQuestion.sequence_no.desc(), GameHostRoundQuestion.id.desc())
+            .first()
+        )
 
     assignments = []
     stats = {
@@ -2207,11 +2236,16 @@ def host_round_debug_logic(db: Session, host_round_id: int):
         if not isinstance(question_content, dict):
             question_content = {}
 
+        is_reveal = str(current_question.status or "").lower() != "active"
+        answers_open = bool(current_question.answers_open)
+
         question_payload = {
             "id": current_question.id,
             "sequence_no": current_question.sequence_no,
             "status": current_question.status,
-            "answers_open": current_question.answers_open,
+            "answers_open": answers_open,
+            "reveal_stage": "reveal" if is_reveal else ("options" if answers_open else "question"),
+            "started_at": current_question.started_at.isoformat() if current_question.started_at else None,
             "title": question_template.title if question_template else f"Вопрос #{current_question.sequence_no}",
             "prompt": question_template.prompt if question_template else None,
             "question_code": question_template.question_code if question_template else None,
@@ -2220,7 +2254,7 @@ def host_round_debug_logic(db: Session, host_round_id: int):
             "time_limit_sec": getattr(question_template, "time_limit_sec", None) if question_template else None,
             "timer": getattr(question_template, "timer", None) if question_template else None,
             "duration_sec": getattr(question_template, "duration_sec", None) if question_template else None,
-            "content": question_content,
+            "content": _sanitize_question_content_for_stage(question_content, answers_open=answers_open, is_reveal=is_reveal),
             "media_type": question_content.get("media_type"),
             "media_ref": question_content.get("media_ref"),
             "is_media_question": bool(question_content.get("is_media_question")),

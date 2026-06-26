@@ -1066,6 +1066,51 @@ def _build_active_house_expedition_payload(db: Session, expedition: GameExpediti
     }
 
 
+def _sanitize_assignment_question_content(content, *, runtime_question):
+    safe_content = dict(content or {}) if isinstance(content, dict) else {}
+    if not runtime_question:
+        return safe_content
+
+    is_reveal = str(getattr(runtime_question, "status", "") or "").lower() != "active"
+    answers_open = bool(getattr(runtime_question, "answers_open", False))
+    if is_reveal:
+        return safe_content
+
+    for key in ("correct_answer", "answer", "explanation"):
+        safe_content.pop(key, None)
+
+    if not answers_open:
+        for key in ("options", "statements", "choices", "variants", "items"):
+            safe_content.pop(key, None)
+
+    return safe_content
+
+
+def _sanitize_assignment_result_payload(result_payload, *, runtime_question):
+    parsed = _load_json_text(result_payload)
+    if not isinstance(parsed, dict) or not runtime_question:
+        return result_payload
+
+    is_reveal = str(getattr(runtime_question, "status", "") or "").lower() != "active"
+    if is_reveal:
+        return result_payload
+
+    parsed.pop("correct_answer", None)
+    return _dump_json(parsed)
+
+
+def _sanitize_assignment_result_payload_object(result_payload, *, runtime_question):
+    safe_payload = dict(result_payload or {}) if isinstance(result_payload, dict) else {}
+    if not runtime_question:
+        return safe_payload
+
+    is_reveal = str(getattr(runtime_question, "status", "") or "").lower() != "active"
+    if not is_reveal:
+        safe_payload.pop("correct_answer", None)
+
+    return safe_payload
+
+
 def _serialize_assignment(assignment: GameAssignment):
     template_task = getattr(assignment, "template_task", None)
     host_round = getattr(assignment, "host_round", None)
@@ -1086,12 +1131,15 @@ def _serialize_assignment(assignment: GameAssignment):
             "ui_template": tpl.ui_template,
             "answer_mode": tpl.answer_mode,
             "role_code": tpl.role_code,
-            "content": _load_json_text(tpl.content_json),
+            "content": _sanitize_assignment_question_content(
+                _load_json_text(tpl.content_json),
+                runtime_question=runtime_question,
+            ),
             "reward": _load_json_text(tpl.reward_json),
             "fail_effect": _load_json_text(tpl.fail_effect_json),
         }
 
-    result_payload = assignment.result_payload
+    result_payload = _sanitize_assignment_result_payload(assignment.result_payload, runtime_question=runtime_question)
     answer_payload = assignment.answer_payload
 
     return {
@@ -1127,6 +1175,8 @@ def _serialize_assignment(assignment: GameAssignment):
             "sequence_no": runtime_question.sequence_no,
             "status": runtime_question.status,
             "answers_open": runtime_question.answers_open,
+            "reveal_stage": "reveal" if str(runtime_question.status or "").lower() != "active" else ("options" if runtime_question.answers_open else "question"),
+            "started_at": runtime_question.started_at.isoformat() if runtime_question.started_at else None,
             "template": question_content,
         } if runtime_question else None,
         "answer_payload": answer_payload,
@@ -3502,7 +3552,10 @@ def answer_assignment(
                 "nickname": player.nickname,
             },
             "assignment": _serialize_assignment(result["assignment"]),
-            "result_payload": result["result_payload"],
+            "result_payload": _sanitize_assignment_result_payload_object(
+                result["result_payload"],
+                runtime_question=getattr(result["assignment"], "host_round_question", None),
+            ),
             "house_resources_after": result["house_resources_after"],
         }
 

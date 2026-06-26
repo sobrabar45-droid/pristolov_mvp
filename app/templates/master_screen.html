@@ -4028,10 +4028,18 @@ function resolveScenarioAction(state) {
         }
 
         if (activeQuestion.status === "active") {
+            if (activeQuestion.answers_open === false) {
+                return {
+                    action: "open_answers",
+                    label: "Показать варианты / начать ответы",
+                    status: "Вопрос читается: варианты ещё скрыты",
+                    disabled: false
+                };
+            }
             return {
                 action: "close_current_question",
                 label: "Закрыть вопрос",
-                status: "Завершить текущий вопрос",
+                status: "Ответы открыты: закрыть и показать правильный ответ",
                 disabled: false
             };
         }
@@ -4391,14 +4399,30 @@ const FALLBACK_SCENE_STEP_REGISTRY = {
                 ctx.host.hostRound &&
                 ctx.host.hostRoundStatus === "active" &&
                 ctx.host.runtimeQuestion &&
+                !ctx.host.answersOpen,
+            step: (state, ctx) => ({
+                type: "open_answers",
+                action: "open_answers",
+                label: "Показать варианты / начать ответы",
+                status: ctx.host.currentQuestionNo && ctx.host.questionsTotal
+                    ? `Вопрос ${ctx.host.currentQuestionNo}/${ctx.host.questionsTotal} читается — следующий шаг: открыть варианты`
+                    : "Вопрос читается — открой варианты и стартуй ответы",
+                blocking: false
+            })
+        },
+        {
+            when: (state, ctx) =>
+                ctx.host.hostRound &&
+                ctx.host.hostRoundStatus === "active" &&
+                ctx.host.runtimeQuestion &&
                 ctx.host.answersOpen,
             step: (state, ctx) => ({
                 type: "close_runtime_question",
                 action: "close_runtime_question",
                 label: "Закрыть текущий вопрос",
                 status: ctx.host.currentQuestionNo && ctx.host.questionsTotal
-                    ? `Открыт вопрос ${ctx.host.currentQuestionNo}/${ctx.host.questionsTotal} — сначала закрой его`
-                    : "Открыт runtime-вопрос — сначала закрой его",
+                    ? `Ответы открыты ${ctx.host.currentQuestionNo}/${ctx.host.questionsTotal} — закрой и покажи правильный ответ`
+                    : "Ответы открыты — закрой и покажи правильный ответ",
                 blocking: false
             })
         },
@@ -4598,14 +4622,30 @@ function resolveNextMasterAction(state) {
         host.hostRound &&
         host.hostRoundStatus === "active" &&
         host.runtimeQuestion &&
+        !host.answersOpen
+    ) {
+        return {
+            type: "open_answers",
+            label: "Показать варианты / начать ответы",
+            status: host.currentQuestionNo && host.questionsTotal
+                ? `Вопрос ${host.currentQuestionNo}/${host.questionsTotal} читается — открой варианты`
+                : "Вопрос читается — открой варианты"
+        };
+    }
+
+    if (
+        currentPhase === "host_round" &&
+        host.hostRound &&
+        host.hostRoundStatus === "active" &&
+        host.runtimeQuestion &&
         host.answersOpen
     ) {
         return {
             type: "close_runtime_question",
             label: "Закрыть текущий вопрос",
             status: host.currentQuestionNo && host.questionsTotal
-                ? `Открыт вопрос ${host.currentQuestionNo}/${host.questionsTotal} — сначала закрой его`
-                : "Открыт runtime-вопрос — сначала закрой его"
+                ? `Ответы открыты ${host.currentQuestionNo}/${host.questionsTotal} — закрой и покажи правильный ответ`
+                : "Ответы открыты — закрой и покажи правильный ответ"
         };
     }
 
@@ -4668,6 +4708,12 @@ async function runNextMasterAction(state) {
             return;
         }
 
+        if (action.type === "open_answers") {
+            if (statusEl) statusEl.textContent = "Показываем варианты и запускаем ответы...";
+            await openAnswersForCurrentQuestion();
+            return;
+        }
+
         if (action.type === "finish_host_round") {
             if (statusEl) statusEl.textContent = "Подтверждаем завершение раунда...";
             await finishHostRound();
@@ -4718,6 +4764,16 @@ const ACTION_HANDLERS = {
 
     close_runtime_question: async () => {
         await forceCloseQuestion();
+    },
+
+    open_answers: async (state) => {
+        const hr = state?.active_host_round;
+        if (!hr?.id) {
+            throw new Error("Сейчас нет активного серийного раунда");
+        }
+
+        await apiPost(`/dev/host-rounds/${hr.id}/open-answers`);
+        await loadState();
     },
 
     open_next_question: async (state) => {
@@ -5591,11 +5647,15 @@ function renderQuestionScene(state) {
     const hr = state?.active_host_round || host?.hostRound || {};
     const q = host?.runtimeQuestion || latestDebug?.current_question || {};
     const questionActive = q?.status === "active";
+    const answersOpen = q?.answers_open !== false;
     const action = questionActive
-        ? "Жди ответы или закрой вопрос"
+        ? (answersOpen ? "Жди ответы или закрой вопрос" : "Прочитай вопрос, затем открой варианты")
         : hr?.status === "completed_waiting_host"
             ? "Подтверди завершение"
             : "Открой следующий вопрос";
+    const statusLabel = questionActive
+        ? (answersOpen ? "ответы открыты" : "вопрос читается")
+        : "закрыт";
     const roundLabel = hr?.title || (hasCourtRuntime(state) ? "Суд Домов" : "Серийный раунд");
 
     return `
@@ -5604,7 +5664,7 @@ function renderQuestionScene(state) {
             <div class="ps-question-scene-grid">
                 <div>
                     <h2 class="ps-scene-title">${escapeHtml(q?.title || hr?.title || "Раунд ведущего")}</h2>
-                    <div class="ps-scene-subtitle">${escapeHtml(roundLabel)} · статус: ${escapeHtml(questionActive ? "идёт" : "закрыт")}</div>
+                    <div class="ps-scene-subtitle">${escapeHtml(roundLabel)} · статус: ${escapeHtml(statusLabel)}</div>
                     <div class="ps-scene-action">${escapeHtml(action)}</div>
                 </div>
                 <div class="ps-scene-timer" id="psSceneTimer">${formatTimer(timerRemainingSec)}</div>
@@ -6361,6 +6421,21 @@ async function openNextQuestion() {
     const data = await apiPost(`/dev/host-rounds/${activeHostRound.id}/open-next-question`);
     setBox("hostRoundResult", data);
     logLine(`Открыт следующий вопрос для раунда #${activeHostRound.id}`);
+    await loadState();
+    if (data.ok) {
+        resetTimer(false);
+    }
+}
+
+async function openAnswersForCurrentQuestion() {
+    const activeHostRound = latestState?.active_host_round;
+    if (!activeHostRound || !activeHostRound.id) {
+        alert("Сейчас нет активного серийного раунда");
+        return;
+    }
+    const data = await apiPost(`/dev/host-rounds/${activeHostRound.id}/open-answers`);
+    setBox("hostRoundResult", data);
+    logLine(`Открыты варианты и ответы для раунда #${activeHostRound.id}`);
     await loadState();
     if (data.ok) {
         resetTimer(false);

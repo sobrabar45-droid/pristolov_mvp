@@ -85,9 +85,9 @@ def open_next_question_for_host_round(
         question_template_id=question_template.id,
         sequence_no=next_sequence_no,
         status="active",
-        answers_open=True,
+        answers_open=False,
         check_mode=round_template.check_mode or "auto",
-        started_at=func.now(),
+        started_at=None,
     )
     db.add(runtime_question)
     db.flush()
@@ -138,7 +138,7 @@ def open_next_question_for_host_round(
 
         created_assignment_ids.append(assignment.id)
 
-    host_round.answers_open = True
+    host_round.answers_open = False
     host_round.current_question_no = next_sequence_no
 
     return {
@@ -146,6 +146,54 @@ def open_next_question_for_host_round(
         "runtime_question": runtime_question,
         "question_template": question_template,
         "created_assignment_ids": created_assignment_ids,
+    }
+
+
+def open_answers_for_current_question(db: Session, host_round: GameHostRound):
+    if not host_round:
+        return {
+            "ok": False,
+            "message": "Host round не найден",
+        }
+
+    if host_round.status != "active":
+        return {
+            "ok": False,
+            "message": f'Нельзя открыть ответы у раунда со статусом "{host_round.status}"',
+        }
+
+    if not is_phase_active(db, host_round.game_id, "host_round"):
+        return {
+            "ok": False,
+            "message": "Нельзя открыть ответы вне фазы host_round",
+        }
+
+    current_question = (
+        db.query(GameHostRoundQuestion)
+        .filter(
+            GameHostRoundQuestion.host_round_id == host_round.id,
+            GameHostRoundQuestion.status == "active",
+        )
+        .first()
+    )
+
+    if not current_question:
+        return {
+            "ok": False,
+            "message": "У этого host round нет активного вопроса",
+        }
+
+    current_question.answers_open = True
+    current_question.started_at = datetime.now(timezone.utc)
+    host_round.answers_open = True
+
+    db.flush()
+
+    return {
+        "ok": True,
+        "message": "Ответы на текущий вопрос открыты",
+        "host_round": host_round,
+        "runtime_question": current_question,
     }
 
 

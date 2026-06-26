@@ -57,6 +57,7 @@ from app.services.assignment_service import (
 
 from app.services.host_round_service import (
     open_next_question_for_host_round as _open_next_question_for_host_round,
+    open_answers_for_current_question as _open_answers_for_current_question,
     finalize_host_round_by_host as _finalize_host_round_by_host,
     force_close_current_question_by_host as _force_close_current_question_by_host,
     pick_runtime_task_for_player as _pick_runtime_task_for_player,
@@ -1729,6 +1730,64 @@ def open_next_question_for_host_round(host_round_id: int):
 
     finally:
         db.close()
+
+
+@router.post("/host-rounds/{host_round_id}/open-answers")
+def open_answers_for_host_round_question(host_round_id: int):
+    db: Session = SessionLocal()
+
+    try:
+        host_round = (
+            db.query(GameHostRound)
+            .filter(GameHostRound.id == host_round_id)
+            .first()
+        )
+
+        if not host_round:
+            return {
+                "ok": False,
+                "message": "Host round not found",
+                "host_round_id": host_round_id,
+            }
+
+        result = _open_answers_for_current_question(
+            db=db,
+            host_round=host_round,
+        )
+
+        if not result.get("ok"):
+            db.rollback()
+            return result
+
+        db.commit()
+        db.refresh(host_round)
+
+        runtime_question = result["runtime_question"]
+
+        return {
+            "ok": True,
+            "message": result["message"],
+            "host_round": {
+                "id": host_round.id,
+                "round_code": host_round.round_code,
+                "title": host_round.title,
+                "status": host_round.status,
+                "questions_total": host_round.questions_total,
+                "current_question_no": host_round.current_question_no,
+                "answers_open": host_round.answers_open,
+            },
+            "runtime_question": {
+                "id": runtime_question.id,
+                "sequence_no": runtime_question.sequence_no,
+                "status": runtime_question.status,
+                "answers_open": runtime_question.answers_open,
+                "started_at": runtime_question.started_at.isoformat() if runtime_question.started_at else None,
+            },
+        }
+
+    finally:
+        db.close()
+
 
 @router.get("/host-rounds/{host_round_id}")
 def get_series_host_round(host_round_id: int):
