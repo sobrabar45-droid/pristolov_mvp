@@ -1736,7 +1736,10 @@
 
     let questionFocusMode = false;
     let questionTimerEndsAt = null;
-    let questionTimerDurationSec = 60;
+    const QUESTION_ANSWER_TIMER_DEFAULT_SEC = 20;
+    const QUESTION_ANSWER_TIMER_MAX_SEC = 20;
+
+    let questionTimerDurationSec = QUESTION_ANSWER_TIMER_DEFAULT_SEC;
     let activeQuestionVisualKey = null;
     let questionVisualState = "idle";
     let questionVisualStateUntil = null;
@@ -3349,6 +3352,14 @@
       return `${String(minutes).padStart(2,"0")}:${String(seconds).padStart(2,"0")}`;
     }
 
+    function normalizeQuestionAnswerDurationSec(rawValue){
+      const raw = num(rawValue);
+      if (!raw || raw <= 0){
+        return QUESTION_ANSWER_TIMER_DEFAULT_SEC;
+      }
+      return Math.min(raw, QUESTION_ANSWER_TIMER_MAX_SEC);
+    }
+
     function updateQuestionTimerVisual(){
       const timerValueEl = document.getElementById("questionTimerValue");
       const timerSubEl = document.getElementById("questionTimerSub");
@@ -3458,7 +3469,7 @@
           activeQuestionVisualKey = null;
           lastQuestionRenderKey = null;
           questionTimerEndsAt = null;
-          questionTimerDurationSec = 60;
+          questionTimerDurationSec = QUESTION_ANSWER_TIMER_DEFAULT_SEC;
           questionVisualState = "idle";
           questionVisualStateUntil = null;
           activeQuestionSceneData = null;
@@ -3517,12 +3528,11 @@
             questionTimerDurationSec = null;
             questionTimerEndsAt = null;
           } else {
-            questionTimerDurationSec = num(
+            questionTimerDurationSec = normalizeQuestionAnswerDurationSec(
               cq.time_limit_sec ||
               cq.timer ||
-              cq.duration_sec ||
-              45
-            ) || 45;
+              cq.duration_sec
+            );
             const startedAtMs = cq.started_at ? Date.parse(cq.started_at) : NaN;
             questionTimerEndsAt = Number.isFinite(startedAtMs)
               ? startedAtMs + questionTimerDurationSec * 1000
