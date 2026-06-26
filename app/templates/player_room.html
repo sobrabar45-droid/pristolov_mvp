@@ -1801,6 +1801,11 @@ function renderExpeditionControls(data) {
   const expeditionRoleCodes = expedition?.role_codes || [];
   const expeditionRoleNames = formatRoleNames(expeditionRoleCodes);
   const playerCanChooseRoute = !expeditionRoleCodes.length || expeditionRoleCodes.includes(roleCode);
+  const expeditionMembersCount = Number(expedition?.members_count || 0);
+  const expeditionChoicesCount = Number(expedition?.choices_count || 0);
+  const expeditionRemainingChoices = expeditionMembersCount > 0
+    ? Math.max(expeditionMembersCount - expeditionChoicesCount, 0)
+    : 0;
   const lordNeedsRouteChoice = roleCode === "lord_lady"
     && expedition?.status === "planned"
     && expeditionRoleCodes.includes("lord_lady")
@@ -1808,13 +1813,17 @@ function renderExpeditionControls(data) {
   const voteStatusMarkup = expedition?.status === "planned"
     ? `
         <div class="chips" style="margin-top:10px;">
-          <span class="chip">Ответов получено: ${expedition.choices_count || 0}</span>
-          ${expedition?.members_count ? `<span class="chip">Назначено участников: ${expedition.members_count}</span>` : ""}
+          <span class="chip">Направлений выбрано: ${expeditionChoicesCount}</span>
+          ${expeditionMembersCount ? `<span class="chip">Назначено участников: ${expeditionMembersCount}</span>` : ""}
+          ${expeditionMembersCount ? `<span class="chip">Осталось выбрать: ${expeditionRemainingChoices}</span>` : ""}
         </div>
       `
     : "";
   const lordResolutionHint = expedition?.status === "planned"
-    ? `<div class="muted" style="margin-top:10px;">Лорд ждёт решения Дома.</div>`
+    ? expeditionRemainingChoices > 0
+      ? `<div class="muted" style="margin-top:10px;">Завершить экспедицию можно после выбора всех назначенных игроков. Сейчас ждём оставшихся участников.</div>
+         <div class="muted" style="margin-top:8px;">Если игрок не видит выбор направления, попросите его обновить экран или обратиться к ведущему.</div>`
+      : `<div class="muted" style="margin-top:10px;">Все назначенные игроки выбрали направление. Лорд / Леди может завершить экспедицию.</div>`
     : "";
 
   if (!roleCode) {
@@ -1874,8 +1883,8 @@ function renderExpeditionControls(data) {
     controls.innerHTML = `
       <div class="action-box">
         <div class="big-text">Экспедиция уже назначена</div>
-        <div class="muted">Экспедиция ожидает завершения.</div>
-        ${expedition?.members_count ? `<div class="muted" style="margin-top:10px;">Назначено участников: ${expedition.members_count}</div>` : ""}
+        <div class="muted">Назначенные игроки выбирают направление на своих экранах.</div>
+        ${expeditionMembersCount ? `<div class="muted" style="margin-top:10px;">Назначено участников: ${expeditionMembersCount}</div>` : ""}
         ${expeditionRoleNames ? `<div class="muted" style="margin-top:8px;">Состав: ${expeditionRoleNames}</div>` : ""}
         ${expeditionRoleCodes.includes("lord_lady") ? `<div class="muted" style="margin-top:8px;">Ваш выбор: ${playerVote || "ещё не выбран"}.</div>` : ""}
         ${voteStatusMarkup}
@@ -1883,11 +1892,11 @@ function renderExpeditionControls(data) {
         ${lordNeedsRouteChoice ? `
           <div class="expedition-choice-grid" style="margin-top:10px;">
             ${locationButtons.map(item => `
-              <button type="button" class="btn" onclick="chooseExpeditionLocation(${expedition.id}, '${item.code}')">${item.label}</button>
+              <button type="button" class="btn" onclick="chooseExpeditionLocation(${expedition.id}, '${item.code}')">Выбрать: ${item.label}</button>
             `).join("")}
           </div>
         ` : ""}
-        <div class="muted" style="margin-top:10px;">После выбора маршрутов Лорд может завершить экспедицию.</div>
+        <div class="muted" style="margin-top:10px;">Кнопка завершения сработает, когда все назначенные участники выберут направление.</div>
         <div class="expedition-inline-actions">
           <button type="button" class="btn" onclick="resolveExpedition(${expedition.id})">Завершить экспедицию</button>
         </div>
@@ -1902,7 +1911,8 @@ function renderExpeditionControls(data) {
       controls.innerHTML = `
         <div class="action-box">
           <div class="big-text">Экспедиция Дома назначена</div>
-          <div class="muted">Дом готовит экспедицию. Ожидайте своего хода.</div>
+          <div class="muted">В экспедиции участвуют назначенные игроки.</div>
+          <div class="muted" style="margin-top:8px;">Вы можете помогать обсуждением за столом и следить за объявлениями ведущего.</div>
           ${voteStatusMarkup}
         </div>
       `;
@@ -1910,13 +1920,14 @@ function renderExpeditionControls(data) {
     }
     controls.innerHTML = `
       <div class="action-box">
-        <div class="big-text">Выберите направление экспедиции</div>
-        <div class="muted">Лорд ждёт решения Дома. Ваш текущий выбор: ${playerVote || "ещё не выбран"}.</div>
+        <div class="big-text">Вы назначены в экспедицию</div>
+        <div class="muted">Выберите направление на своём экране. После выбора дождитесь решения Лорда / Леди.</div>
+        <div class="muted" style="margin-top:8px;">Ваш текущий выбор: ${playerVote || "ещё не выбран"}.</div>
         ${expeditionRoleNames ? `<div class="muted" style="margin-top:8px;">В состав входят: ${expeditionRoleNames}</div>` : ""}
         ${voteStatusMarkup}
         <div class="expedition-choice-grid">
           ${locationButtons.map(item => `
-            <button type="button" class="btn" onclick="chooseExpeditionLocation(${expedition.id}, '${item.code}')">${item.label}</button>
+            <button type="button" class="btn" onclick="chooseExpeditionLocation(${expedition.id}, '${item.code}')">Выбрать: ${item.label}</button>
           `).join("")}
         </div>
       </div>
