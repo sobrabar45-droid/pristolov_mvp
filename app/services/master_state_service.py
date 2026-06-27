@@ -631,6 +631,42 @@ def _build_runtime_question_payload(runtime_question):
     return payload
 
 
+def _select_current_or_reveal_runtime_question(runtime_questions, host_round_id: int | None):
+    if not host_round_id:
+        return None
+
+    round_questions = [
+        question
+        for question in runtime_questions
+        if question.host_round_id == host_round_id
+    ]
+
+    active_question = next(
+        (
+            question
+            for question in round_questions
+            if str(question.status or "").lower() == "active"
+        ),
+        None,
+    )
+    if active_question:
+        return active_question
+
+    reveal_questions = [
+        question
+        for question in round_questions
+        if str(question.status or "").lower() in {"resolved", "closed"}
+    ]
+    if not reveal_questions:
+        return None
+
+    return sorted(
+        reveal_questions,
+        key=lambda question: (question.sequence_no or 0, question.id or 0),
+        reverse=True,
+    )[0]
+
+
 def _sanitize_question_content_for_stage(content: dict, *, answers_open: bool, is_reveal: bool) -> dict:
     safe_content = dict(content or {})
     if is_reveal:
@@ -966,23 +1002,12 @@ def get_game_master_state_logic(
     current_runtime_question = None
     current_question_payload = None
     if active_host_round:
-        current_runtime_question = next(
-            (
-                question
-                for question in active_host_round.get("runtime_questions", [])
-                if question.get("status") == "active"
-            ),
-            None,
-        )
-        current_runtime_question_entity = next(
-            (
-                question
-                for question in runtime_questions
-                if question.host_round_id == active_host_round["id"] and question.status == "active"
-            ),
-            None,
+        current_runtime_question_entity = _select_current_or_reveal_runtime_question(
+            runtime_questions,
+            active_host_round["id"],
         )
         current_question_payload = _build_runtime_question_payload(current_runtime_question_entity)
+        current_runtime_question = current_question_payload
 
     deals = (
         db.query(GameDeal)
@@ -1653,13 +1678,9 @@ def get_game_master_tv_state_logic(
 
     current_question_payload = None
     if active_host_round:
-        current_runtime_question = next(
-            (
-                question
-                for question in runtime_questions
-                if question.host_round_id == active_host_round["id"] and question.status == "active"
-            ),
-            None,
+        current_runtime_question = _select_current_or_reveal_runtime_question(
+            runtime_questions,
+            active_host_round["id"],
         )
         current_question_payload = _build_runtime_question_payload(current_runtime_question)
 
