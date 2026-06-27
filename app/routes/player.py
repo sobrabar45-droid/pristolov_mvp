@@ -150,55 +150,134 @@ TREASURER_SHOP_ACTIONS = {
         "label": "Сет у стойки",
         "cost": 5,
         "requires_ally": False,
-        "event_text": "Дом {actor} заказал \"Сет у стойки\" за 5 золота. За столом стало громче.",
+        "is_18_plus": False,
+        "category": "operator",
+        "event_text": "Дом {actor} заказал сет у стойки за 5 золота. За столом стало громче.",
     },
     "giraffe": {
         "code": "giraffe",
         "label": "Жираф",
         "cost": 10,
         "requires_ally": False,
-        "event_text": "Дом {actor} заказал \"Жирафа\" за 10 золота. Пир набирает силу.",
+        "is_18_plus": True,
+        "category": "alcohol",
+        "event_text": "Дом {actor} заказал жирафа за 10 золота. Пир набирает силу.",
     },
     "author_tea": {
         "code": "author_tea",
         "label": "Авторский чай",
         "cost": 3,
         "requires_ally": False,
+        "is_18_plus": False,
+        "category": "drink",
         "event_text": "Дом {actor} заказал авторский чай за 3 золота. За столом стало теплее.",
+    },
+    "premium_champagne_premier": {
+        "code": "premium_champagne_premier",
+        "label": "Шампанское Премиум премьер",
+        "cost": 7,
+        "requires_ally": False,
+        "is_18_plus": True,
+        "category": "alcohol",
+        "event_text": "Дом {actor} заказал шампанское Премиум премьер за 7 золота. Выдача подтверждена баром.",
+    },
+    "tincture_set": {
+        "code": "tincture_set",
+        "label": "Сет настоек",
+        "cost": 7,
+        "requires_ally": False,
+        "is_18_plus": True,
+        "category": "alcohol",
+        "event_text": "Дом {actor} заказал сет настоек за 7 золота. Выдача подтверждена баром.",
+    },
+    "beer_giraffe_shihan": {
+        "code": "beer_giraffe_shihan",
+        "label": "Жираф пива Шихан",
+        "cost": 10,
+        "requires_ally": False,
+        "is_18_plus": True,
+        "category": "alcohol",
+        "event_text": "Дом {actor} заказал жираф пива Шихан за 10 золота. Выдача подтверждена баром.",
     },
     "lemonade_02": {
         "code": "lemonade_02",
-        "label": "Лимонад 0.2",
+        "label": "Лимонад 0.2 л",
         "cost": 2,
         "requires_ally": False,
-        "event_text": "Дом {actor} заказал лимонад 0.2 за 2 золота. Пир получил лёгкую передышку.",
+        "is_18_plus": False,
+        "category": "drink",
+        "event_text": "Дом {actor} заказал лимонад 0.2 л за 2 золота. Пир получил лёгкую передышку.",
     },
     "sobranie_pizza": {
         "code": "sobranie_pizza",
-        "label": "Пицца «Собрание»",
+        "label": "Пицца Собрание",
         "cost": 6,
         "requires_ally": False,
-        "event_text": "Дом {actor} заказал пиццу «Собрание» за 6 золота. Совет Дома подкрепился.",
+        "is_18_plus": False,
+        "category": "food",
+        "event_text": "Дом {actor} заказал пиццу Собрание за 6 золота. Совет Дома подкрепился.",
+    },
+    "beer_set_any": {
+        "code": "beer_set_any",
+        "label": "любой пивной сет (1, 2, 3, 4)",
+        "cost": 10,
+        "requires_ally": False,
+        "is_18_plus": True,
+        "category": "alcohol",
+        "event_text": "Дом {actor} заказал пивной сет за 10 золота. Конкретный сет согласован вручную с баром.",
     },
     "anna_pavlova": {
         "code": "anna_pavlova",
-        "label": "Десерт «Анна Павлова»",
+        "label": "Анна Павлова",
         "cost": 2,
         "requires_ally": False,
-        "event_text": "Дом {actor} заказал десерт «Анна Павлова» за 2 золота. В зале стало чуть торжественнее.",
+        "is_18_plus": False,
+        "category": "dessert",
+        "event_text": "Дом {actor} заказал Анну Павлову за 2 золота. В зале стало чуть торжественнее.",
+    },
+    "tapas_set": {
+        "code": "tapas_set",
+        "label": "Сет тапасов",
+        "cost": 7,
+        "requires_ally": False,
+        "is_18_plus": False,
+        "category": "food",
+        "event_text": "Дом {actor} заказал сет тапасов за 7 золота. За столом стало сытнее.",
     },
     "gift_to_ally": {
         "code": "gift_to_ally",
         "label": "Подарок союзнику",
         "cost": 15,
         "requires_ally": True,
+        "is_18_plus": False,
+        "category": "game_effect",
         "event_text": "Дом {actor} угостил союзников из Дома {ally}. Оба Дома получают +1 влияние.",
     },
 }
 
+TREASURER_SHOP_DIRECT_PURCHASE_ACTIONS = {
+    "set_bar",
+    "giraffe",
+    "author_tea",
+    "lemonade_02",
+    "sobranie_pizza",
+    "anna_pavlova",
+    "gift_to_ally",
+}
+
 TREASURER_SHOP_REQUEST_ACTIONS = {
     code: TREASURER_SHOP_ACTIONS[code]
-    for code in ("author_tea", "lemonade_02", "sobranie_pizza", "anna_pavlova")
+    for code in (
+        "author_tea",
+        "premium_champagne_premier",
+        "tincture_set",
+        "beer_giraffe_shihan",
+        "lemonade_02",
+        "sobranie_pizza",
+        "beer_set_any",
+        "anna_pavlova",
+        "tapas_set",
+    )
 }
 
 
@@ -2518,7 +2597,7 @@ def purchase_treasurer_shop_item(player_id: int, payload: dict = Body(default={}
 
         action_code = str(payload.get("action_code") or "").strip().lower()
         action_meta = TREASURER_SHOP_ACTIONS.get(action_code)
-        if not action_meta:
+        if not action_meta or action_code not in TREASURER_SHOP_DIRECT_PURCHASE_ACTIONS:
             return {
                 "ok": False,
                 "message": "Выберите доступную покупку Мастера золота.",
@@ -2676,6 +2755,10 @@ def create_treasurer_shop_request(player_id: int, payload: dict = Body(default={
                 "item_label": action_meta["label"],
                 "cost_gold": int(action_meta["cost"]),
                 "player_id": player.id,
+                "is_18_plus": bool(action_meta.get("is_18_plus")),
+                "category": str(action_meta.get("category") or ""),
+                "requires_bar_confirmation": True,
+                "replacement_policy": "manual_only",
             },
             note="Treasurer Shop request: pending cashier review",
         )

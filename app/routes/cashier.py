@@ -21,9 +21,14 @@ templates = Jinja2Templates(directory="app/templates")
 TREASURER_SHOP_REQUEST_TYPE = "treasurer_shop_request"
 TREASURER_SHOP_REQUEST_ACTIONS = {
     "author_tea",
+    "premium_champagne_premier",
+    "tincture_set",
+    "beer_giraffe_shihan",
     "lemonade_02",
     "sobranie_pizza",
+    "beer_set_any",
     "anna_pavlova",
+    "tapas_set",
 }
 
 
@@ -97,6 +102,7 @@ async def cashier_gold_desk_page(request: Request, room_code: str):
                         "house_key": deal.from_house.house_key if deal.from_house else None,
                         "item_label": deal.offer.get("item_label") if isinstance(deal.offer, dict) else None,
                         "cost_gold": deal.offer.get("cost_gold") if isinstance(deal.offer, dict) else None,
+                        "is_18_plus": bool(deal.offer.get("is_18_plus")) if isinstance(deal.offer, dict) else False,
                         "status": deal.status,
                     }
                     for deal in pending_shop_requests

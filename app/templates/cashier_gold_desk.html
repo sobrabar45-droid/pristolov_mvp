@@ -256,6 +256,13 @@
                         <div class="queue-card" id="shopRequest{{ item.id }}">
                             <div class="queue-card-title">{{ item.house_name or item.house_key or "Дом" }} · {{ item.item_label or "Позиция" }}</div>
                             <div class="queue-card-meta">Стоимость: {{ item.cost_gold or 0 }} золота · Статус: {{ item.status }}</div>
+                            {% if item.is_18_plus %}
+                                <div class="queue-card-meta" style="color: var(--red); font-weight: 700;">
+                                    18+ позиция. Перед подтверждением проверьте возможность выдачи с баром.
+                                    Бар может отказать в выдаче независимо от золота Дома.
+                                    Если позиция недоступна, замену согласуйте вручную.
+                                </div>
+                            {% endif %}
                             <span class="queue-status">Ожидает подтверждения</span>
                             <button class="button queue-action" type="button" data-confirm-shop-request="{{ item.id }}">Заказ принят</button>
                         </div>

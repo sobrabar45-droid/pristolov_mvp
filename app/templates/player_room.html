@@ -612,6 +612,7 @@ let dealSubmitBusy = false;
 let duelActionBusy = false;
 let lastWhisperActionBusy = false;
 let treasurerShopRequestBusy = false;
+let treasurerShopShowAdultItems = false;
 let isUserEditingDeal = false;
 let lastUserInteractionAt = 0;
 const PHASE_LABELS = {
@@ -657,10 +658,15 @@ const EXPEDITION_ROLE_LABELS = {
   house_sworn: "Соратник Дома"
 };
 const TREASURER_SHOP_REQUEST_ITEMS = [
-  { code: "author_tea", label: "Авторский чай", cost: 3 },
-  { code: "lemonade_02", label: "Лимонад 0.2", cost: 2 },
-  { code: "sobranie_pizza", label: "Пицца Собрание", cost: 6 },
-  { code: "anna_pavlova", label: "Десерт Анна Павлова", cost: 2 }
+  { code: "author_tea", label: "Авторский чай", cost: 3, is18Plus: false },
+  { code: "lemonade_02", label: "Лимонад 0.2 л", cost: 2, is18Plus: false },
+  { code: "sobranie_pizza", label: "Пицца Собрание", cost: 6, is18Plus: false },
+  { code: "anna_pavlova", label: "Анна Павлова", cost: 2, is18Plus: false },
+  { code: "tapas_set", label: "Сет тапасов", cost: 7, is18Plus: false },
+  { code: "premium_champagne_premier", label: "Шампанское Премиум премьер", cost: 7, is18Plus: true },
+  { code: "tincture_set", label: "Сет настоек", cost: 7, is18Plus: true },
+  { code: "beer_giraffe_shihan", label: "Жираф пива Шихан", cost: 10, is18Plus: true },
+  { code: "beer_set_any", label: "любой пивной сет (1, 2, 3, 4)", cost: 10, is18Plus: true }
 ];
 
 function escapeHtml(value) {
@@ -1370,16 +1376,32 @@ function renderTreasurerShopControls(data) {
   }
 
   const gold = Number(data?.house?.resources?.gold || 0);
+  const visibleShopItems = TREASURER_SHOP_REQUEST_ITEMS.filter(item => !item.is18Plus || treasurerShopShowAdultItems);
   section.style.display = "";
   controls.innerHTML = `
     <div class="action-box">
       <div class="big-text">Харчевня / Магазин</div>
-      <div class="muted">Золото Дома: ${escapeHtml(gold)}. Золото спишется после подтверждения кассиром.</div>
+      <div class="muted">Золото Дома: ${escapeHtml(gold)}. Золото спишется только после подтверждения кассиром и баром.</div>
+      <div class="muted" style="margin-top:6px;">Если позиции нет в наличии, замену предлагает сотрудник вручную.</div>
+      <label class="warning-box" style="display:block;margin-top:12px;">
+        <input
+          type="checkbox"
+          id="treasurerShopAdultToggle"
+          ${treasurerShopShowAdultItems ? "checked" : ""}
+          onchange="toggleTreasurerShopAdultItems(this.checked)">
+        <span class="big-text" style="font-size:16px;">Показать позиции 18+</span>
+        <div class="muted" style="margin-top:6px;">
+          18+ позиции доступны только совершеннолетним гостям. Отметка здесь не заменяет проверку документов и решение сотрудников бара. Бар может отказать в выдаче независимо от золота Дома.
+        </div>
+      </label>
       <div class="expedition-inline-actions" style="margin-top:12px;">
-        ${TREASURER_SHOP_REQUEST_ITEMS.map(item => `
+        ${visibleShopItems.map(item => `
           <div class="warning-box">
-            <div class="big-text" style="font-size:16px;">${escapeHtml(item.label)}</div>
+            <div class="big-text" style="font-size:16px;">
+              ${escapeHtml(item.label)}${item.is18Plus ? ` <span class="pill">18+</span>` : ""}
+            </div>
             <div class="muted" style="margin-top:6px;">Цена: ${escapeHtml(item.cost)} золота</div>
+            ${item.is18Plus ? `<div class="muted" style="margin-top:6px;">Выдача подтверждается баром. Золото спишется только после подтверждения кассиром.</div>` : ""}
             <button
               type="button"
               class="btn"
@@ -1393,6 +1415,13 @@ function renderTreasurerShopControls(data) {
       </div>
     </div>
   `;
+}
+
+function toggleTreasurerShopAdultItems(isChecked) {
+  treasurerShopShowAdultItems = Boolean(isChecked);
+  if (window.latestPlayerState) {
+    renderTreasurerShopControls(window.latestPlayerState);
+  }
 }
 
 function renderTreasurerShopResult(ok, title, text) {
