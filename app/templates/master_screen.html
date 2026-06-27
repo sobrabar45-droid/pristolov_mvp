@@ -5500,6 +5500,7 @@ function mapResourceToDisplay(resourceKey, value) {
 function formatDuelStatus(status) {
     if (status === "challenged") return "Вызов брошен";
     if (status === "accepted") return "Вызов принят";
+    if (status === "needs_replay") return "Ничья / нужна переигровка";
     if (status === "resolved") return "Дуэль завершена";
     if (status === "refused") return "Отказ";
     if (status === "canceled") return "Отменена";
@@ -6975,6 +6976,15 @@ async function resolveHouseDuel(duelId, winnerHouseId) {
     }
 }
 
+async function markHouseDuelDraw(duelId) {
+    const data = await apiPost(`/dev/games/${ROOM_CODE}/duels/${duelId}/draw`, {});
+    showDuelMessage(data);
+    if (data?.ok) {
+        logLine(`Дуэль #${duelId}: ничья, нужна переигровка`);
+        await loadState();
+    }
+}
+
 function renderDuelOperatorPanel(state) {
     const root = document.getElementById("duelOperatorCard");
     if (!root) return;
@@ -6992,16 +7002,22 @@ function renderDuelOperatorPanel(state) {
     const duelId = Number(duel?.id || 0);
     const duelStatus = String(duel?.status || "").trim().toLowerCase();
     const canAccept = duelStatus === "challenged";
-    const canResolve = duelStatus === "challenged" || duelStatus === "accepted";
+    const canMarkDraw = duelStatus === "challenged" || duelStatus === "accepted";
+    const canResolve = duelStatus === "challenged" || duelStatus === "accepted" || duelStatus === "needs_replay";
+    const replayHint = duelStatus === "needs_replay"
+        ? `<div class="runtime-muted" style="margin-top:8px;">Ничья уже отмечена. Проведите переигровку или короткий тай-брейк, затем зафиксируйте победителя.</div>`
+        : "";
 
     root.innerHTML = `
         <div class="duel-operator-meta">
             <div class="duel-operator-name">${escapeHtml(challengerName)} vs ${escapeHtml(targetName)}</div>
             <div class="duel-operator-sub">Статус: ${escapeHtml(formatDuelStatus(duel?.status))} · Ставка: ${escapeHtml(duel?.stake_gold ?? "—")} золота</div>
+            ${replayHint}
         </div>
         <div class="duel-operator-actions">
             ${canAccept ? `<button class="btn-green" onclick="acceptHouseDuel(${duelId})">Принять</button>` : ""}
             ${canAccept ? `<button class="btn-red" onclick="refuseHouseDuel(${duelId})">Отклонить</button>` : ""}
+            ${canMarkDraw ? `<button class="btn-red" onclick="markHouseDuelDraw(${duelId})">Ничья / переигровка</button>` : ""}
             ${canResolve ? `<button class="btn-blue" onclick="resolveHouseDuel(${duelId}, ${challengerId})">Победил ${escapeHtml(challengerName)}</button>` : ""}
             ${canResolve ? `<button class="btn-blue" onclick="resolveHouseDuel(${duelId}, ${targetId})">Победил ${escapeHtml(targetName)}</button>` : ""}
         </div>

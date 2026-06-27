@@ -1213,6 +1213,7 @@ function formatDuelStatus(status) {
   const normalized = String(status || "").trim().toLowerCase();
   if (normalized === "challenged") return "Вызов объявлен";
   if (normalized === "accepted") return "Вызов принят";
+  if (normalized === "needs_replay") return "Ничья / нужна переигровка";
   if (normalized === "refused") return "Вызов отклонён";
   if (normalized === "resolved") return "Дуэль завершена";
   return status || "—";

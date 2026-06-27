@@ -1663,7 +1663,7 @@ def get_player_me(player_token: str):
                 db,
                 game_id=player.game_id,
                 house_id=player.house_id,
-                statuses={"challenged", "accepted"},
+                statuses={"challenged", "accepted", "needs_replay"},
             )
             incoming_house_duels = [
                 duel

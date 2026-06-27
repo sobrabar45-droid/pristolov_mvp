@@ -143,6 +143,7 @@ from app.services.duel_service import (
     create_duel_challenge as _create_duel_challenge,
     accept_duel as _accept_duel,
     refuse_duel as _refuse_duel,
+    mark_duel_needs_replay as _mark_duel_needs_replay,
     resolve_duel as _resolve_duel,
     serialize_duel as _serialize_duel,
     list_duels_for_game as _list_duels_for_game,
@@ -1360,7 +1361,7 @@ def seed_technical_run(room_code: str):
                     {"nickname": "Огонь / Лорд", "role_code": "lord_lady", "extra_roles": []},
                     {"nickname": "Огонь / Мейстер", "role_code": "maester", "extra_roles": []},
                     {"nickname": "Огонь / Дипломат", "role_code": "diplomat", "extra_roles": []},
-                    {"nickname": "Огонь / Казначей", "role_code": "treasurer", "extra_roles": []},
+                    {"nickname": "Огонь / Мастер над золотом", "role_code": "treasurer", "extra_roles": []},
                     {"nickname": "Огонь / Шёпот", "role_code": "whisper_master", "extra_roles": []},
                     {"nickname": "Огонь / Соратник", "role_code": "house_sworn", "extra_roles": []},
                 ],
@@ -2885,6 +2886,64 @@ def refuse_game_duel(room_code: str, duel_id: int, payload: dict = Body(...)):
         return {
             "ok": False,
             "message": "Не удалось отклонить дуэль",
+            "error": str(e),
+            "room_code": room_code,
+            "duel_id": duel_id,
+        }
+
+    finally:
+        db.close()
+
+
+@router.post("/games/{room_code}/duels/{duel_id}/draw")
+def mark_game_duel_draw(room_code: str, duel_id: int, payload: dict = Body(default={})):
+    db: Session = SessionLocal()
+
+    try:
+        game = db.query(Game).filter(Game.room_code == room_code).first()
+
+        if not game:
+            return {
+                "ok": False,
+                "message": "Игра не найдена",
+                "room_code": room_code,
+            }
+
+        duel = (
+            db.query(GameDuel)
+            .filter(
+                GameDuel.id == duel_id,
+                GameDuel.game_id == game.id,
+            )
+            .first()
+        )
+
+        if not duel:
+            return {
+                "ok": False,
+                "message": "Дуэль не найдена",
+                "duel_id": duel_id,
+                "room_code": room_code,
+            }
+
+        result = _mark_duel_needs_replay(
+            db=db,
+            duel=duel,
+            payload=payload if isinstance(payload, dict) else {},
+        )
+
+        if not result.get("ok"):
+            db.rollback()
+            return result
+
+        db.commit()
+        return result
+
+    except Exception as e:
+        db.rollback()
+        return {
+            "ok": False,
+            "message": "Не удалось отметить ничью в дуэли",
             "error": str(e),
             "room_code": room_code,
             "duel_id": duel_id,

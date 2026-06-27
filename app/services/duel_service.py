@@ -22,7 +22,7 @@ DUEL_REFUSE_INFLUENCE_TRANSFER = 1
 DUEL_RESOLVE_INFLUENCE_TRANSFER = 1
 DUEL_WINNER_INFLUENCE_BONUS = 1
 DUEL_TOWER_BONUS_INFLUENCE = 1
-DUEL_ALLOWED_STATUSES = {"challenged", "accepted", "refused", "resolved", "canceled"}
+DUEL_ALLOWED_STATUSES = {"challenged", "accepted", "refused", "resolved", "canceled", "needs_replay"}
 
 
 def _normalize_duel_stake_gold(payload: dict | None) -> int:
@@ -479,6 +479,32 @@ def create_duel_challenge(db: Session, game_id: int, challenger_house_id: int, t
             "message": "Нельзя вызвать союзный Дом",
         }
 
+    existing_active_duel = (
+        db.query(GameDuel)
+        .filter(
+            GameDuel.game_id == game_id,
+            GameDuel.status.in_(["challenged", "accepted", "needs_replay"]),
+            (
+                (
+                    (GameDuel.challenger_house_id == challenger_house.id)
+                    & (GameDuel.target_house_id == target_house.id)
+                )
+                | (
+                    (GameDuel.challenger_house_id == target_house.id)
+                    & (GameDuel.target_house_id == challenger_house.id)
+                )
+            ),
+        )
+        .order_by(GameDuel.id.desc())
+        .first()
+    )
+    if existing_active_duel:
+        return {
+            "ok": False,
+            "message": "Между этими Домами уже есть активная дуэль",
+            "duel": serialize_duel(existing_active_duel),
+        }
+
     try:
         stake_gold = _normalize_duel_stake_gold(payload)
     except ValueError:
@@ -657,12 +683,47 @@ def refuse_duel(db: Session, duel: GameDuel, payload: dict) -> dict:
     }
 
 
-def resolve_duel(db: Session, duel: GameDuel, payload: dict) -> dict:
+def mark_duel_needs_replay(db: Session, duel: GameDuel, payload: dict) -> dict:
     phase_guard = _ensure_duel_phase_active(db, duel.game_id)
     if not phase_guard.get("ok"):
         return phase_guard
 
     if duel.status not in {"challenged", "accepted"}:
+        return {
+            "ok": False,
+            "message": f'Ничью нельзя отметить для дуэли в статусе "{duel.status}"',
+            "duel": serialize_duel(duel),
+        }
+
+    duel.status = "needs_replay"
+    duel.winner_house_id = None
+    _append_note(
+        duel,
+        "draw_debug",
+        {
+            "note": payload.get("note") if isinstance(payload, dict) else None,
+            "marked_at": datetime.now(timezone.utc).isoformat(),
+            "reward_applied": False,
+            "requires": "replay_or_host_tiebreak",
+        },
+    )
+    _touch_duel(duel)
+    db.flush()
+
+    return {
+        "ok": True,
+        "message": "Дуэль завершилась ничьей. Нужна переигровка или решение ведущего.",
+        "duel": serialize_duel(duel),
+        "reward_applied": False,
+    }
+
+
+def resolve_duel(db: Session, duel: GameDuel, payload: dict) -> dict:
+    phase_guard = _ensure_duel_phase_active(db, duel.game_id)
+    if not phase_guard.get("ok"):
+        return phase_guard
+
+    if duel.status not in {"challenged", "accepted", "needs_replay"}:
         return {
             "ok": False,
             "message": f'Разрешение невозможно для дуэли в статусе "{duel.status}"',

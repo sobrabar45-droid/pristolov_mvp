@@ -129,6 +129,17 @@ def _build_master_prompt(*, active_host_round, current_question, duels_block, ex
             "severity": "medium",
         }
 
+    replay_duels = [
+        duel for duel in (duels_block or {}).get("active_or_pending", [])
+        if duel.get("status") == "needs_replay"
+    ]
+    if replay_duels:
+        return {
+            "title": "Дуэль требует переигровки",
+            "body": "Ничья отмечена. Проведи переигровку или короткий тай-брейк и зафиксируй победителя.",
+            "severity": "medium",
+        }
+
     planned_without_approval = [
         expedition for expedition in (expeditions_block or {}).get("planned", [])
         if not expedition.get("approved_by_player_id")
@@ -496,6 +507,9 @@ def _build_recent_events_payload(
         if status == "resolved" and winner:
             text = f"Победа в дуэли: {winner}"
             severity = "ok"
+        elif status == "needs_replay":
+            text = f"Дуэль {challenger} и {target}: ничья, нужна переигровка"
+            severity = "warn"
         elif status == "refused":
             text = f"{target} отказался от дуэли с {challenger}"
             severity = "warn"
@@ -1172,15 +1186,16 @@ def get_game_master_state_logic(
                     "house_key": duel.winner_house.house_key,
                 } if duel.winner_house else None,
                 "created_at": duel.created_at.isoformat() if duel.created_at else None,
+                "updated_at": duel.updated_at.isoformat() if getattr(duel, "updated_at", None) else None,
                 "resolved_at": duel.resolved_at.isoformat() if duel.resolved_at else None,
             }
         )
 
     challenged_duels = [duel for duel in duels_payload if duel["status"] == "challenged"]
     accepted_duels = [duel for duel in duels_payload if duel["status"] == "accepted"]
-    recent_duels = [duel for duel in reversed(duels_payload) if duel["status"] in {"refused", "resolved", "canceled"}][:5]
+    recent_duels = [duel for duel in reversed(duels_payload) if duel["status"] in {"refused", "resolved", "canceled", "needs_replay"}][:5]
     duels_block = {
-        "active_or_pending": [duel for duel in duels_payload if duel["status"] in {"challenged", "accepted"}],
+        "active_or_pending": [duel for duel in duels_payload if duel["status"] in {"challenged", "accepted", "needs_replay"}],
         "challenged": challenged_duels,
         "accepted": accepted_duels,
         "recent": recent_duels,
@@ -1290,6 +1305,16 @@ def get_game_master_state_logic(
                     "text": f'Победа в дуэли: {duel["winner_house"]["name"]}',
                     "created_at": duel.get("resolved_at") or duel.get("created_at"),
                     "severity": "ok",
+                }
+            )
+        elif duel["status"] == "needs_replay":
+            event_feed.append(
+                {
+                    "type": "duel",
+                    "title": "Ничья в дуэли",
+                    "text": f'{duel["challenger_house"]["name"]} и {duel["target_house"]["name"]}: нужна переигровка или тай-брейк',
+                    "created_at": duel.get("updated_at") or duel.get("created_at"),
+                    "severity": "warn",
                 }
             )
         if duel.get("live_bonus_label"):
@@ -1843,16 +1868,17 @@ def get_game_master_tv_state_logic(
                     "duel_format": getattr(duel, "duel_format", None),
                     "live_bonus_label": getattr(duel, "live_bonus_label", None),
                     "created_at": duel.created_at.isoformat() if duel.created_at else None,
+                    "updated_at": duel.updated_at.isoformat() if getattr(duel, "updated_at", None) else None,
                 }
             )
     except Exception:
         duels_payload = []
 
     duels_block = {
-        "active_or_pending": [duel for duel in duels_payload if duel["status"] in {"challenged", "accepted"}][:5],
+        "active_or_pending": [duel for duel in duels_payload if duel["status"] in {"challenged", "accepted", "needs_replay"}][:5],
         "challenged": [duel for duel in duels_payload if duel["status"] == "challenged"][:5],
         "accepted": [duel for duel in duels_payload if duel["status"] == "accepted"][:5],
-        "recent": [duel for duel in reversed(duels_payload) if duel["status"] in {"refused", "resolved", "canceled"}][:5],
+        "recent": [duel for duel in reversed(duels_payload) if duel["status"] in {"refused", "resolved", "canceled", "needs_replay"}][:5],
     }
 
     expeditions_payload = []

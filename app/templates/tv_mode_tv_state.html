@@ -1695,9 +1695,9 @@
     const ROOM_CODE = "{{ room_code }}";
     const TV_STATE_URL = `/dev/game-master/${ROOM_CODE}/tv-state`;
     const SLIDE_DURATIONS_MS = {
-        question: 15000,
-        balance: 15000,
-        resources: 15000,
+        question: 15 * 1000,
+        balance: 15 * 1000,
+        resources: 15 * 1000,
         politics: 12000,
         phase: 10000
     };
@@ -4300,7 +4300,13 @@ function scheduleNextSlideRotation() {
           const challenger = pickText(duel?.challenger_house_name) || getHouseNameById(state, duel?.challenger_house_id);
           const target = pickText(duel?.target_house_name) || getHouseNameById(state, duel?.target_house_id);
           const bonus = duel?.stake_gold ? `${num(duel.stake_gold)} золота` : (pickText(duel?.live_bonus_label) || pickText(duel?.duel_format) || "ставка уточняется");
-          const status = pickText(duel?.status) || "ожидание";
+          const rawStatus = pickText(duel?.status) || "ожидание";
+          const status = rawStatus === "challenged" ? "вызов брошен"
+            : rawStatus === "accepted" ? "вызов принят"
+            : rawStatus === "needs_replay" ? "ничья, нужна переигровка"
+            : rawStatus === "resolved" ? "дуэль завершена"
+            : rawStatus === "refused" ? "отказ"
+            : rawStatus;
           return `
             <div class="tv-activity-row">
               <div class="tv-activity-item">${escapeHtml(challenger)} против ${escapeHtml(target)}</div>
@@ -4313,7 +4319,7 @@ function scheduleNextSlideRotation() {
           <div class="tv-activity-block">
             <div class="tv-activity-title">Дуэли домов</div>
             <div class="tv-activity-list">${rows}</div>
-            <div class="tv-activity-sub">Победа меняет расклад ресурсов и влияния</div>
+            <div class="tv-activity-sub">Победу фиксирует ведущий. При ничьей нужна переигровка или тай-брейк.</div>
           </div>
         `;
       }
