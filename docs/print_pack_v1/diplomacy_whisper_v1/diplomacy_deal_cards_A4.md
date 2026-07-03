@@ -2,7 +2,7 @@
 
 Print and cut. These cards are manual promises for Diplomacy windows.
 
-No card creates automatic enforcement unless the host explicitly decides.
+В V1 нет автоматического исполнения. Ведущий может только вручную трактовать последствия договорённости в рамках игры.
 
 ---
 

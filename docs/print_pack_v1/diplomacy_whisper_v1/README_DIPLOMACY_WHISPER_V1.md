@@ -15,10 +15,12 @@ Use it when the host wants to test stronger Diplomacy and `Мастер над �
 
 For up to 10 Houses:
 
-- 1 copy of host script.
-- 2-3 copies of host resolution sheet.
-- 10 sets of Whisper charges: 3 charge cards per House.
-- 1-2 A4 sheets of Diplomacy deal cards, cut into cards.
+- Player explanation: 1 copy per House + 1 copy for host.
+- Whisper charge cards: enough for 3 charges per House, 30 charges total for 10 Houses.
+- Whisper action cards: at least 1 set per House, or 2-3 shared table sets if cutting time is limited.
+- Diplomacy deal cards: 2-3 shared table sets minimum; print more if many Houses will negotiate at once.
+- Host resolution sheet: 2-3 copies for host.
+- Host script: 1 copy for host.
 
 Recommended format:
 
@@ -26,6 +28,8 @@ Recommended format:
 - Large font, 14-18 pt if re-laid out.
 - Cut cards after printing.
 - Use colored paper or marker dots for Whisper charges if available.
+
+This is a manual playtest kit. It does not add a runtime feature by itself.
 
 ## What this tests manually
 
