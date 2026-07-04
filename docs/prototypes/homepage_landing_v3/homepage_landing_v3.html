@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>приСтолов - homepage landing prototype V3</title>
+  <style>
+    :root {
+      --bg: #08090b;
+      --ink: #f5ead4;
+      --muted: #c8b996;
+      --gold: #d9a63d;
+      --gold-hot: #ffe08a;
+      --burgundy: #421a24;
+      --panel: rgba(10, 12, 16, 0.76);
+      --panel-2: rgba(24, 18, 22, 0.82);
+      --line: rgba(255, 224, 138, 0.22);
+      --shadow: rgba(0, 0, 0, 0.58);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--bg);
+      font-family: "Trebuchet MS", Verdana, sans-serif;
+      line-height: 1.5;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .topbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 20;
+      border-bottom: 1px solid rgba(255, 224, 138, 0.16);
+      background: rgba(0, 0, 0, 0.42);
+      backdrop-filter: blur(16px);
+    }
+
+    .wrap {
+      width: min(1160px, calc(100% - 28px));
+      margin: 0 auto;
+    }
+
+    .topbar-inner {
+      min-height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 900;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      border: 1px solid var(--gold-hot);
+      border-radius: 9px;
+      color: #211407;
+      background: linear-gradient(135deg, var(--gold-hot), var(--gold));
+      box-shadow: 0 0 28px rgba(217, 166, 61, 0.42);
+    }
+
+    .nav {
+      display: flex;
+      gap: 8px;
+      color: rgba(245, 234, 212, 0.78);
+      font-size: 0.92rem;
+    }
+
+    .nav a {
+      padding: 9px 11px;
+      border-radius: 999px;
+    }
+
+    .nav a:hover {
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: grid;
+      align-items: center;
+      isolation: isolate;
+      overflow: hidden;
+      background-image: url("./assets/hero_council_room.png");
+      background-size: cover;
+      background-position: center right;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+      background-image: url("./assets/hero_council_room.png");
+      background-size: cover;
+      background-position: center right;
+      transform: scale(1.02);
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background:
+        radial-gradient(circle at 78% 48%, rgba(217, 166, 61, 0.12), transparent 24rem),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.96) 0%, rgba(7, 8, 11, 0.88) 28%, rgba(10, 9, 11, 0.55) 58%, rgba(0, 0, 0, 0.22) 100%),
+        linear-gradient(0deg, rgba(0, 0, 0, 0.75), transparent 44%, rgba(0, 0, 0, 0.25));
+    }
+
+    .hero-content {
+      width: min(1160px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 118px 0 70px;
+    }
+
+    .hero-copy {
+      max-width: 720px;
+    }
+
+    .label {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+      color: var(--gold-hot);
+      font-size: 0.82rem;
+      font-weight: 900;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .label::before {
+      content: "";
+      width: 42px;
+      height: 1px;
+      background: var(--gold);
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      font-size: clamp(3rem, 7.6vw, 6.8rem);
+      line-height: 0.93;
+      letter-spacing: -0.07em;
+      text-wrap: balance;
+      text-shadow: 0 30px 70px var(--shadow);
+    }
+
+    .hero-subtitle {
+      max-width: 670px;
+      margin-bottom: 30px;
+      color: var(--muted);
+      font-size: clamp(1.05rem, 2vw, 1.34rem);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .button {
+      display: inline-flex;
+      min-height: 56px;
+      align-items: center;
+      justify-content: center;
+      padding: 15px 22px;
+      border: 1px solid rgba(255, 224, 138, 0.34);
+      border-radius: 14px;
+      font-weight: 900;
+      transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+    }
+
+    .button:hover {
+      transform: translateY(-2px);
+    }
+
+    .button-primary {
+      color: #201306;
+      background: linear-gradient(135deg, var(--gold-hot), var(--gold));
+      box-shadow: 0 18px 36px rgba(217, 166, 61, 0.27);
+    }
+
+    .button-secondary {
+      color: var(--ink);
+      background: rgba(0, 0, 0, 0.38);
+      backdrop-filter: blur(8px);
+    }
+
+    .helper {
+      max-width: 620px;
+      margin-bottom: 0;
+      color: rgba(245, 234, 212, 0.74);
+      font-size: 0.95rem;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 28px;
+    }
+
+    .chip {
+      padding: 8px 10px;
+      border: 1px solid rgba(255, 224, 138, 0.24);
+      border-radius: 999px;
+      color: rgba(245, 234, 212, 0.92);
+      background: rgba(0, 0, 0, 0.34);
+      backdrop-filter: blur(8px);
+      font-size: 0.9rem;
+    }
+
+    .scroll-cue {
+      position: absolute;
+      left: 50%;
+      bottom: 26px;
+      transform: translateX(-50%);
+      color: rgba(245, 234, 212, 0.68);
+      font-size: 0.82rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .section {
+      padding: 72px 0;
+      background:
+        radial-gradient(circle at 18% 0%, rgba(217, 166, 61, 0.08), transparent 24rem),
+        linear-gradient(180deg, #08090b, #12151d);
+      border-top: 1px solid var(--line);
+    }
+
+    .section.alt {
+      background:
+        radial-gradient(circle at 80% 10%, rgba(143, 47, 46, 0.12), transparent 24rem),
+        linear-gradient(180deg, #12151d, #171019);
+    }
+
+    .section-head {
+      max-width: 820px;
+      margin-bottom: 28px;
+    }
+
+    h2 {
+      margin-bottom: 14px;
+      font-size: clamp(2rem, 5vw, 4rem);
+      line-height: 0.98;
+      letter-spacing: -0.055em;
+      text-wrap: balance;
+    }
+
+    .lead {
+      color: var(--muted);
+      font-size: 1.08rem;
+    }
+
+    .entry-grid,
+    .card-grid,
+    .organizer-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .entry-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .entry-box,
+    .mini-card,
+    .organizer-box {
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: var(--panel);
+      box-shadow: 0 24px 58px rgba(0, 0, 0, 0.24);
+    }
+
+    .entry-box {
+      padding: 26px;
+    }
+
+    .entry-box h3,
+    .mini-card h3,
+    .organizer-box h3 {
+      color: var(--gold-hot);
+      font-size: 1.2rem;
+      margin-bottom: 14px;
+    }
+
+    .entry-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .entry-link {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 13px 14px;
+      border: 1px solid rgba(255, 224, 138, 0.16);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.045);
+      font-weight: 900;
+    }
+
+    .entry-link span {
+      color: var(--gold-hot);
+    }
+
+    .card-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .mini-card {
+      padding: 24px;
+    }
+
+    .mini-card p,
+    .organizer-box p {
+      margin-bottom: 0;
+      color: var(--muted);
+    }
+
+    .organizer-grid {
+      grid-template-columns: 0.9fr 1.1fr;
+      align-items: start;
+    }
+
+    .organizer-box {
+      padding: 24px;
+    }
+
+    .organizer-points {
+      display: grid;
+      gap: 12px;
+    }
+
+    .point {
+      padding: 16px;
+      border: 1px solid rgba(255, 224, 138, 0.14);
+      border-radius: 16px;
+      background: rgba(0, 0, 0, 0.22);
+      color: var(--muted);
+    }
+
+    .footer {
+      padding: 42px 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      background: #07080a;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+    }
+
+    .footer strong {
+      color: var(--ink);
+    }
+
+    @media (max-width: 900px) {
+      .nav {
+        display: none;
+      }
+
+      .hero {
+        background-position: 62% center;
+      }
+
+      .hero::after {
+        background:
+          linear-gradient(90deg, rgba(0, 0, 0, 0.94), rgba(0, 0, 0, 0.72) 66%, rgba(0, 0, 0, 0.42)),
+          linear-gradient(0deg, rgba(0, 0, 0, 0.74), transparent 54%);
+      }
+
+      .hero-copy {
+        max-width: 680px;
+      }
+
+      .entry-grid,
+      .card-grid,
+      .organizer-grid,
+      .footer-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .wrap,
+      .hero-content {
+        width: min(100% - 22px, 1160px);
+      }
+
+      .topbar-inner {
+        min-height: 60px;
+      }
+
+      .hero-content {
+        padding-top: 96px;
+      }
+
+      h1 {
+        font-size: clamp(2.7rem, 14vw, 4.4rem);
+      }
+
+      .actions {
+        display: grid;
+      }
+
+      .button {
+        width: 100%;
+      }
+
+      .section {
+        padding: 54px 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="#top" aria-label="приСтолов">
+        <span class="brand-mark">P</span>
+        <span>приСтолов</span>
+      </a>
+      <nav class="nav" aria-label="Разделы прототипа">
+        <a href="#format">Что это</a>
+        <a href="#entry">Как играть</a>
+        <a href="#organizers">Для площадок</a>
+        <a href="#entry">Войти</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-content">
+        <div class="hero-copy">
+          <div class="label">ЖИВАЯ ИГРА ЗА СТОЛОМ</div>
+          <h1 id="hero-title">Станьте Домом. Побеждайте не только ответами.</h1>
+          <p class="hero-subtitle">Живая командная игра для бара и событий: роли, золото, Харчевня, дипломатия, дуэли и Суд Домов.</p>
+          <div class="actions">
+            <a class="button button-primary" href="#entry">Войти в игру</a>
+            <a class="button button-secondary" href="#organizers">Для организаторов</a>
+          </div>
+          <p class="helper">Игрокам нужен QR-код, ссылка события или код комнаты от ведущего.</p>
+          <div class="chips" aria-label="Механики игры">
+            <span class="chip">Дома</span>
+            <span class="chip">Роли</span>
+            <span class="chip">Золото</span>
+            <span class="chip">Харчевня</span>
+            <span class="chip">Дипломатия</span>
+            <span class="chip">Дуэли</span>
+            <span class="chip">Суд</span>
+          </div>
+        </div>
+      </div>
+      <div class="scroll-cue">листайте ниже</div>
+    </section>
+
+    <section class="section" id="entry" aria-labelledby="entry-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="entry-title">Как войти в игру</h2>
+          <p class="lead">Главная должна быстро разделить участника события и организатора. Реальные маршруты входа будут подключены после утверждения структуры.</p>
+        </div>
+        <div class="entry-grid">
+          <article class="entry-box">
+            <h3>Я игрок</h3>
+            <div class="entry-list">
+              <a class="entry-link" href="#entry">У меня QR-код <span>→</span></a>
+              <a class="entry-link" href="#entry">У меня код комнаты <span>→</span></a>
+              <a class="entry-link" href="#entry">Я потерял ссылку <span>→</span></a>
+            </div>
+          </article>
+          <article class="entry-box">
+            <h3>Я организатор</h3>
+            <div class="entry-list">
+              <a class="entry-link" href="#format">Узнать формат <span>→</span></a>
+              <a class="entry-link" href="#organizers">Обсудить игру <span>→</span></a>
+              <a class="entry-link" href="#organizers">Партнерство / франшиза <span>→</span></a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section alt" id="format" aria-labelledby="format-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="format-title">Что такое приСтолов</h2>
+          <p class="lead">Это не просто квиз. Игроки становятся Домами, получают роли и проходят вечер через вопросы, золото, сделки, дуэли, Суд и финал.</p>
+        </div>
+        <div class="card-grid">
+          <article class="mini-card">
+            <h3>Дом за столом</h3>
+            <p>Игроки держатся вместе, спорят, договариваются и принимают решения как Дом.</p>
+          </article>
+          <article class="mini-card">
+            <h3>Роли и решения</h3>
+            <p>Лорд / Леди, Дипломат, Мастер над золотом и другие роли дают каждому понятную задачу.</p>
+          </article>
+          <article class="mini-card">
+            <h3>Живой вечер</h3>
+            <p>Телефон помогает, но главная игра происходит в зале: за столом, на переговорах и в Суде.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="organizers" aria-labelledby="organizers-title">
+      <div class="wrap organizer-grid">
+        <div>
+          <h2 id="organizers-title">Для площадок и организаторов</h2>
+          <p class="lead">приСтолов подходит для баров, ресторанов, event-площадок, частных событий и городских форматов.</p>
+        </div>
+        <div class="organizer-box">
+          <div class="organizer-points">
+            <div class="point">Гости не просто сидят за столом — они играют Домами и участвуют в решениях.</div>
+            <div class="point">Роли, экраны и ведущий создают структуру вечера без перегруза правилами.</div>
+            <div class="point">Формат можно повторять и адаптировать, но без обещаний результата заранее.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-grid">
+      <div>
+        <strong>приСтолов</strong>
+        <p>Живая командная игра Домов для баров, событий и городских форматов.</p>
+      </div>
+      <div>
+        <p>Связь: &lt;CONTACT_PHONE_OR_TELEGRAM&gt;</p>
+        <p>Email: &lt;CONTACT_EMAIL&gt;</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
