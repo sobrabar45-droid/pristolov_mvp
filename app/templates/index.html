@@ -8,68 +8,57 @@
   <style>
     :root {
       --bg: #100d0a;
-      --bg-soft: #1a130e;
-      --card: rgba(34, 24, 17, 0.78);
-      --card-strong: rgba(57, 39, 25, 0.88);
+      --card: rgba(24, 17, 12, 0.78);
+      --card-strong: rgba(50, 34, 22, 0.82);
       --gold: #d9a441;
       --gold-soft: #f3d389;
       --ember: #a94224;
-      --wine: #5b1e1d;
       --ink: #f7ead4;
-      --muted: #c7ad86;
-      --line: rgba(243, 211, 137, 0.22);
-      --shadow: rgba(0, 0, 0, 0.42);
+      --muted: #cdb58f;
+      --line: rgba(243, 211, 137, 0.24);
+      --shadow: rgba(0, 0, 0, 0.52);
     }
 
     * { box-sizing: border-box; }
-
     html { scroll-behavior: smooth; }
 
     body {
       margin: 0;
       color: var(--ink);
-      background:
-        radial-gradient(circle at 20% 10%, rgba(217, 164, 65, 0.20), transparent 34rem),
-        radial-gradient(circle at 85% 25%, rgba(169, 66, 36, 0.18), transparent 28rem),
-        linear-gradient(135deg, #0b0907 0%, var(--bg) 42%, #21140f 100%);
+      background: var(--bg);
       font-family: Georgia, "Times New Roman", serif;
       line-height: 1.55;
+      overflow-x: hidden;
     }
 
     a { color: inherit; }
 
     .page {
       min-height: 100vh;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .page::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      opacity: 0.32;
-      background-image:
-        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px);
-      background-size: 44px 44px;
-      mask-image: linear-gradient(to bottom, black, transparent 82%);
+      background:
+        radial-gradient(circle at 16% 8%, rgba(217, 164, 65, 0.18), transparent 30rem),
+        linear-gradient(135deg, #0b0907 0%, #140f0b 52%, #24160f 100%);
     }
 
     .wrap {
       width: min(1160px, calc(100% - 32px));
       margin: 0 auto;
       position: relative;
-      z-index: 1;
+      z-index: 2;
     }
 
     .topbar {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      z-index: 5;
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 20px;
+      width: min(1160px, calc(100% - 32px));
       padding: 22px 0;
+      transform: translateX(-50%);
     }
 
     .brand {
@@ -104,23 +93,46 @@
 
     .nav a {
       text-decoration: none;
-      border: 1px solid transparent;
+      border: 1px solid rgba(243, 211, 137, 0.16);
       border-radius: 999px;
       padding: 8px 12px;
+      background: rgba(7, 5, 4, 0.30);
+      backdrop-filter: blur(10px);
     }
 
     .nav a:hover {
       border-color: var(--line);
       color: var(--ink);
-      background: rgba(255,255,255,0.04);
+      background: rgba(255,255,255,0.06);
     }
 
     .hero {
+      position: relative;
       display: grid;
-      grid-template-columns: 0.95fr 1.05fr;
-      gap: 44px;
       align-items: center;
-      padding: 42px 0 70px;
+      min-height: 780px;
+      padding: 132px 0 90px;
+      overflow: hidden;
+      background-image:
+        linear-gradient(90deg, rgba(10, 7, 5, 0.94) 0%, rgba(10, 7, 5, 0.82) 32%, rgba(10, 7, 5, 0.42) 62%, rgba(10, 7, 5, 0.74) 100%),
+        linear-gradient(0deg, rgba(10, 7, 5, 0.98) 0%, rgba(10, 7, 5, 0.12) 40%, rgba(10, 7, 5, 0.55) 100%),
+        url('/static/homepage/hero_council_room.png');
+      background-position: center;
+      background-size: cover;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      height: 170px;
+      background: linear-gradient(to bottom, transparent, var(--bg));
+      pointer-events: none;
+    }
+
+    .hero-content {
+      max-width: 690px;
+      padding: 34px 0;
     }
 
     .eyebrow {
@@ -132,33 +144,36 @@
       border: 1px solid var(--line);
       border-radius: 999px;
       color: var(--gold-soft);
-      background: rgba(217, 164, 65, 0.08);
+      background: rgba(8, 5, 4, 0.46);
       font-family: Arial, sans-serif;
       font-size: 12px;
       letter-spacing: 0.16em;
       text-transform: uppercase;
+      backdrop-filter: blur(10px);
     }
 
     h1, h2, h3, p { margin-top: 0; }
 
     h1 {
       margin-bottom: 18px;
-      font-size: clamp(48px, 9vw, 104px);
-      line-height: 0.9;
-      letter-spacing: -0.06em;
+      font-size: clamp(58px, 12vw, 128px);
+      line-height: 0.86;
+      letter-spacing: -0.07em;
+      text-shadow: 0 18px 52px rgba(0,0,0,0.62);
     }
 
     .hero-lead {
-      max-width: 620px;
+      max-width: 650px;
       margin-bottom: 18px;
       color: var(--gold-soft);
-      font-size: clamp(25px, 4vw, 46px);
+      font-size: clamp(28px, 5vw, 56px);
       line-height: 1.02;
-      letter-spacing: -0.035em;
+      letter-spacing: -0.04em;
+      text-shadow: 0 14px 42px rgba(0,0,0,0.64);
     }
 
     .subtitle {
-      max-width: 620px;
+      max-width: 640px;
       color: var(--muted);
       font-family: Arial, sans-serif;
       font-size: 18px;
@@ -175,8 +190,8 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 48px;
-      padding: 14px 20px;
+      min-height: 50px;
+      padding: 14px 22px;
       border-radius: 999px;
       text-decoration: none;
       font-family: Arial, sans-serif;
@@ -190,13 +205,14 @@
     .button-primary {
       color: #1b1109;
       background: linear-gradient(135deg, var(--gold-soft), var(--gold));
-      box-shadow: 0 18px 44px rgba(217, 164, 65, 0.22);
+      box-shadow: 0 18px 44px rgba(217, 164, 65, 0.24);
     }
 
     .button-secondary {
       color: var(--ink);
       border: 1px solid var(--line);
-      background: rgba(255,255,255,0.045);
+      background: rgba(10, 7, 5, 0.48);
+      backdrop-filter: blur(10px);
     }
 
     .helper {
@@ -218,64 +234,14 @@
       border: 1px solid var(--line);
       border-radius: 999px;
       color: var(--gold-soft);
-      background: rgba(16, 13, 10, 0.55);
+      background: rgba(10, 7, 5, 0.58);
       font-family: Arial, sans-serif;
       font-size: 13px;
-    }
-
-    .hero-art {
-      position: relative;
-      min-height: 560px;
-      border: 1px solid var(--line);
-      border-radius: 36px;
-      overflow: hidden;
-      background: #21150f;
-      box-shadow: 0 34px 90px rgba(0,0,0,0.52);
-    }
-
-    .hero-art img {
-      width: 100%;
-      height: 100%;
-      min-height: 560px;
-      display: block;
-      object-fit: cover;
-      filter: saturate(1.04) contrast(1.04);
-    }
-
-    .hero-art::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background:
-        linear-gradient(to top, rgba(12,8,6,0.86), transparent 54%),
-        radial-gradient(circle at 24% 16%, rgba(243, 211, 137, 0.24), transparent 23rem);
-      pointer-events: none;
-    }
-
-    .art-card {
-      position: absolute;
-      left: 22px;
-      right: 22px;
-      bottom: 22px;
-      z-index: 1;
-      padding: 18px;
-      border: 1px solid var(--line);
-      border-radius: 24px;
-      background: rgba(16, 13, 10, 0.72);
       backdrop-filter: blur(10px);
-      font-family: Arial, sans-serif;
     }
 
-    .art-card strong {
-      display: block;
-      margin-bottom: 6px;
-      color: var(--gold-soft);
-      font-family: Georgia, "Times New Roman", serif;
-      font-size: 22px;
-    }
-
-    section {
-      padding: 52px 0;
+    section:not(.hero) {
+      padding: 54px 0;
     }
 
     .section-head {
@@ -366,21 +332,24 @@
       flex-wrap: wrap;
     }
 
-    .contact-placeholders {
+    .contact-list {
+      display: grid;
+      gap: 6px;
       color: var(--muted);
       font-family: Arial, sans-serif;
-      line-height: 1.8;
     }
+
+    .contact-list a {
+      color: var(--gold-soft);
+      text-decoration: none;
+    }
+
+    .contact-list a:hover { text-decoration: underline; }
 
     @media (max-width: 900px) {
       .hero {
-        grid-template-columns: 1fr;
-        padding-top: 20px;
-      }
-
-      .hero-art,
-      .hero-art img {
-        min-height: 430px;
+        min-height: 720px;
+        background-position: 60% center;
       }
 
       .grid,
@@ -389,15 +358,39 @@
       }
     }
 
-    @media (max-width: 620px) {
+    @media (max-width: 700px) {
       .wrap { width: min(100% - 24px, 1160px); }
 
       .topbar {
         align-items: flex-start;
         flex-direction: column;
+        gap: 12px;
+        padding-top: 16px;
       }
 
-      .nav { justify-content: flex-start; }
+      .nav {
+        width: 100%;
+        justify-content: flex-start;
+      }
+
+      .nav a {
+        padding: 7px 10px;
+        font-size: 13px;
+      }
+
+      .hero {
+        min-height: 760px;
+        padding: 150px 0 62px;
+        background-image:
+          linear-gradient(90deg, rgba(10, 7, 5, 0.96) 0%, rgba(10, 7, 5, 0.80) 100%),
+          linear-gradient(0deg, rgba(10, 7, 5, 0.98) 0%, rgba(10, 7, 5, 0.20) 50%, rgba(10, 7, 5, 0.72) 100%),
+          url('/static/homepage/hero_council_room.png');
+        background-position: 62% center;
+      }
+
+      h1 { font-size: clamp(48px, 18vw, 74px); }
+      .hero-lead { font-size: clamp(28px, 10vw, 38px); }
+      .subtitle { font-size: 16px; }
 
       .actions .button,
       .entry-link {
@@ -409,26 +402,14 @@
         flex-direction: column;
       }
 
-      .hero-art,
-      .hero-art img {
-        min-height: 360px;
-        border-radius: 26px;
-      }
-
-      .art-card {
-        left: 14px;
-        right: 14px;
-        bottom: 14px;
-      }
-
-      section { padding: 38px 0; }
+      section:not(.hero) { padding: 38px 0; }
       .card, .organizer-panel { padding: 20px; }
     }
   </style>
 </head>
 <body>
   <div class="page">
-    <header class="wrap topbar" aria-label="Верхняя навигация">
+    <header class="topbar" aria-label="Верхняя навигация">
       <div class="brand" aria-label="приСтолов">
         <span class="brand-mark" aria-hidden="true"></span>
         <span>приСтолов</span>
@@ -441,36 +422,30 @@
     </header>
 
     <main>
-      <section class="wrap hero" aria-labelledby="hero-title">
-        <div>
-          <div class="eyebrow">ЖИВАЯ ИГРА ЗА СТОЛОМ</div>
-          <h1 id="hero-title">приСтолов</h1>
-          <p class="hero-lead">Станьте Домом. Побеждайте не только ответами.</p>
-          <p class="subtitle">Живая командная игра для бара и событий: роли, золото, Харчевня, дипломатия, дуэли и Суд Домов.</p>
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="wrap">
+          <div class="hero-content">
+            <div class="eyebrow">ЖИВАЯ ИГРА ЗА СТОЛОМ</div>
+            <h1 id="hero-title">приСтолов</h1>
+            <p class="hero-lead">Станьте Домом. Побеждайте не только ответами.</p>
+            <p class="subtitle">Живая командная игра для бара и событий: роли, золото, Харчевня, дипломатия, дуэли и Суд Домов.</p>
 
-          <div class="actions">
-            <a class="button button-primary" href="/join">Войти в игру</a>
-            <a class="button button-secondary" href="#organizers">Для организаторов</a>
-          </div>
+            <div class="actions">
+              <a class="button button-primary" href="/join">Войти в игру</a>
+              <a class="button button-secondary" href="#organizers">Для организаторов</a>
+            </div>
 
-          <p class="helper">Игрокам нужен QR-код, ссылка события или код комнаты от ведущего.</p>
+            <p class="helper">Игрокам нужен QR-код, ссылка события или код комнаты от ведущего.</p>
 
-          <div class="chips" aria-label="Механики игры">
-            <span class="chip">Дома</span>
-            <span class="chip">Роли</span>
-            <span class="chip">Золото</span>
-            <span class="chip">Харчевня</span>
-            <span class="chip">Дипломатия</span>
-            <span class="chip">Дуэли</span>
-            <span class="chip">Суд</span>
-          </div>
-        </div>
-
-        <div class="hero-art" aria-label="Атмосферный зал игры приСтолов">
-          <img src="/static/homepage/hero_council_room.png" alt="Атмосферный игровой зал с большим столом, Домами и золотым светом">
-          <div class="art-card">
-            <strong>Не просто квиз.</strong>
-            <span>Это вечер, где Дом советуется, торгуется, рискует, отвечает и выбирает момент для удара.</span>
+            <div class="chips" aria-label="Механики игры">
+              <span class="chip">Дома</span>
+              <span class="chip">Роли</span>
+              <span class="chip">Золото</span>
+              <span class="chip">Харчевня</span>
+              <span class="chip">Дипломатия</span>
+              <span class="chip">Дуэли</span>
+              <span class="chip">Суд</span>
+            </div>
           </div>
         </div>
       </section>
@@ -544,7 +519,7 @@
             </article>
             <article class="card">
               <h3>Для партнёров</h3>
-              <p>Партнёрские и франшизные сценарии обсуждаются отдельно. Реальные контакты и условия подключаются после утверждения структуры.</p>
+              <p>Партнёрские и франшизные сценарии обсуждаются отдельно. Реальные условия подключаются после утверждения структуры.</p>
             </article>
           </div>
         </div>
@@ -560,9 +535,11 @@
           </div>
           <p>Живая командная игра за столом.</p>
         </div>
-        <div class="contact-placeholders" aria-label="Контакты">
-          <div>&lt;CONTACT_PHONE_OR_TELEGRAM&gt;</div>
-          <div>&lt;CONTACT_EMAIL&gt;</div>
+        <div class="contact-list" aria-label="Контакты">
+          <div>Телефон: 553-553</div>
+          <div>Моб.: 8 912 835-35-53</div>
+          <div>VK: <a href="https://vk.ru/pristolov45">vk.ru/pristolov45</a></div>
+          <div>Telegram: <a href="https://t.me/sobranie_kgn">@sobranie_kgn</a></div>
         </div>
       </div>
     </footer>
