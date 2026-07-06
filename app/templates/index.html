@@ -1,0 +1,571 @@
+﻿<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>приСтолов — живая игра за столом</title>
+  <meta name="description" content="приСтолов — командная ролевая игра для бара и событий: Дома, роли, золото, Харчевня, дипломатия, дуэли и Суд.">
+  <style>
+    :root {
+      --bg: #100d0a;
+      --bg-soft: #1a130e;
+      --card: rgba(34, 24, 17, 0.78);
+      --card-strong: rgba(57, 39, 25, 0.88);
+      --gold: #d9a441;
+      --gold-soft: #f3d389;
+      --ember: #a94224;
+      --wine: #5b1e1d;
+      --ink: #f7ead4;
+      --muted: #c7ad86;
+      --line: rgba(243, 211, 137, 0.22);
+      --shadow: rgba(0, 0, 0, 0.42);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 20% 10%, rgba(217, 164, 65, 0.20), transparent 34rem),
+        radial-gradient(circle at 85% 25%, rgba(169, 66, 36, 0.18), transparent 28rem),
+        linear-gradient(135deg, #0b0907 0%, var(--bg) 42%, #21140f 100%);
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.55;
+    }
+
+    a { color: inherit; }
+
+    .page {
+      min-height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .page::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.32;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: linear-gradient(to bottom, black, transparent 82%);
+    }
+
+    .wrap {
+      width: min(1160px, calc(100% - 32px));
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      padding: 22px 0;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 50% 50% 46% 46%;
+      background:
+        linear-gradient(145deg, rgba(243, 211, 137, 0.30), rgba(169, 66, 36, 0.18)),
+        radial-gradient(circle at 50% 35%, var(--gold), transparent 45%);
+      box-shadow: 0 12px 30px var(--shadow), inset 0 0 18px rgba(255,255,255,0.10);
+    }
+
+    .nav {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .nav a {
+      text-decoration: none;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      padding: 8px 12px;
+    }
+
+    .nav a:hover {
+      border-color: var(--line);
+      color: var(--ink);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 0.95fr 1.05fr;
+      gap: 44px;
+      align-items: center;
+      padding: 42px 0 70px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 18px;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--gold-soft);
+      background: rgba(217, 164, 65, 0.08);
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    h1 {
+      margin-bottom: 18px;
+      font-size: clamp(48px, 9vw, 104px);
+      line-height: 0.9;
+      letter-spacing: -0.06em;
+    }
+
+    .hero-lead {
+      max-width: 620px;
+      margin-bottom: 18px;
+      color: var(--gold-soft);
+      font-size: clamp(25px, 4vw, 46px);
+      line-height: 1.02;
+      letter-spacing: -0.035em;
+    }
+
+    .subtitle {
+      max-width: 620px;
+      color: var(--muted);
+      font-family: Arial, sans-serif;
+      font-size: 18px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin: 28px 0 18px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 14px 20px;
+      border-radius: 999px;
+      text-decoration: none;
+      font-family: Arial, sans-serif;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+    }
+
+    .button:hover { transform: translateY(-2px); }
+
+    .button-primary {
+      color: #1b1109;
+      background: linear-gradient(135deg, var(--gold-soft), var(--gold));
+      box-shadow: 0 18px 44px rgba(217, 164, 65, 0.22);
+    }
+
+    .button-secondary {
+      color: var(--ink);
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.045);
+    }
+
+    .helper {
+      max-width: 540px;
+      color: var(--muted);
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 28px;
+    }
+
+    .chip {
+      padding: 8px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--gold-soft);
+      background: rgba(16, 13, 10, 0.55);
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+    }
+
+    .hero-art {
+      position: relative;
+      min-height: 560px;
+      border: 1px solid var(--line);
+      border-radius: 36px;
+      overflow: hidden;
+      background: #21150f;
+      box-shadow: 0 34px 90px rgba(0,0,0,0.52);
+    }
+
+    .hero-art img {
+      width: 100%;
+      height: 100%;
+      min-height: 560px;
+      display: block;
+      object-fit: cover;
+      filter: saturate(1.04) contrast(1.04);
+    }
+
+    .hero-art::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(to top, rgba(12,8,6,0.86), transparent 54%),
+        radial-gradient(circle at 24% 16%, rgba(243, 211, 137, 0.24), transparent 23rem);
+      pointer-events: none;
+    }
+
+    .art-card {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 22px;
+      z-index: 1;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: rgba(16, 13, 10, 0.72);
+      backdrop-filter: blur(10px);
+      font-family: Arial, sans-serif;
+    }
+
+    .art-card strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--gold-soft);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 22px;
+    }
+
+    section {
+      padding: 52px 0;
+    }
+
+    .section-head {
+      max-width: 760px;
+      margin-bottom: 24px;
+    }
+
+    h2 {
+      margin-bottom: 12px;
+      color: var(--gold-soft);
+      font-size: clamp(30px, 5vw, 52px);
+      line-height: 1;
+      letter-spacing: -0.04em;
+    }
+
+    .section-head p, .card p, .footer p {
+      color: var(--muted);
+      font-family: Arial, sans-serif;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .grid.two { grid-template-columns: repeat(2, 1fr); }
+
+    .card {
+      min-height: 100%;
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: linear-gradient(145deg, var(--card), rgba(26, 19, 14, 0.74));
+      box-shadow: 0 18px 44px rgba(0,0,0,0.20);
+    }
+
+    .card h3 {
+      margin-bottom: 10px;
+      color: var(--ink);
+      font-size: 24px;
+      line-height: 1.1;
+    }
+
+    .entry-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .entry-link {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      color: var(--ink);
+      background: rgba(255,255,255,0.04);
+      text-decoration: none;
+      font-family: Arial, sans-serif;
+      font-weight: 700;
+    }
+
+    .entry-link span:last-child {
+      color: var(--gold-soft);
+      white-space: nowrap;
+    }
+
+    .organizer-panel {
+      padding: 32px;
+      border: 1px solid var(--line);
+      border-radius: 34px;
+      background:
+        radial-gradient(circle at 86% 20%, rgba(217,164,65,0.18), transparent 20rem),
+        linear-gradient(145deg, var(--card-strong), rgba(31, 20, 14, 0.78));
+    }
+
+    .footer {
+      padding: 44px 0 36px;
+      border-top: 1px solid var(--line);
+    }
+
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .contact-placeholders {
+      color: var(--muted);
+      font-family: Arial, sans-serif;
+      line-height: 1.8;
+    }
+
+    @media (max-width: 900px) {
+      .hero {
+        grid-template-columns: 1fr;
+        padding-top: 20px;
+      }
+
+      .hero-art,
+      .hero-art img {
+        min-height: 430px;
+      }
+
+      .grid,
+      .grid.two {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .wrap { width: min(100% - 24px, 1160px); }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .nav { justify-content: flex-start; }
+
+      .actions .button,
+      .entry-link {
+        width: 100%;
+      }
+
+      .entry-link {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .hero-art,
+      .hero-art img {
+        min-height: 360px;
+        border-radius: 26px;
+      }
+
+      .art-card {
+        left: 14px;
+        right: 14px;
+        bottom: 14px;
+      }
+
+      section { padding: 38px 0; }
+      .card, .organizer-panel { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="wrap topbar" aria-label="Верхняя навигация">
+      <div class="brand" aria-label="приСтолов">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>приСтолов</span>
+      </div>
+      <nav class="nav" aria-label="Основные разделы">
+        <a href="#entry">Войти</a>
+        <a href="#about">О формате</a>
+        <a href="#organizers">Организаторам</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="wrap hero" aria-labelledby="hero-title">
+        <div>
+          <div class="eyebrow">ЖИВАЯ ИГРА ЗА СТОЛОМ</div>
+          <h1 id="hero-title">приСтолов</h1>
+          <p class="hero-lead">Станьте Домом. Побеждайте не только ответами.</p>
+          <p class="subtitle">Живая командная игра для бара и событий: роли, золото, Харчевня, дипломатия, дуэли и Суд Домов.</p>
+
+          <div class="actions">
+            <a class="button button-primary" href="/join">Войти в игру</a>
+            <a class="button button-secondary" href="#organizers">Для организаторов</a>
+          </div>
+
+          <p class="helper">Игрокам нужен QR-код, ссылка события или код комнаты от ведущего.</p>
+
+          <div class="chips" aria-label="Механики игры">
+            <span class="chip">Дома</span>
+            <span class="chip">Роли</span>
+            <span class="chip">Золото</span>
+            <span class="chip">Харчевня</span>
+            <span class="chip">Дипломатия</span>
+            <span class="chip">Дуэли</span>
+            <span class="chip">Суд</span>
+          </div>
+        </div>
+
+        <div class="hero-art" aria-label="Атмосферный зал игры приСтолов">
+          <img src="/static/homepage/hero_council_room.png" alt="Атмосферный игровой зал с большим столом, Домами и золотым светом">
+          <div class="art-card">
+            <strong>Не просто квиз.</strong>
+            <span>Это вечер, где Дом советуется, торгуется, рискует, отвечает и выбирает момент для удара.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="wrap" id="entry" aria-labelledby="entry-title">
+        <div class="section-head">
+          <h2 id="entry-title">Как войти в игру</h2>
+          <p>Если вы уже на событии, используйте QR-код, ссылку или код комнаты от ведущего. Если ссылка потерялась, начните с общей страницы входа.</p>
+        </div>
+
+        <div class="grid two">
+          <article class="card">
+            <h3>Игроку</h3>
+            <p>Выберите вход, затем следуйте подсказкам ведущего и своему экрану.</p>
+            <div class="entry-list">
+              <a class="entry-link" href="/join"><span>У меня QR-код</span><span>Войти</span></a>
+              <a class="entry-link" href="/join"><span>У меня код комнаты</span><span>Войти</span></a>
+              <a class="entry-link" href="/join"><span>Я потерял ссылку</span><span>Войти</span></a>
+            </div>
+          </article>
+
+          <article class="card">
+            <h3>Организатору</h3>
+            <p>Формат можно адаптировать под бар, корпоратив, закрытую встречу или партнерское событие.</p>
+            <div class="entry-list">
+              <a class="entry-link" href="#organizers"><span>Узнать формат</span><span>Смотреть</span></a>
+              <a class="entry-link" href="#organizers"><span>Обсудить игру</span><span>Смотреть</span></a>
+              <a class="entry-link" href="#organizers"><span>Партнёрство / франшиза</span><span>Смотреть</span></a>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="wrap" id="about" aria-labelledby="about-title">
+        <div class="section-head">
+          <h2 id="about-title">Что такое приСтолов</h2>
+          <p>Командный вечер, где гости объединяются в Дома, получают роли и влияют на ход игры не только знаниями, но и переговорами.</p>
+        </div>
+
+        <div class="grid">
+          <article class="card">
+            <h3>Дом вместо одиночки</h3>
+            <p>Игроки советуются, распределяют роли и принимают решения вместе. Побеждает не самый громкий, а самый собранный Дом.</p>
+          </article>
+          <article class="card">
+            <h3>Роли дают поводы действовать</h3>
+            <p>Лорд или Леди ведут Дом, Дипломат договаривается, Мастер над золотом следит за Харчевней, а Мастер над шёпотом добавляет интригу.</p>
+          </article>
+          <article class="card">
+            <h3>Вечер живёт между раундами</h3>
+            <p>Вопросы, золото, дуэли, Суд и договорённости создают историю, которую гости вспоминают после финала.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="wrap" id="organizers" aria-labelledby="organizers-title">
+        <div class="organizer-panel">
+          <div class="section-head">
+            <h2 id="organizers-title">Для площадок и организаторов</h2>
+            <p>приСтолов задуман как атмосферное событие для гостей, которым хочется не только отвечать на вопросы, но и играть роль внутри общего вечера.</p>
+          </div>
+
+          <div class="grid">
+            <article class="card">
+              <h3>Для бара</h3>
+              <p>Харчевня и золото помогают встроить меню в игровой ритм, но выдача позиций всегда остаётся за сотрудниками площадки.</p>
+            </article>
+            <article class="card">
+              <h3>Для события</h3>
+              <p>Формат поддерживает ведущего, экран, телефоны игроков и понятные паузы для общения между Домами.</p>
+            </article>
+            <article class="card">
+              <h3>Для партнёров</h3>
+              <p>Партнёрские и франшизные сценарии обсуждаются отдельно. Реальные контакты и условия подключаются после утверждения структуры.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="wrap footer">
+      <div class="footer-grid">
+        <div>
+          <div class="brand">
+            <span class="brand-mark" aria-hidden="true"></span>
+            <span>приСтолов</span>
+          </div>
+          <p>Живая командная игра за столом.</p>
+        </div>
+        <div class="contact-placeholders" aria-label="Контакты">
+          <div>&lt;CONTACT_PHONE_OR_TELEGRAM&gt;</div>
+          <div>&lt;CONTACT_EMAIL&gt;</div>
+        </div>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
