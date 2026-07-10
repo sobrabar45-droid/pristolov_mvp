@@ -117,3 +117,23 @@ Safety сохраняется:
 - no LIVE01 touch;
 - no media copy to `app/static/questions_media`;
 - no runtime/template/route changes.
+
+## Рабочая таблица после fact-check/media решений
+
+Workbook cleaned up for practical content work:
+
+- main sheet `Вопросы для редактуры` now contains only active/non-cut questions;
+- questions removed by Victor are moved to separate sheet `Убрано`;
+- active editor sheet now shows answer completeness, selected image file/target, image status, reveal timing, and next action as visible columns;
+- selected visual files are tied to question rows through `media_ref` and target filename/status columns;
+- unresolved answers are explicitly marked as `НЕТ — заполнить/проверить` instead of being hidden in technical notes;
+- technical sheets are preserved for traceability, but workbook remains authoring-only.
+
+Counts after cleanup:
+
+- active editor rows: 44;
+- removed/cut rows: 4;
+- all technical question rows still have `safe_to_import=no`;
+- all technical question rows still have `import_status=not_ready`.
+
+Safety remains unchanged: no import, no DB mutation, no production action, no LIVE01 touch, no media copy to `app/static/questions_media`, no runtime/template/route changes.
