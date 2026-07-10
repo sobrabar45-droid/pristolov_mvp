@@ -137,3 +137,11 @@ Counts after cleanup:
 - all technical question rows still have `import_status=not_ready`.
 
 Safety remains unchanged: no import, no DB mutation, no production action, no LIVE01 touch, no media copy to `app/static/questions_media`, no runtime/template/route changes.
+
+## Обновление obvious correct answers
+
+Заполнены очевидные черновые правильные ответы из уже существующих заметок, вариантов ответа и source/workbook context. Онлайн fact-check не выполнялся, новые ответы не выдумывались.
+
+Оставлены явно нерешёнными строки, где ответ не был достаточно очевиден из текущих материалов: 1, 7, 8, 29, 37.
+
+Safety gates не менялись: `safe_to_import=no`, `import_status=not_ready`. Импорт, DB mutation, production, LIVE01, копирование media в app/static и `clear_existing` не выполнялись.
