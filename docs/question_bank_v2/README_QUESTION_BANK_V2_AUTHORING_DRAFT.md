@@ -1,47 +1,49 @@
 # Question Bank V2 Authoring Draft
 
-## What this is
+## Что это
 
-`question_bank_v2_authoring_draft.xlsx` is the first local authoring draft workbook for the next commercial `?????????` question bank.
+`question_bank_v2_authoring_draft.xlsx` — первый локальный редакторский XLSX-черновик для следующей коммерческой игры `приСтолов`.
 
-It is an authoring draft only. It is not import-ready.
+Файл нужен для Виктора и контент-редактуры: смотреть структуру, идеи вопросов, медиа-флаги, резерв, ручное аудио и статусы готовности.
 
-## Safety status
+Это только authoring draft. Файл не import-ready.
 
-- No DB mutation.
-- No production action.
-- No LIVE01 touch.
-- No import was run.
-- No migrations.
-- No media files were created or copied into `app/static/questions_media`.
-- All question rows are `safe_to_import=no`.
-- All question rows have `import_status=not_ready`.
-- `clear_existing=true` is forbidden without separate explicit approval and rollback plan.
+## Статус безопасности
 
-## Workbook sheets
+- Нет DB mutation.
+- Нет production action.
+- Нет LIVE01 touch.
+- Import не запускался.
+- Migrations не запускались.
+- Медиафайлы не создавались и не копировались в `app/static/questions_media`.
+- Все строки вопросов имеют `safe_to_import=no`.
+- Все строки вопросов имеют `import_status=not_ready`.
+- `clear_existing=true` запрещён без отдельного явного разрешения и rollback-плана.
 
-1. `questions` - 48 authoring rows for candidate questions.
-2. `media_assets` - 13 planned visual/image candidates.
-3. `manual_audio` - 4 host-operated/offline manual audio moments.
-4. `review_status` - 48 review tracking rows.
+## Листы workbook
 
-## Manual audio rule
+1. `questions` — 48 редакторских строк-кандидатов.
+2. `media_assets` — 13 планируемых визуальных/image кандидатов.
+3. `manual_audio` — 4 ручных/offline аудиомомента для ведущего.
+4. `review_status` — 48 строк для отслеживания проверки.
 
-Manual audio is host-operated/offline only.
+## Правило по ручному аудио
 
-The app is not expected to play audio. Manual audio rows use `media_type=none`, include `manual_audio` in tags, and require fallback text before live use.
+Manual audio работает только вручную: host-operated/offline.
 
-## Image rule
+Приложение не должно проигрывать аудио. В строках ручного аудио стоит `media_type=none`, в tags есть `manual_audio`, и перед живой игрой нужен текстовый fallback.
 
-Images still need assets/source checks.
+## Правило по изображениям
 
-No image is claimed to exist yet. Image rows and media assets must be reviewed for source/rights, filename alignment, local open check, and TV readability before dry-run.
+Картинки ещё требуют asset/source checks.
 
-## Import rule
+Ни один image asset не считается существующим или финально готовым. Для визуальных вопросов нужно отдельно проверить источник/права, совпадение filename и `media_ref`, открытие локально и читаемость на ТВ.
 
-Import only after review and dry-run approval.
+## Правило импорта
 
-Safe future defaults:
+Import возможен только после review и отдельного dry-run approval.
+
+Безопасные будущие значения:
 
 ```text
 dry-run first
@@ -50,11 +52,11 @@ target_round_code=v2_commercial_test_round
 no LIVE01
 ```
 
-## Next steps
+## Следующие шаги
 
 1. Victor/content review.
-2. Fill final prompts/options/correct answers.
-3. Select final 10-12 image rows.
-4. Prepare media assets.
-5. Mark rows `ready_for_dry_run` only after review.
-6. Run dry-run import only after explicit approval.
+2. Заполнить финальные prompts/options/correct answers.
+3. Выбрать финальные 10-12 image rows.
+4. Подготовить media assets.
+5. Перевести строки в `ready_for_dry_run` только после проверки.
+6. Запускать dry-run import только после явного разрешения.
