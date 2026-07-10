@@ -60,3 +60,14 @@ no LIVE01
 4. Подготовить media assets.
 5. Перевести строки в `ready_for_dry_run` только после проверки.
 6. Запускать dry-run import только после явного разрешения.
+
+## Обновление от edited DOCX source
+
+- Workbook populated from `docs/question_bank_v2/source_docs/Вопросы на игру Пристолов Редакиция.docx` through the committed edited DOCX source audit.
+- Source audit reference: commit `4d15bce Add edited DOCX question source audit`; source materials reference: commit `98c1e5d Add question bank v2 source materials`.
+- `questions` now contains real Russian candidate prompts/options/answer drafts where the source explicitly provided them.
+- All rows remain authoring-only: `safe_to_import=no` and `import_status=not_ready`.
+- no import; no DB mutation; no production action; no LIVE01 touch.
+- Images remain source materials only under `docs/question_bank_v2/source_docs/`; they still need rights/source checks, final filenames, TV readability checks, and later app media prep before any dry-run import.
+- `media_assets.source_rights_status=needs_check` for source image candidates.
+- Manual audio remains host-operated/offline only; no runtime audio dependency was added.
