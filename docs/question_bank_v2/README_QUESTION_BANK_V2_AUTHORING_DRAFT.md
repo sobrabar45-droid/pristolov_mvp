@@ -92,3 +92,28 @@ Workbook populated from `docs/question_bank_v2/source_docs/Вопросы на �
 4. Проверить source rights и TV readability для картинок.
 5. Подготовить отдельную задачу на dry-run import только после явного approval.
 6. Не использовать LIVE01.
+
+## Обновление fact-check/media от Виктора
+
+Применены редакторские решения Виктора по fact-check и визуальным материалам.
+
+Что обновлено в workbook:
+
+- спорные вопросы помечены `cut`;
+- утверждённые вопросы оставлены в редакторском статусе `needs_review`;
+- визуальные вопросы размечены через `needs_media`, `needs_source_check`, `needs_replacement`, `needs_crop_or_replace`, `needs_clean_source` или `needs_video_check`;
+- обновлены draft правильных ответов для утверждённых multiple-choice вопросов;
+- обновлены `media_ref`, `asset_status`, `reveal_timing` и заметки по source-картинкам;
+- лист `Вопросы для редактуры` синхронизирован с техническими листами;
+- лист `Статусы RU` дополнен новыми редакторскими статусами.
+
+Safety сохраняется:
+
+- все строки остаются `safe_to_import=no`;
+- все строки остаются `import_status=not_ready`;
+- no import;
+- no DB mutation;
+- no production action;
+- no LIVE01 touch;
+- no media copy to `app/static/questions_media`;
+- no runtime/template/route changes.
