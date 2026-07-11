@@ -157,3 +157,11 @@ Safety gates не менялись: `safe_to_import=no`, `import_status=not_read
 - Row 37 / `v2_edited_q037`: оставлен reserve/source_check, ответ заполнен как `зубная щётка`; требуется смягчить формулировку и проверить источник.
 
 Safety gates не менялись: `safe_to_import=no`, `import_status=not_ready`. Импорт, DB mutation, production, LIVE01, копирование media в app/static и `clear_existing` не выполнялись.
+
+## Обновление row 29 reserve-only
+
+Row 29 / `v2_edited_q029` закрыт как reserve-only для текущей подготовки коммерческой игры. Строка остаётся в резерве со status=`needs_video_check`, финальный answer field не заполнен, предварительная версия `D — просто отодвинул затвор` сохранена только как non-final note.
+
+Это означает: строка больше не считается блокирующей для текущего вопросника. Вернуться к ней можно после проверки кадра/видео.
+
+Safety gates не менялись: `safe_to_import=no`, `import_status=not_ready`. Импорт, DB mutation, production, LIVE01, копирование media в app/static и `clear_existing` не выполнялись.
