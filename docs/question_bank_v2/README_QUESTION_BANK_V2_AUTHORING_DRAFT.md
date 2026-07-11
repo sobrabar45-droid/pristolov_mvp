@@ -145,3 +145,15 @@ Safety remains unchanged: no import, no DB mutation, no production action, no LI
 Оставлены явно нерешёнными строки, где ответ не был достаточно очевиден из текущих материалов: 1, 7, 8, 29, 37.
 
 Safety gates не менялись: `safe_to_import=no`, `import_status=not_ready`. Импорт, DB mutation, production, LIVE01, копирование media в app/static и `clear_existing` не выполнялись.
+
+## Обновление remaining Victor decisions
+
+Применены решения Виктора по оставшимся 5 строкам после отчёта `QUESTION_BANK_V2_REMAINING_VICTOR_DECISIONS.md`.
+
+- Row 1 / `v2_edited_q001`: убран из активного листа, status=`cut`, добавлен/сохранён в `Убрано`.
+- Row 7 / `v2_edited_q007`: ответ заполнен как `правда`, status=`needs_review`; требуется смягчить формулировку.
+- Row 8 / `v2_edited_q008`: ответ заполнен как `правда`, status=`needs_review`; уточнено, что речь о рождественской helpline Hasbro UK/Ireland.
+- Row 29 / `v2_edited_q029`: оставлен reserve + `needs_video_check`; предварительный вариант `D — просто отодвинул затвор` записан в заметки, но финальный ответ не заполнен до проверки кадра/видео.
+- Row 37 / `v2_edited_q037`: оставлен reserve/source_check, ответ заполнен как `зубная щётка`; требуется смягчить формулировку и проверить источник.
+
+Safety gates не менялись: `safe_to_import=no`, `import_status=not_ready`. Импорт, DB mutation, production, LIVE01, копирование media в app/static и `clear_existing` не выполнялись.
