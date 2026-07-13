@@ -9,21 +9,21 @@ This document is a plan only. The import endpoint is not called in this task.
 Importer-compatible candidate:
 
 ```text
-docs/question_bank_v2/question_bank_v2_text_only_import_compatible_candidate.xlsx
+docs/question_bank_v2/question_bank_v2_text_only_import_compatible_candidate_v2.xlsx
 ```
 
 Companion report:
 
 ```text
-docs/question_bank_v2/QUESTION_BANK_V2_TEXT_ONLY_IMPORT_COMPATIBLE_CANDIDATE_REPORT.md
+docs/question_bank_v2/QUESTION_BANK_V2_TEXT_ONLY_IMPORT_COMPATIBLE_CANDIDATE_V2_REPORT.md
 ```
 
 Known parser verification:
 
 ```text
-PARSED_COUNT 21
+PARSED_COUNT 19
 ERROR_COUNT 0
-TYPE_COUNTS {'single_choice': 8, 'true_false': 13}
+TYPE_COUNTS {'single_choice': 6, 'true_false': 13}
 MEDIA_REFS_NONEMPTY []
 ```
 
@@ -72,15 +72,15 @@ Run this local read-only parse check before any HTTP dry-run:
 cd D:\Projects\pristolov_mvp
 
 $env:PYTHONPATH = "D:\Projects\pristolov_mvp"
-python -c "from pathlib import Path; from app.services.question_import_service import parse_questions_xlsx, build_questions_import_preview; p=Path('docs/question_bank_v2/question_bank_v2_text_only_import_compatible_candidate.xlsx'); items=parse_questions_xlsx(p); preview=build_questions_import_preview(p); print('PARSED_COUNT', len(items)); print('PREVIEW_COUNT', preview.get('questions_count')); print('SECTIONS', preview.get('sections')); print('ERROR_COUNT', sum(1 for x in items if x.get('has_errors'))); print('MEDIA_REFS_NONEMPTY', [x.get('media_ref') for x in items if x.get('media_ref')]);"
+python -c "from pathlib import Path; from app.services.question_import_service import parse_questions_xlsx, build_questions_import_preview; p=Path('docs/question_bank_v2/question_bank_v2_text_only_import_compatible_candidate_v2.xlsx'); items=parse_questions_xlsx(p); preview=build_questions_import_preview(p); print('PARSED_COUNT', len(items)); print('PREVIEW_COUNT', preview.get('questions_count')); print('SECTIONS', preview.get('sections')); print('ERROR_COUNT', sum(1 for x in items if x.get('has_errors'))); print('MEDIA_REFS_NONEMPTY', [x.get('media_ref') for x in items if x.get('media_ref')]);"
 ```
 
 Expected:
 
 ```text
-PARSED_COUNT 21
-PREVIEW_COUNT 21
-SECTIONS {'true_false': 13, 'single_choice': 8, 'free_text': 0}
+PARSED_COUNT 19
+PREVIEW_COUNT 19
+SECTIONS {'true_false': 13, 'single_choice': 6, 'free_text': 0}
 ERROR_COUNT 0
 MEDIA_REFS_NONEMPTY []
 ```
@@ -118,17 +118,17 @@ Only after Victor explicitly approves, local server is confirmed, token is confi
 ```powershell
 cd D:\Projects\pristolov_mvp
 
-curl.exe -X POST "http://127.0.0.1:8000/dev/questions/import" ^
-  -H "X-Admin-Token: <LOCAL_DEV_ADMIN_TOKEN>" ^
-  -F "dry_run=true" ^
-  -F "clear_existing=false" ^
-  -F "target_round_code=v2_text_only_dry_run" ^
-  -F "true_false_limit=13" ^
-  -F "single_choice_limit=8" ^
-  -F "free_text_limit=0" ^
-  -F "media_limit=0" ^
-  -F "prefer_media=false" ^
-  -F "file=@docs/question_bank_v2/question_bank_v2_text_only_import_compatible_candidate.xlsx"
+curl.exe -X POST "http://127.0.0.1:8000/dev/questions/import" `
+  -H "X-Admin-Token: <LOCAL_DEV_ADMIN_TOKEN>" `
+  -F "file=@docs/question_bank_v2/question_bank_v2_text_only_import_compatible_candidate_v2.xlsx" `
+  -F "target_round_code=QUESTION_DRYRUN_02" `
+  -F "dry_run=true" `
+  -F "clear_existing=false" `
+  -F "true_false_limit=13" `
+  -F "single_choice_limit=6" `
+  -F "free_text_limit=0" `
+  -F "media_limit=0" `
+  -F "prefer_media=false"
 ```
 
 Important:
@@ -136,7 +136,9 @@ Important:
 - this should return preview JSON only;
 - it must not write to DB because `dry_run=true`;
 - it must not clear anything because `clear_existing=false`;
-- it should select all 21 rows by limits: 13 true/false + 8 single-choice + 0 free-text.
+- `target_round_code` must be sent as a multipart form field, not a query parameter;
+- the endpoint does not accept `room_code`; `QUESTION_DRYRUN_02` is the target round label for this plan;
+- it should select all 19 rows by limits: 13 true/false + 6 single-choice + 0 free-text.
 
 ## 8. Expected dry-run response checks
 
@@ -145,13 +147,13 @@ After a future dry-run response, verify:
 ```text
 ok=true
 source_type=xlsx
-questions_count=21
+questions_count=19
 dry_run=true
 media_limit=0
 prefer_media=false
-preview_selected.selected_count=21
+preview_selected.selected_count=19
 preview_selected.by_type.true_false=13
-preview_selected.by_type.single_choice=8
+preview_selected.by_type.single_choice=6
 preview_selected.by_type.free_text=0
 preview_selected.media_count=0
 ```
