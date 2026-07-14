@@ -168,38 +168,16 @@ GAME_TEMPLATES_DIR = BASE_DIR / "game_templates"
 MAP_LOCATIONS_FILE = GAME_TEMPLATES_DIR / "season1_core_v1" / "locations.yaml"
 
 
-def _resolve_questions_import_template(db: Session):
-    games_with_template = [
-        game
-        for game in db.query(Game).order_by(Game.id.asc()).all()
-        if getattr(game, "template_code", None)
-    ]
+def _resolve_questions_import_template(db: Session, template_code: str):
+    normalized_template_code = str(template_code or "").strip()
+    if not normalized_template_code:
+        return None
 
-    if len(games_with_template) == 1:
-        template_code = games_with_template[0].template_code
-        template = (
-            db.query(GameTemplate)
-            .filter(GameTemplate.template_code == template_code)
-            .first()
-        )
-        if template:
-            return template
-
-    templates = db.query(GameTemplate).order_by(GameTemplate.id.asc()).all()
-    if len(templates) == 1:
-        return templates[0]
-
-    iron_game = next((game for game in games_with_template if game.room_code == "IRON01"), None)
-    if iron_game and iron_game.template_code:
-        template = (
-            db.query(GameTemplate)
-            .filter(GameTemplate.template_code == iron_game.template_code)
-            .first()
-        )
-        if template:
-            return template
-
-    return None
+    return (
+        db.query(GameTemplate)
+        .filter(GameTemplate.template_code == normalized_template_code)
+        .first()
+    )
 
 print("BASE_DIR =", BASE_DIR)
 print("GAME_TEMPLATES_DIR =", GAME_TEMPLATES_DIR)
@@ -3792,6 +3770,7 @@ def adjust_house_resource(house_id: int, payload: dict = Body(...)):
 @router.post("/questions/import")
 async def import_questions_preview(
     file: UploadFile = File(...),
+    template_code: str = Form(...),
     dry_run: str = Form("true"),
     target_round_code: str = Form("imported_warmup_test"),
     true_false_limit: int = Form(5),
@@ -3805,6 +3784,7 @@ async def import_questions_preview(
     is_dry_run = dry_run_value in {"true", "1", "yes"}
     prefer_media_value = str(prefer_media or "").strip().lower() in {"true", "1", "yes"}
     clear_existing_value = str(clear_existing or "").strip().lower() in {"true", "1", "yes"}
+    template_code = str(template_code or "").strip()
     target_round_code = (target_round_code or "imported_warmup_test").strip() or "imported_warmup_test"
 
     suffix = Path(file.filename or "").suffix.lower()
@@ -3840,18 +3820,25 @@ async def import_questions_preview(
         preview["prefer_media"] = prefer_media_value
         preview["preview_selected"] = selected_preview
 
-        if is_dry_run:
-            return preview
-
         db = SessionLocal()
-        template = _resolve_questions_import_template(db)
+        template = _resolve_questions_import_template(db, template_code)
         if not template:
             return {
                 "ok": False,
-                "message": "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u043f\u0440\u0435\u0434\u0435\u043b\u0438\u0442\u044c \u0448\u0430\u0431\u043b\u043e\u043d \u0438\u0433\u0440\u044b \u0434\u043b\u044f \u0438\u043c\u043f\u043e\u0440\u0442\u0430 \u0432\u043e\u043f\u0440\u043e\u0441\u043e\u0432",
+                "message": "\u041d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d \u0448\u0430\u0431\u043b\u043e\u043d \u0438\u0433\u0440\u044b \u0434\u043b\u044f \u0438\u043c\u043f\u043e\u0440\u0442\u0430 \u0432\u043e\u043f\u0440\u043e\u0441\u043e\u0432",
                 "filename": file.filename,
                 "target_round_code": target_round_code,
+                "template_code": template_code,
             }
+
+        preview["template"] = {
+            "id": template.id,
+            "template_code": template.template_code,
+            "name": template.name,
+        }
+
+        if is_dry_run:
+            return preview
 
         round_template = (
             db.query(RoundTemplate)
