@@ -165,6 +165,7 @@ def _extract_shared_strings(archive: ZipFile) -> list[str]:
 def _resolve_questions_sheet_path(archive: ZipFile) -> str:
     workbook_root = ET.fromstring(archive.read("xl/workbook.xml"))
     rel_root = ET.fromstring(archive.read("xl/_rels/workbook.xml.rels"))
+    archive_paths = set(archive.namelist())
     rel_map = {
         rel.attrib.get("Id"): rel.attrib.get("Target")
         for rel in rel_root.findall(".//pkg:Relationship", SHEET_NS)
@@ -174,7 +175,23 @@ def _resolve_questions_sheet_path(archive: ZipFile) -> str:
             rel_id = sheet.attrib.get("{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id")
             target = rel_map.get(rel_id)
             if target:
-                return f"xl/{target.lstrip('/')}"
+                normalized_target = target.replace("\\", "/").lstrip("/")
+                candidates = []
+                if normalized_target.startswith("xl/"):
+                    candidates.append(normalized_target)
+                else:
+                    candidates.append(f"xl/{normalized_target}")
+                candidates.append(normalized_target)
+
+                unique_candidates = list(dict.fromkeys(candidates))
+                for candidate in unique_candidates:
+                    if candidate in archive_paths:
+                        return candidate
+
+                raise ValueError(
+                    f'\u041f\u0443\u0442\u044c \u043b\u0438\u0441\u0442\u0430 "questions" \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d \u0432 XLSX: '
+                    f"target={target!r}, candidates={unique_candidates!r}"
+                )
     raise ValueError('\u041b\u0438\u0441\u0442 "questions" \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d')
 
 
