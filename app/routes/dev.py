@@ -1443,10 +1443,12 @@ def start_next_scenario_round(room_code: str):
         return _start_next_scenario_round_logic(
             db,
             room_code=room_code,
-            start_series_round_fn=lambda db_obj, game_obj, round_code: _start_series_host_round_logic(
+            start_series_round_fn=lambda db_obj, game_obj, round_code, *, round_template_id=None, scenario_id=None: _start_series_host_round_logic(
                 db_obj,
                 game_obj,
                 round_code,
+                round_template_id=round_template_id,
+                scenario_id=scenario_id,
             ),
         )
 
@@ -1470,10 +1472,12 @@ def advance_scenario(room_code: str, force: bool | None = None, payload: dict = 
             room_code=room_code,
             payload=request_payload,
             finalize_host_round_fn=_finalize_host_round_by_host,
-            start_series_round_fn=lambda db_obj, game_obj, round_code: _start_series_host_round_logic(
+            start_series_round_fn=lambda db_obj, game_obj, round_code, *, round_template_id=None, scenario_id=None: _start_series_host_round_logic(
                 db_obj,
                 game_obj,
                 round_code,
+                round_template_id=round_template_id,
+                scenario_id=scenario_id,
             ),
         )
 
