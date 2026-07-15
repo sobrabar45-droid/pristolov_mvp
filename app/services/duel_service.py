@@ -719,9 +719,10 @@ def mark_duel_needs_replay(db: Session, duel: GameDuel, payload: dict) -> dict:
 
 
 def resolve_duel(db: Session, duel: GameDuel, payload: dict) -> dict:
-    phase_guard = _ensure_duel_phase_active(db, duel.game_id)
-    if not phase_guard.get("ok"):
-        return phase_guard
+    if duel.status != "needs_replay":
+        phase_guard = _ensure_duel_phase_active(db, duel.game_id)
+        if not phase_guard.get("ok"):
+            return phase_guard
 
     if duel.status not in {"challenged", "accepted", "needs_replay"}:
         return {

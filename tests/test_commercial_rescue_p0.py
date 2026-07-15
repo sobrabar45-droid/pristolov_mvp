@@ -1,6 +1,10 @@
 import json
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
+
+from app.services import duel_service
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,6 +40,48 @@ class CommercialRescueP0Tests(unittest.TestCase):
             'pending.find(duel => duel?.status === "needs_replay")',
             block,
         )
+
+    def test_duel_errors_use_inline_master_status_without_native_alert(self):
+        block = _function_block(
+            self.master,
+            "function showDuelMessage(data) {",
+            "async function createHouseDuel",
+        )
+        self.assertNotIn("alert(", block)
+        self.assertIn('document.getElementById("psActionStatus")', block)
+        self.assertIn("logLine", block)
+
+    def test_primary_court_action_starts_first_pair(self):
+        resolver = _function_block(
+            self.master,
+            "function resolveCourtPrimaryAction(state) {",
+            "function resolveScenarioAction",
+        )
+        scene_step = _function_block(
+            self.master,
+            "function resolveSceneStep(state) {",
+            "function resolveNextMasterAction",
+        )
+        handler_block = _function_block(
+            self.master,
+            "const ACTION_HANDLERS = {",
+            "async function runSceneStep",
+        )
+        start_pair = _function_block(
+            self.master,
+            "async function startNextCourtPair() {",
+            "async function openCourtQuestion",
+        )
+
+        self.assertIn("court?.can_start_next_pair", resolver)
+        self.assertIn('action: "court_start_next_pair"', resolver)
+        self.assertIn('"Начать первую пару"', resolver)
+        self.assertIn('scenarioAction?.action === "court_start_next_pair"', scene_step)
+        self.assertIn("court_start_next_pair: async", handler_block)
+        self.assertIn("await startNextCourtPair()", handler_block)
+        self.assertIn("/dev/court/start-pair/${ROOM_CODE}", start_pair)
+        self.assertNotIn("alert(", start_pair)
+        self.assertIn('document.getElementById("psActionStatus")', start_pair)
 
     def test_master_court_controls_activate_for_scenario_stage(self):
         block = _function_block(
@@ -99,6 +145,75 @@ class CommercialRescueP0Tests(unittest.TestCase):
 
         self.assertEqual(len(checked_codes), 5)
         self.assertEqual(mismatches, [])
+
+
+class DuelReplayFinalizationTests(unittest.TestCase):
+    def test_needs_replay_can_be_finalized_after_duel_phase_closed(self):
+        challenger = SimpleNamespace(id=1, resource_gold=10)
+        target = SimpleNamespace(id=2, resource_gold=10)
+        duel = SimpleNamespace(
+            id=77,
+            game_id=3,
+            status="needs_replay",
+            challenger_house_id=challenger.id,
+            target_house_id=target.id,
+            challenger_house=challenger,
+            target_house=target,
+            stake_gold=3,
+            winner_house_id=None,
+            resolved_at=None,
+            influence_transfer_amount=0,
+            bonus_payload_json=None,
+            notes_json="{}",
+            updated_at=None,
+            duel_advantage_side=None,
+            duel_advantage_class=None,
+            duel_format=None,
+            live_bonus_side=None,
+            live_bonus_code=None,
+            live_bonus_label=None,
+            live_bonus_host_text=None,
+            live_bonus_tv_text=None,
+            live_bonus_payload_json=None,
+        )
+        db = SimpleNamespace(flush=lambda: None)
+        tower_result = {
+            "tower_bonus_applied": False,
+            "extra_influence_applied": 0,
+            "right_to_error": False,
+            "winner_matched_advantage": False,
+        }
+
+        with (
+            patch.object(duel_service, "_ensure_duel_phase_active", return_value={"ok": False}) as phase_guard,
+            patch.object(duel_service, "resolve_pvp_gold", return_value={"ok": True}),
+            patch.object(duel_service, "apply_house_effect", return_value={"ok": True}),
+            patch.object(duel_service, "apply_duel_advantage_bonus", return_value=tower_result),
+            patch.object(duel_service, "serialize_duel", side_effect=lambda item: {"id": item.id, "status": item.status}),
+        ):
+            result = duel_service.resolve_duel(
+                db,
+                duel,
+                {"winner_house_id": challenger.id, "note": "host tiebreak"},
+            )
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(duel.status, "resolved")
+        self.assertEqual(duel.winner_house_id, challenger.id)
+        phase_guard.assert_not_called()
+
+    def test_non_replay_duel_still_requires_active_duel_phase(self):
+        duel = SimpleNamespace(game_id=3, status="accepted")
+        with patch.object(
+            duel_service,
+            "_ensure_duel_phase_active",
+            return_value={"ok": False, "message": "duel phase inactive"},
+        ) as phase_guard:
+            result = duel_service.resolve_duel(object(), duel, {"winner_house_id": 1})
+
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["message"], "duel phase inactive")
+        phase_guard.assert_called_once_with(unittest.mock.ANY, 3)
 
 
 if __name__ == "__main__":

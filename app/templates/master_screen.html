@@ -3992,7 +3992,36 @@ function getFinalOutcomeState(state) {
     };
 }
 
+function resolveCourtPrimaryAction(state) {
+    const court = state?.court_runtime || null;
+    const bracket = Array.isArray(court?.bracket) ? court.bracket : [];
+    if (
+        !hasCourtRuntime(state) ||
+        !bracket.length ||
+        court?.current_pair ||
+        !court?.can_start_next_pair ||
+        isCourtFinishedState(state)
+    ) {
+        return null;
+    }
+
+    const hasStartedPair = bracket.some(pair => String(pair?.status || "").trim().toLowerCase() !== "pending");
+    return {
+        action: "court_start_next_pair",
+        label: hasStartedPair ? "Начать следующую пару" : "Начать первую пару",
+        status: hasStartedPair
+            ? "Сетка готова: вывести следующую пару на Суд"
+            : "Сетка готова: вывести первую пару на Суд",
+        disabled: false
+    };
+}
+
 function resolveScenarioAction(state) {
+    const courtAction = resolveCourtPrimaryAction(state);
+    if (courtAction) {
+        return courtAction;
+    }
+
     const director = getDirectorState(state);
     const activeHostRound =
         state?.active_host_round ||
@@ -4510,6 +4539,15 @@ function resolveSceneStep(state) {
     const sceneType = getCurrentSceneType(state);
     const scenarioAction = resolveScenarioAction(state);
 
+    if (scenarioAction?.action === "court_start_next_pair") {
+        return {
+            ...scenarioAction,
+            type: "court",
+            blocking: false,
+            sceneType
+        };
+    }
+
     if (sceneType === "map") {
         if (hasActiveExpedition(state)) {
             return {
@@ -4760,6 +4798,10 @@ const ACTION_HANDLERS = {
     scenario_advance_and_start: async () => {
         await advanceScenarioRound(false);
         await startNextScenarioRound();
+    },
+
+    court_start_next_pair: async () => {
+        await startNextCourtPair();
     },
 
     close_runtime_question: async () => {
@@ -6491,8 +6533,17 @@ async function generateCourtBracket() {
 async function startNextCourtPair() {
     const data = await apiPost(`/dev/court/start-pair/${ROOM_CODE}`);
     setBox("courtResult", data);
+    if (!data?.ok) {
+        const message = data?.message || "Не удалось запустить пару Суда Домов";
+        const statusEl = document.getElementById("psActionStatus");
+        if (statusEl) statusEl.textContent = message;
+        logLine(`Суд Домов: ${message}`);
+        await loadState();
+        return data;
+    }
     logLine("Суд Домов: старт пары");
     await loadState();
+    return data;
 }
 
 async function openCourtQuestion() {
@@ -6916,8 +6967,13 @@ function getOperatorDuel(state) {
 function showDuelMessage(data) {
     setBox("duelResult", data);
     if (!data?.ok) {
-        alert(data?.message || "Не удалось выполнить действие по дуэли.");
+        const message = data?.message || "Не удалось выполнить действие по дуэли.";
+        const statusEl = document.getElementById("psActionStatus");
+        if (statusEl) statusEl.textContent = message;
+        logLine(`Дуэль: ${message}`);
+        return false;
     }
+    return true;
 }
 
 async function createHouseDuel() {
