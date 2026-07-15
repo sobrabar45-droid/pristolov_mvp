@@ -1536,8 +1536,21 @@ def get_available_series_rounds(room_code: str):
     finally:
         db.close()
 
-def _start_series_host_round_logic(db: Session, game: Game, round_code: str):
-    round_resolution = _resolve_round_template_for_game(db, game, round_code)
+def _start_series_host_round_logic(
+    db: Session,
+    game: Game,
+    round_code: str,
+    *,
+    round_template_id: int | None = None,
+    scenario_id: int | None = None,
+):
+    round_resolution = _resolve_round_template_for_game(
+        db,
+        game,
+        round_code,
+        round_template_id=round_template_id,
+        scenario_id=scenario_id,
+    )
     if not round_resolution.get("ok"):
         return round_resolution
 

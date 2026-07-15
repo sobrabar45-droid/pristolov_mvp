@@ -40,21 +40,35 @@ def resolve_template_for_game(db: Session, game):
     }
 
 
-def resolve_round_template_for_game(db: Session, game, round_code: str):
+def resolve_round_template_for_game(
+    db: Session,
+    game,
+    round_code: str,
+    *,
+    round_template_id: int | None = None,
+    scenario_id: int | None = None,
+):
     template_resolution = resolve_template_for_game(db, game)
     if not template_resolution.get("ok"):
         return template_resolution
 
     template = template_resolution["template"]
 
-    round_template = (
+    round_query = (
         db.query(RoundTemplate)
         .filter(
             RoundTemplate.template_id == template.id,
             RoundTemplate.round_code == round_code,
         )
-        .first()
     )
+
+    if round_template_id is not None:
+        round_query = round_query.filter(RoundTemplate.id == round_template_id)
+
+    if scenario_id is not None:
+        round_query = round_query.filter(RoundTemplate.scenario_id == scenario_id)
+
+    round_template = round_query.first()
 
     if not round_template:
         return {
@@ -62,6 +76,24 @@ def resolve_round_template_for_game(db: Session, game, round_code: str):
             "message": f'Раунд "{round_code}" не найден в шаблоне "{template.template_code}"',
             "round_code": round_code,
             "template_code": template.template_code,
+        }
+
+    if round_template_id is not None and round_template.id != round_template_id:
+        return {
+            "ok": False,
+            "message": "Resolved round template does not match the scenario-selected round template",
+            "round_code": round_code,
+            "expected_round_template_id": round_template_id,
+            "resolved_round_template_id": round_template.id,
+        }
+
+    if scenario_id is not None and round_template.scenario_id != scenario_id:
+        return {
+            "ok": False,
+            "message": "Resolved round template does not belong to the linked scenario",
+            "round_code": round_code,
+            "expected_scenario_id": scenario_id,
+            "resolved_scenario_id": round_template.scenario_id,
         }
 
     return {

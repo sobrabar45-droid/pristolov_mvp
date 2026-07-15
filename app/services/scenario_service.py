@@ -1296,6 +1296,32 @@ def get_scenario_director_logic(db: Session, *, room_code: str):
     }
 
 
+def _classify_scenario_round_start_conflict(host_rounds, round_template: RoundTemplate):
+    exact_matches = [
+        item
+        for item in host_rounds
+        if item.round_template_id == round_template.id
+    ]
+    if exact_matches:
+        return {
+            "type": "duplicate_round_template",
+            "host_round": exact_matches[-1],
+        }
+
+    wrong_template_matches = [
+        item
+        for item in host_rounds
+        if item.round_code == round_template.round_code
+    ]
+    if wrong_template_matches:
+        return {
+            "type": "round_code_template_mismatch",
+            "host_round": wrong_template_matches[-1],
+        }
+
+    return None
+
+
 def start_next_scenario_round_logic(
     db: Session,
     *,
@@ -1305,6 +1331,7 @@ def start_next_scenario_round_logic(
     game = (
         db.query(Game)
         .filter(Game.room_code == room_code)
+        .with_for_update()
         .first()
     )
 
@@ -1373,6 +1400,31 @@ def start_next_scenario_round_logic(
             "next_round": next_round,
         }
 
+    existing_same_code_rounds = (
+        db.query(GameHostRound)
+        .filter(
+            GameHostRound.game_id == game.id,
+            GameHostRound.round_code == round_template.round_code,
+        )
+        .order_by(GameHostRound.id.asc())
+        .all()
+    )
+    start_conflict = _classify_scenario_round_start_conflict(
+        existing_same_code_rounds,
+        round_template,
+    )
+    if start_conflict:
+        existing_host_round = start_conflict["host_round"]
+        return {
+            "ok": False,
+            "message": "Scenario round start blocked because this round code already has runtime history",
+            "duplicate_start_blocked": True,
+            "conflict_type": start_conflict["type"],
+            "target_round_template_id": round_template.id,
+            "target_scenario_id": scenario.id,
+            "existing_host_round": _serialize_host_round_brief(existing_host_round),
+        }
+
     if round_template.round_code != "stage_court":
         _cleanup_stale_court_runtime(db, game)
 
@@ -1383,7 +1435,13 @@ def start_next_scenario_round_logic(
             phase_open_result = open_game_phase_logic(db, game.room_code, "host_round")
             if not phase_open_result.get("ok"):
                 return phase_open_result
-        start_result = start_series_round_fn(db, game, next_round["round_code"])
+        start_result = start_series_round_fn(
+            db,
+            game,
+            next_round["round_code"],
+            round_template_id=round_template.id,
+            scenario_id=scenario.id,
+        )
 
     if not start_result.get("ok"):
         return start_result
