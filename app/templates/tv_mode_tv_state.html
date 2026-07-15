@@ -1309,6 +1309,148 @@
       display:grid;
       gap:10px;
     }
+    .last-whisper-scene{
+      height:100%;
+      min-height:0;
+      overflow:hidden;
+    }
+    .last-whisper-scene .court-stage{
+      grid-template-columns:minmax(0, 1.34fr) minmax(230px, .66fr);
+      grid-template-rows:auto minmax(0, 1fr);
+      grid-template-areas:
+        "whisper-header whisper-window"
+        "whisper-details whisper-details";
+      align-content:start;
+      gap:clamp(10px, 1vw, 16px);
+    }
+    .last-whisper-scene .court-header{
+      grid-area:whisper-header;
+      min-width:0;
+      align-content:start;
+    }
+    .last-whisper-scene .court-title{
+      font-size:clamp(30px, 2.4vw, 46px);
+      line-height:1;
+      overflow-wrap:anywhere;
+    }
+    .last-whisper-scene .court-warning{
+      min-width:0;
+      padding:10px 12px;
+      font-size:clamp(13px, 1vw, 16px);
+      overflow-wrap:anywhere;
+    }
+    .last-whisper-scene .court-current-pair{
+      grid-area:whisper-window;
+      min-width:0;
+      grid-template-columns:minmax(0, 1fr);
+      padding:clamp(12px, 1.2vw, 18px);
+    }
+    .last-whisper-scene .court-house-name{
+      font-size:clamp(20px, 1.65vw, 32px);
+      line-height:1.08;
+      white-space:normal;
+      overflow:visible;
+      text-overflow:clip;
+      overflow-wrap:anywhere;
+    }
+    .last-whisper-scene .court-alive{
+      font-size:clamp(22px, 2vw, 36px);
+      line-height:1.05;
+      overflow-wrap:anywhere;
+    }
+    .last-whisper-countdown{
+      display:flex;
+      align-items:baseline;
+      gap:clamp(8px, .7vw, 12px);
+      flex-wrap:wrap;
+    }
+    .last-whisper-countdown-label{
+      min-width:0;
+      font-size:clamp(15px, 1.15vw, 20px);
+      line-height:1.15;
+    }
+    .last-whisper-countdown-value{
+      flex:0 0 auto;
+      color:var(--gold2);
+      font-size:clamp(24px, 2vw, 36px);
+      line-height:1;
+      white-space:nowrap;
+    }
+    .last-whisper-scene .court-pair-list{
+      grid-area:whisper-details;
+      min-width:0;
+      min-height:0;
+      grid-template-columns:repeat(3, minmax(0, 1fr));
+      gap:clamp(8px, .75vw, 12px);
+      align-items:stretch;
+    }
+    .last-whisper-scene .court-pair-item{
+      min-width:0;
+      padding:clamp(10px, 1vw, 16px);
+      border-radius:16px;
+      border:1px solid rgba(221,182,105,.14);
+      background:rgba(255,255,255,.035);
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      overflow:hidden;
+    }
+    .last-whisper-scene .court-pair-item span{
+      color:var(--gold);
+      font-size:clamp(11px, .9vw, 14px);
+      font-weight:900;
+      letter-spacing:.12em;
+      line-height:1.1;
+      text-transform:uppercase;
+      overflow-wrap:anywhere;
+    }
+    .last-whisper-scene .court-pair-item strong{
+      min-width:0;
+      color:var(--text);
+      font-size:clamp(16px, 1.25vw, 23px);
+      line-height:1.18;
+      overflow-wrap:anywhere;
+      word-break:normal;
+    }
+    @media (max-width:1600px), (max-height:900px){
+      .last-whisper-scene .court-stage{
+        grid-template-columns:minmax(0, 1.42fr) minmax(210px, .58fr);
+        gap:10px;
+      }
+      .last-whisper-scene .court-title{
+        font-size:clamp(28px, 2.15vw, 36px);
+      }
+      .last-whisper-scene .court-warning{
+        padding:8px 10px;
+        font-size:13px;
+      }
+      .last-whisper-scene .court-current-pair{
+        padding:10px 12px;
+      }
+      .last-whisper-scene .court-house-name{
+        font-size:clamp(18px, 1.45vw, 24px);
+      }
+      .last-whisper-scene .court-alive{
+        font-size:clamp(20px, 1.7vw, 28px);
+      }
+      .last-whisper-countdown{
+        gap:7px;
+      }
+      .last-whisper-countdown-label{
+        font-size:14px;
+      }
+      .last-whisper-countdown-value{
+        font-size:clamp(22px, 1.75vw, 28px);
+      }
+      .last-whisper-scene .court-pair-item{
+        padding:9px 10px;
+        gap:6px;
+      }
+      .last-whisper-scene .court-pair-item strong{
+        font-size:clamp(15px, 1.1vw, 18px);
+        line-height:1.15;
+      }
+    }
     .court-subtitle{
       color:var(--muted);
       font-size:clamp(17px, 1.4vw, 23px);
@@ -1972,7 +2114,7 @@
       const latestEventText = pickText(latestEvent?.tv_text) || "Слухи ещё не оформились в явный ход, но напряжение в зале растёт.";
 
       return `
-        <div class="court-scene">
+        <div class="court-scene last-whisper-scene">
           <div class="court-stage">
             <div class="court-header">
               <div class="court-title">ПОСЛЕДНИЙ ШЁПОТ</div>
@@ -1980,8 +2122,11 @@
             </div>
             <div class="court-current-pair court-winner">
               <div class="court-house">
-                <div class="court-house-name">Короткое политическое окно</div>
-                <div class="court-alive">До финального сигнала: ${escapeHtml(countdown)}</div>
+                <div class="court-house-name last-whisper-window-title">Короткое политическое окно</div>
+                <div class="court-alive last-whisper-countdown">
+                  <span class="last-whisper-countdown-label">До финального сигнала:</span>
+                  <strong class="last-whisper-countdown-value">${escapeHtml(countdown)}</strong>
+                </div>
               </div>
             </div>
             <div class="court-pair-list">

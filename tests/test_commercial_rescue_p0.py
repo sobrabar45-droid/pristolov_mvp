@@ -155,6 +155,31 @@ class CommercialRescueP0Tests(unittest.TestCase):
         self.assertIn(fallback_render, fetch_block)
         self.assertLess(fetch_block.index(court_render), fetch_block.index(fallback_render))
 
+    def test_last_whisper_tv_scene_has_compact_viewport_safe_layout(self):
+        final_block = _function_block(
+            self.tv,
+            "function renderFinalShowActivity(state){",
+            "function renderLastWhisperActivity(state){",
+        )
+        whisper_block = _function_block(
+            self.tv,
+            "function renderLastWhisperActivity(state){",
+            "function renderCourtSetupActivity(state){",
+        )
+
+        self.assertIn('class="court-scene last-whisper-scene"', whisper_block)
+        self.assertNotIn("last-whisper-scene", final_block)
+        self.assertIn('class="last-whisper-countdown-label"', whisper_block)
+        self.assertIn('class="last-whisper-countdown-value"', whisper_block)
+        self.assertNotIn("Кор...", whisper_block)
+        self.assertIn(".last-whisper-scene .court-stage{", self.tv)
+        self.assertIn('"whisper-header whisper-window"', self.tv)
+        self.assertIn("grid-template-columns:repeat(3, minmax(0, 1fr));", self.tv)
+        self.assertIn("white-space:normal;", self.tv)
+        self.assertIn("white-space:nowrap;", self.tv)
+        self.assertIn("overflow-wrap:anywhere;", self.tv)
+        self.assertIn("@media (max-width:1600px), (max-height:900px){", self.tv)
+
     def test_all_commercial_single_choice_answers_match_player_values(self):
         mismatches = []
         checked_codes = []
