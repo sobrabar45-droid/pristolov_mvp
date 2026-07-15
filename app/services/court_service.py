@@ -14,6 +14,7 @@ from app.models.round_question_template import RoundQuestionTemplate
 from app.models.round_template import RoundTemplate
 from app.services.host_round_service import (
     force_close_current_question_by_host as _force_close_current_question_by_host,
+    open_answers_for_current_question as _open_answers_for_current_question,
     open_next_question_for_host_round as _open_next_question_for_host_round,
 )
 
@@ -1245,7 +1246,12 @@ def open_court_question_logic(db: Session, room_code: str) -> dict[str, Any]:
         db.rollback()
         return result
 
-    runtime_question = result["runtime_question"]
+    activation_result = _open_answers_for_current_question(db, host_round)
+    if not activation_result.get("ok"):
+        db.rollback()
+        return activation_result
+
+    runtime_question = activation_result["runtime_question"]
     question_template = result["question_template"]
     if question_template and question_template.question_code not in used_questions:
         used_questions.append(question_template.question_code)

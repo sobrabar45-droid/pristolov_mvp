@@ -10,6 +10,7 @@ from app.services import duel_service
 ROOT = Path(__file__).resolve().parents[1]
 MASTER_TEMPLATE = ROOT / "app" / "templates" / "master_screen.html"
 TV_TEMPLATE = ROOT / "app" / "templates" / "tv_mode_tv_state.html"
+COURT_SERVICE = ROOT / "app" / "services" / "court_service.py"
 SCENARIO_PATH = (
     ROOT
     / "app"
@@ -28,6 +29,7 @@ class CommercialRescueP0Tests(unittest.TestCase):
     def setUpClass(cls):
         cls.master = MASTER_TEMPLATE.read_text(encoding="utf-8")
         cls.tv = TV_TEMPLATE.read_text(encoding="utf-8")
+        cls.court_service = COURT_SERVICE.read_text(encoding="utf-8")
         cls.scenario = json.loads(SCENARIO_PATH.read_text(encoding="utf-8"))
 
     def test_duel_operator_keeps_needs_replay_actionable(self):
@@ -93,6 +95,26 @@ class CommercialRescueP0Tests(unittest.TestCase):
         self.assertIn('id="courtControlPanel"', self.master)
         self.assertIn("markCourtResult('a','correct')", self.master)
         self.assertIn("markCourtResult('b','wrong')", self.master)
+
+    def test_court_question_is_opened_for_adjudication_before_runtime_sync(self):
+        block = self.court_service.split("def open_court_question_logic", 1)[1]
+        activate = "activation_result = _open_answers_for_current_question(db, host_round)"
+        synchronize = "sync_result = sync_court_question_runtime_logic"
+
+        self.assertIn(activate, block)
+        self.assertIn('if not activation_result.get("ok"):', block)
+        self.assertLess(block.index(activate), block.index(synchronize))
+
+    def test_master_hides_court_result_buttons_until_question_is_open(self):
+        self.assertIn("const canMarkCourtResult = Boolean(", self.master)
+        self.assertIn('currentCourtQuestion?.status === "active"', self.master)
+        self.assertIn("currentCourtQuestion?.answers_open === true", self.master)
+
+        guarded_controls = self.master.split("if (canMarkCourtResult) {", 1)[1].split(
+            "if (showExtraQuestion)", 1
+        )[0]
+        self.assertIn("markCourtResult('a','correct')", guarded_controls)
+        self.assertIn("markCourtResult('b','wrong')", guarded_controls)
 
     def test_tv_court_scene_activates_and_keeps_elimination_dynamics(self):
         runtime_gate = _function_block(

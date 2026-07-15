@@ -6014,6 +6014,13 @@ function renderCourtControlPanel(state) {
     const hasPendingPairs = bracket.some(item => String(item?.status || "").toLowerCase() === "pending");
     const canStartNextPair = Boolean(court?.can_start_next_pair);
     const isCourtFinished = Boolean(court?.is_finished) || String(court?.status || "").toLowerCase() === "court_finished";
+    const currentCourtQuestion = court.current_question || null;
+    const canMarkCourtResult = Boolean(
+        pair?.question_active &&
+        String(pair?.question_status || "").toLowerCase() === "active" &&
+        currentCourtQuestion?.status === "active" &&
+        currentCourtQuestion?.answers_open === true
+    );
     const showExtraQuestion = Boolean(
         pair &&
         pair.house_a_alive > 0 &&
@@ -6088,21 +6095,23 @@ function renderCourtControlPanel(state) {
     }
 
     if (pair && !pairFinished) {
-        if (!pair.question_active) {
+        if (!canMarkCourtResult) {
             actionButtons.push(`<button class="btn-blue" onclick="openCourtQuestion()">Открыть вопрос суда</button>`);
         }
-        actionButtons.push(`
-            <div class="court-control-row">
-                <button class="btn-green" onclick="markCourtResult('a','correct')">Дом A ответил верно</button>
-                <button class="btn-red" onclick="markCourtResult('a','wrong')">Дом A ошибся</button>
-            </div>
-        `);
-        actionButtons.push(`
-            <div class="court-control-row">
-                <button class="btn-green" onclick="markCourtResult('b','correct')">Дом B ответил верно</button>
-                <button class="btn-red" onclick="markCourtResult('b','wrong')">Дом B ошибся</button>
-            </div>
-        `);
+        if (canMarkCourtResult) {
+            actionButtons.push(`
+                <div class="court-control-row">
+                    <button class="btn-green" onclick="markCourtResult('a','correct')">Дом A ответил верно</button>
+                    <button class="btn-red" onclick="markCourtResult('a','wrong')">Дом A ошибся</button>
+                </div>
+            `);
+            actionButtons.push(`
+                <div class="court-control-row">
+                    <button class="btn-green" onclick="markCourtResult('b','correct')">Дом B ответил верно</button>
+                    <button class="btn-red" onclick="markCourtResult('b','wrong')">Дом B ошибся</button>
+                </div>
+            `);
+        }
     }
 
     if (showExtraQuestion) {
