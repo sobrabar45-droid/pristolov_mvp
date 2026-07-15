@@ -783,13 +783,24 @@ def _get_linked_scenario(db: Session, game: Game):
     return scenario
 
 
+SCENARIO_AUXILIARY_ROUND_KINDS = {"question_bank"}
+
+
+def _is_scenario_director_round(round_item: RoundTemplate | None) -> bool:
+    if round_item is None:
+        return False
+    round_kind = str(getattr(round_item, "round_kind", "") or "").strip().lower()
+    return round_kind not in SCENARIO_AUXILIARY_ROUND_KINDS
+
+
 def _get_scenario_rounds(db: Session, scenario_id: int):
-    return (
+    rounds = (
         db.query(RoundTemplate)
         .filter(RoundTemplate.scenario_id == scenario_id)
         .order_by(RoundTemplate.order_no.asc().nullslast(), RoundTemplate.id.asc())
         .all()
     )
+    return [round_item for round_item in rounds if _is_scenario_director_round(round_item)]
 
 
 def _get_scenario_host_rounds(db: Session, game_id: int, scenario_round_ids: list[int]):

@@ -305,8 +305,47 @@ def _find_round_template_by_code(db: Session, round_code: str) -> RoundTemplate 
     )
 
 
+def _select_court_round_template(round_templates: list[RoundTemplate], game: Game) -> RoundTemplate | None:
+    candidates = list(round_templates or [])
+    if not candidates:
+        return None
+
+    def latest(items: list[RoundTemplate]) -> RoundTemplate | None:
+        return max(items, key=lambda item: int(getattr(item, "id", 0) or 0), default=None)
+
+    scenario_id = getattr(game, "scenario_id", None)
+    if scenario_id is not None:
+        exact_scenario = [item for item in candidates if getattr(item, "scenario_id", None) == scenario_id]
+        selected = latest(exact_scenario)
+        if selected is not None:
+            return selected
+
+    template_id = getattr(game, "template_id", None)
+    if template_id is not None:
+        legacy_template = [
+            item
+            for item in candidates
+            if getattr(item, "template_id", None) == template_id and getattr(item, "scenario_id", None) is None
+        ]
+        selected = latest(legacy_template)
+        if selected is not None:
+            return selected
+
+    return latest(candidates)
+
+
+def _find_court_round_template_for_game(db: Session, game: Game) -> RoundTemplate | None:
+    candidates = (
+        db.query(RoundTemplate)
+        .filter(RoundTemplate.round_code == COURT_QUESTION_ROUND_CODE)
+        .order_by(RoundTemplate.id.desc())
+        .all()
+    )
+    return _select_court_round_template(candidates, game)
+
+
 def _ensure_court_question_round_template(db: Session, game: Game) -> RoundTemplate | None:
-    existing = _find_round_template_by_code(db, COURT_QUESTION_ROUND_CODE)
+    existing = _find_court_round_template_for_game(db, game)
     if existing and len(existing.questions or []) > 0:
         return existing
 
