@@ -128,11 +128,32 @@ class CommercialRescueP0Tests(unittest.TestCase):
             "function renderInsights",
         )
         self.assertIn('currentRoundCode === "stage_court"', runtime_gate)
+        self.assertIn("const hasActiveCourtRuntime = Boolean(", runtime_gate)
+        self.assertIn("!courtFinished", runtime_gate)
+        self.assertIn("if (hasActiveCourtRuntime) return true;", runtime_gate)
         self.assertIn("return renderCourtSetupActivity(data)", scene)
         self.assertIn("winner_house_id", scene)
         self.assertIn("court-loser", scene)
         self.assertIn("house_a_alive", scene)
         self.assertIn("house_b_alive", scene)
+
+    def test_tv_active_court_runtime_outranks_last_whisper_scene(self):
+        fetch_block = _function_block(
+            self.tv,
+            "async function fetchTvState(){",
+            "fetchTvState();",
+        )
+
+        court_gate = "const shouldForceCourtScene = hasCourtRuntime(data);"
+        special_gate = "const shouldForceSpecialScene = shouldForceCourtScene || Boolean(directorSceneModel?.mode);"
+        court_render = "if (shouldForceCourtScene){"
+        fallback_render = "renderInsights(houses, pending, counters, closed, directorSceneModel, data);"
+
+        self.assertIn(court_gate, fetch_block)
+        self.assertIn(special_gate, fetch_block)
+        self.assertIn(court_render, fetch_block)
+        self.assertIn(fallback_render, fetch_block)
+        self.assertLess(fetch_block.index(court_render), fetch_block.index(fallback_render))
 
     def test_all_commercial_single_choice_answers_match_player_values(self):
         mismatches = []

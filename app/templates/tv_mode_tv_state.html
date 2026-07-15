@@ -2547,8 +2547,18 @@
     }
 
     function hasCourtRuntime(data){
-      const source = pickText(data?.court_runtime?.source).trim().toLowerCase();
+      const court = data?.court_runtime;
+      const source = pickText(court?.source).trim().toLowerCase();
+      const courtStatus = pickText(court?.status).trim().toLowerCase();
       const currentRoundCode = pickText(getDirectorState(data)?.current_round?.round_code).trim().toLowerCase();
+      const courtFinished = Boolean(court?.is_finished) || courtStatus === "court_finished";
+      const hasActiveCourtRuntime = Boolean(
+        court &&
+        typeof court === "object" &&
+        !courtFinished
+      );
+
+      if (hasActiveCourtRuntime) return true;
       return source === "court_mvp" || currentRoundCode === "stage_court";
     }
 
