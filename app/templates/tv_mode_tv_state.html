@@ -2547,7 +2547,9 @@
     }
 
     function hasCourtRuntime(data){
-      return pickText(data?.court_runtime?.source).trim().toLowerCase() === "court_mvp";
+      const source = pickText(data?.court_runtime?.source).trim().toLowerCase();
+      const currentRoundCode = pickText(getDirectorState(data)?.current_round?.round_code).trim().toLowerCase();
+      return source === "court_mvp" || currentRoundCode === "stage_court";
     }
 
     function getCourtHouseName(pair, side){
@@ -2759,6 +2761,9 @@
 
     function renderCourtMvpScene(data){
       const court = data?.court_runtime || {};
+      if (pickText(court?.source).trim().toLowerCase() !== "court_mvp"){
+        return renderCourtSetupActivity(data);
+      }
       const currentPair = court?.current_pair || null;
       const activeRound = data?.active_host_round || data?.tv_summary?.active_host_round || null;
       const currentQuestion = data?.court_runtime?.current_question || data?.current_question || null;

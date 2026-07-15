@@ -5259,7 +5259,11 @@ function getDirectorRoundLabel(round) {
 }
 
 function hasCourtRuntime(state) {
-    return String(state?.court_runtime?.source || "").trim().toLowerCase() === "court_mvp";
+    const source = String(state?.court_runtime?.source || "").trim().toLowerCase();
+    const currentRoundCode = String(
+        getDirectorState(state)?.current_round?.round_code || ""
+    ).trim().toLowerCase();
+    return source === "court_mvp" || currentRoundCode === "stage_court";
 }
 
 function courtPairStatusLabel(pair) {
@@ -6905,6 +6909,7 @@ function getOperatorDuel(state) {
     const pending = [...(block.active_or_pending || [])];
     return pending.find(duel => duel?.status === "challenged")
         || pending.find(duel => duel?.status === "accepted")
+        || pending.find(duel => duel?.status === "needs_replay")
         || null;
 }
 
