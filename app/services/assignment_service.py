@@ -21,7 +21,7 @@ def normalize_boolean_answer(value):
     if isinstance(value, str):
         normalized = value.strip().lower()
 
-        if normalized in {"true", "1", "yes", "y", "да", "истина"}:
+        if normalized in {"true", "1", "yes", "y", "да", "истина", "правда"}:
             return True
 
         if normalized in {"false", "0", "no", "n", "нет", "ложь"}:
@@ -48,6 +48,11 @@ SUPPORTED_SINGLE_MODES = {
 
 SUPPORTED_CONFIRM_MODES = {
     "confirm",
+}
+
+SUPPORTED_BOOLEAN_MODES = {
+    "boolean",
+    "true_false",
 }
 
 
@@ -89,7 +94,7 @@ def evaluate_answer_by_mode(answer_mode: str, user_answer, correct_answer):
             return bool(user_answer.get("confirmed")) is True
         return bool(user_answer) is True
 
-    if answer_mode == "boolean":
+    if answer_mode in SUPPORTED_BOOLEAN_MODES:
         normalized_user = normalize_boolean_answer(user_answer)
         normalized_correct = normalize_boolean_answer(correct_answer)
         return normalized_user == normalized_correct

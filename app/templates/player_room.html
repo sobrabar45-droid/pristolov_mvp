@@ -2541,9 +2541,30 @@ function renderAssignments(data) {
 async function submitAnswer(assignmentId, code) {
   const buttons = Array.from(document.querySelectorAll(`.assignment-answer-btn[data-assignment-id="${assignmentId}"]`));
   buttons.forEach(button => {
+    button.dataset.originalText = button.textContent;
     button.disabled = true;
     button.textContent = "Ответ отправляется...";
   });
+
+  const restoreButtons = () => {
+    buttons.forEach(button => {
+      button.disabled = false;
+      if (button.dataset.originalText !== undefined) {
+        button.textContent = button.dataset.originalText;
+        delete button.dataset.originalText;
+      }
+    });
+  };
+
+  const showSubmitError = (message) => {
+    window.latestAssignmentFeedback = {
+      tone: "error",
+      title: "Ответ не отправлен",
+      text: fixEncoding(message || "Не удалось отправить ответ"),
+      extra: "Кнопки снова доступны. Попробуйте ещё раз."
+    };
+    renderAssignmentFeedback(window.latestAssignmentFeedback);
+  };
 
   try {
     const res = await fetch(`/player/assignments/${assignmentId}/answer`, {
@@ -2562,10 +2583,8 @@ async function submitAnswer(assignmentId, code) {
     const data = await res.json();
 
     if (!data?.ok) {
-      buttons.forEach(button => {
-        button.disabled = false;
-      });
-      alert(fixEncoding(data?.message || "Не удалось отправить ответ"));
+      restoreButtons();
+      showSubmitError(data?.message);
       return;
     }
 
@@ -2574,11 +2593,9 @@ async function submitAnswer(assignmentId, code) {
     await loadAssignments();
     await loadPlayerState();
   } catch (e) {
-    buttons.forEach(button => {
-      button.disabled = false;
-    });
+    restoreButtons();
     console.error("answer error", e);
-    alert("Ошибка отправки ответа");
+    showSubmitError("Ошибка отправки ответа");
   }
 }
 
@@ -2587,7 +2604,14 @@ async function submitTextAnswer(assignmentId) {
   const value = (input?.value || "").trim();
 
   if (!value) {
-    alert("Введите ответ");
+    window.latestAssignmentFeedback = {
+      tone: "error",
+      title: "Ответ не отправлен",
+      text: "Введите ответ",
+      extra: ""
+    };
+    renderAssignmentFeedback(window.latestAssignmentFeedback);
+    input?.focus();
     return;
   }
 
