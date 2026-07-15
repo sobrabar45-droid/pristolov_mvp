@@ -1,0 +1,580 @@
+{
+  "scenario": {
+    "code": "season1_mvp_live_v2_qbank_v2",
+    "name": "????????? / ????? 1 / MVP live v2 / Question Bank V2",
+    "description": "????????????? ???????????? ?????? ???????? ? Question Bank V2. ???????? season1_mvp_live_v2 ?? ??????????.",
+    "version": 3,
+    "status": "draft",
+    "backing_template_code": "season1_mvp_live_v2",
+    "metadata_json": {
+      "mode": "stage_based",
+      "variant": "mvp_live_v2",
+      "backing_template_code": "season1_mvp_live_v2",
+      "question_bank_source_round": "QUESTION_DRYRUN_02",
+      "content_isolation": "versioned_scenario",
+      "source_scenario_code": "season1_mvp_live_v2"
+    }
+  },
+  "rounds": [
+    {
+      "round_code": "stage_intro",
+      "title": "Открытие вечера",
+      "order_no": 10,
+      "act_number": 10,
+      "round_type": "intro",
+      "round_kind": "intro",
+      "check_mode": "auto",
+      "questions_total": 1,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Ведущий вводит игроков в вечер и собирает внимание зала.",
+      "outro_text": null,
+      "questions": [
+        {
+          "question_code": "intro_q1",
+          "sequence_no": 1,
+          "role_code": "lord_lady",
+          "title": "Готовность",
+          "prompt": "Подтвердите готовность Дома.",
+          "ui_template": "text",
+          "answer_mode": "text",
+          "auto_check": true,
+          "manual_check_allowed": false,
+          "allowed_house_keys": [],
+          "content": {
+            "time_limit_sec": 15
+          },
+          "reward": {
+            "influence": 1
+          },
+          "fail_effect": {}
+        }
+      ]
+    },
+    {
+      "round_code": "stage_truth_lie_opening",
+      "title": "Быстрый запуск: правда или ложь",
+      "order_no": 20,
+      "act_number": 20,
+      "round_type": "host_round_series",
+      "round_kind": "host_round_series",
+      "check_mode": "auto",
+      "questions_total": 5,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Короткий разогрев зала с вопросами в формате «правда или ложь».",
+      "outro_text": null,
+      "questions": [
+        {
+          "question_code": "commercial_v2_tf_001",
+          "sequence_no": 1,
+          "role_code": "maester",
+          "title": "В Польше Винни-Пуха называют Кубусь Пухатек",
+          "prompt": "В Польше Винни-Пуха называют Кубусь Пухатек",
+          "ui_template": "true_false",
+          "answer_mode": "true_false",
+          "auto_check": true,
+          "manual_check_allowed": false,
+          "allowed_house_keys": [],
+          "content": {
+            "correct_answer": "правда",
+            "explanation": "(А живет от в Хатке Пухатке)",
+            "media_type": "none",
+            "media_ref": "",
+            "is_media_question": false,
+            "difficulty": "easy",
+            "source_round_code": "QUESTION_DRYRUN_02",
+            "source_question_code": "v2_edited_q003",
+            "source_slot": 3,
+            "options": [
+              "правда",
+              "ложь"
+            ]
+          },
+          "reward": {
+            "influence": 1
+          },
+          "fail_effect": {}
+        },
+        {
+          "question_code": "commercial_v2_tf_002",
+          "sequence_no": 2,
+          "role_code": "maester",
+          "title": "Курица проглатывает камешки, чтобы восполнить в организме недостающие минералы",
+          "prompt": "Курица проглатывает камешки, чтобы восполнить в организме недостающие минералы",
+          "ui_template": "true_false",
+          "answer_mode": "true_false",
+          "auto_check": true,
+          "manual_check_allowed": false,
+          "allowed_house_keys": [],
+          "content": {
+            "correct_answer": "ложь",
+            "explanation": "(Камешки они проглатывают, но с другой целью. Они служат в желудке жерновами.)",
+            "media_type": "none",
+            "media_ref": "",
+            "is_media_question": false,
+            "difficulty": "easy",
+            "source_round_code": "QUESTION_DRYRUN_02",
+            "source_question_code": "v2_edited_q004",
+            "source_slot": 4,
+            "options": [
+              "правда",
+              "ложь"
+            ]
+          },
+          "reward": {
+            "influence": 1
+          },
+          "fail_effect": {}
+        },
+        {
+          "question_code": "commercial_v2_tf_003",
+          "sequence_no": 3,
+          "role_code": "maester",
+          "title": "Слово «сарай» восходит к персидскому/иранскому слову со значением «дворец», «дом» или «помещение».",
+          "prompt": "Слово «сарай» восходит к персидскому/иранскому слову со значением «дворец», «дом» или «помещение».",
+          "ui_template": "true_false",
+          "answer_mode": "true_false",
+          "auto_check": true,
+          "manual_check_allowed": false,
+          "allowed_house_keys": [],
+          "content": {
+            "correct_answer": "правда",
+            "explanation": "Формулировка смягчена: речь идёт об этимологии слова и близких значениях исходного персидского/иранского слова.",
+            "media_type": "none",
+            "media_ref": "",
+            "is_media_question": false,
+            "difficulty": "easy",
+            "source_round_code": "QUESTION_DRYRUN_02",
+            "source_question_code": "v2_edited_q007",
+            "source_slot": 7,
+            "options": [
+              "правда",
+              "ложь"
+            ]
+          },
+          "reward": {
+            "influence": 1
+          },
+          "fail_effect": {}
+        },
+        {
+          "question_code": "commercial_v2_tf_004",
+          "sequence_no": 4,
+          "role_code": "maester",
+          "title": "Hasbro запускала рождественскую горячую линию для споров по игре «Монополия».",
+          "prompt": "Hasbro запускала рождественскую горячую линию для споров по игре «Монополия».",
+          "ui_template": "true_false",
+          "answer_mode": "true_false",
+          "auto_check": true,
+          "manual_check_allowed": false,
+          "allowed_house_keys": [],
+          "content": {
+            "correct_answer": "правда",
+            "explanation": "Это не постоянная служба, а праздничная helpline Hasbro UK/Ireland для споров по Monopoly.",
+            "media_type": "none",
+            "media_ref": "",
+            "is_media_question": false,
+            "difficulty": "easy",
+            "source_round_code": "QUESTION_DRYRUN_02",
+            "source_question_code": "v2_edited_q008",
+            "source_slot": 8,
+            "options": [
+              "правда",
+              "ложь"
+            ]
+          },
+          "reward": {
+            "influence": 1
+          },
+          "fail_effect": {}
+        },
+        {
+          "question_code": "commercial_v2_tf_005",
+          "sequence_no": 5,
+          "role_code": "maester",
+          "title": "Самолетный черный ящик имеет оранжевый цвет",
+          "prompt": "Самолетный черный ящик имеет оранжевый цвет",
+          "ui_template": "true_false",
+          "answer_mode": "true_false",
+          "auto_check": true,
+          "manual_check_allowed": false,
+          "allowed_house_keys": [],
+          "content": {
+            "correct_answer": "правда",
+            "explanation": "(Это чтобы его легче было искать)",
+            "media_type": "none",
+            "media_ref": "",
+            "is_media_question": false,
+            "difficulty": "easy",
+            "source_round_code": "QUESTION_DRYRUN_02",
+            "source_question_code": "v2_edited_q019",
+            "source_slot": 19,
+            "options": [
+              "правда",
+              "ложь"
+            ]
+          },
+          "reward": {
+            "influence": 1
+          },
+          "fail_effect": {}
+        }
+      ],
+      "import_key": "season1_mvp_live_v2_qbank_v2:stage_truth_lie_opening"
+    },
+    {
+      "round_code": "stage_four_options",
+      "title": "Лёгкие раунды: 4 варианта",
+      "order_no": 30,
+      "act_number": 30,
+      "round_type": "host_round_series",
+      "round_kind": "host_round_series",
+      "check_mode": "auto",
+      "questions_total": 5,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Более спокойный вход в вечер с вопросами на четыре варианта.",
+      "outro_text": null,
+      "questions": [
+        {
+          "question_code": "commercial_v2_sc_001",
+          "sequence_no": 1,
+          "role_code": "maester",
+          "title": "В кинофильме «Операция Ы» Трус, Бывалый и Балбес выступают в роли последователей известного русского хирурга Николая Пирогова. Как называется медицинское средство, которое они используют?",
+          "prompt": "В кинофильме «Операция Ы» Трус, Бывалый и Балбес выступают в роли последователей известного русского хирурга Николая Пирогова. Как называется медицинское средство, которое они используют?",
+          "ui_template": "single_choice",
+          "answer_mode": "single_choice",
+          "auto_check": true,
+          "manual_check_allowed": false,
+          "allowed_house_keys": [],
+          "content": {
+            "correct_answer": "хлороформ",
+            "explanation": "",
+            "media_type": "none",
+            "media_ref": "",
+            "is_media_question": false,
+            "difficulty": "medium",
+            "source_round_code": "QUESTION_DRYRUN_02",
+            "source_question_code": "v2_edited_q021",
+            "source_slot": 21,
+            "options": [
+              "спирт",
+              "хлороформ",
+              "пеницилин",
+              "бинты"
+            ]
+          },
+          "reward": {
+            "influence": 1
+          },
+          "fail_effect": {}
+        },
+        {
+          "question_code": "commercial_v2_sc_002",
+          "sequence_no": 2,
+          "role_code": "maester",
+          "title": "Джон Шепард-Барон однажды опоздал в банк и не смог снять деньги. После этого он придумал это:",
+          "prompt": "Джон Шепард-Барон однажды опоздал в банк и не смог снять деньги. После этого он придумал это:",
+          "ui_template": "single_choice",
+          "answer_mode": "single_choice",
+          "auto_check": true,
+          "manual_check_allowed": false,
+          "allowed_house_keys": [],
+          "content": {
+            "correct_answer": "банкомат",
+            "explanation": "По авторской заметке, на идею повлиял случай, когда Джон Шепард-Барон пришёл после закрытия банка и не смог снять деньги.",
+            "media_type": "none",
+            "media_ref": "",
+            "is_media_question": false,
+            "difficulty": "medium",
+            "source_round_code": "QUESTION_DRYRUN_02",
+            "source_question_code": "v2_edited_q024",
+            "source_slot": 24,
+            "options": [
+              "камеру хранения",
+              "паркомат",
+              "банкомат",
+              "кодовый замок"
+            ]
+          },
+          "reward": {
+            "influence": 1
+          },
+          "fail_effect": {}
+        },
+        {
+          "question_code": "commercial_v2_sc_003",
+          "sequence_no": 3,
+          "role_code": "maester",
+          "title": "Представим, что вы живете в Дании, вам исполнилось 25 лет, и тут родня начинает посыпать вас корицей. Что это значит?",
+          "prompt": "Представим, что вы живете в Дании, вам исполнилось 25 лет, и тут родня начинает посыпать вас корицей. Что это значит?",
+          "ui_template": "single_choice",
+          "answer_mode": "single_choice",
+          "auto_check": true,
+          "manual_check_allowed": false,
+          "allowed_house_keys": [],
+          "content": {
+            "correct_answer": "нет второй половинки",
+            "explanation": "(По легенде, традиция зародилась в XVI веке и связана с торговцами специями. Они много путешествовали, не задерживаясь на одном месте надолго, поэтому не успевали создать семью. Чтобы привлечь внимание потенциальных пар...",
+            "media_type": "none",
+            "media_ref": "",
+            "is_media_question": false,
+            "difficulty": "medium",
+            "source_round_code": "QUESTION_DRYRUN_02",
+            "source_question_code": "v2_edited_q025",
+            "source_slot": 25,
+            "options": [
+              "вы закончили ВУЗ",
+              "У вас первая зарплата",
+              "у вас нет второй половинки",
+              "родня готовит шарлотку"
+            ]
+          },
+          "reward": {
+            "influence": 1
+          },
+          "fail_effect": {}
+        },
+        {
+          "question_code": "commercial_v2_sc_004",
+          "sequence_no": 4,
+          "role_code": "maester",
+          "title": "Какое из этих блюд названо по имени повара?",
+          "prompt": "Какое из этих блюд названо по имени повара?",
+          "ui_template": "single_choice",
+          "answer_mode": "single_choice",
+          "auto_check": true,
+          "manual_check_allowed": false,
+          "allowed_house_keys": [],
+          "content": {
+            "correct_answer": "салат Цезарь",
+            "explanation": "(Цезарь Кардини — американский повар итальянского происхождения, которому приписывают изобретение салата «Цезарь». Все остальные блюда названы в честь известных людей, но не поваров).",
+            "media_type": "none",
+            "media_ref": "",
+            "is_media_question": false,
+            "difficulty": "medium",
+            "source_round_code": "QUESTION_DRYRUN_02",
+            "source_question_code": "v2_edited_q026",
+            "source_slot": 26,
+            "options": [
+              "Яйца «Бенедикт»",
+              "Салат «Цезарь»",
+              "Торт «Наполеон»",
+              "Бефстроганов"
+            ]
+          },
+          "reward": {
+            "influence": 1
+          },
+          "fail_effect": {}
+        },
+        {
+          "question_code": "commercial_v2_sc_005",
+          "sequence_no": 5,
+          "role_code": "maester",
+          "title": "У кого из этих животных самый длинный язык?",
+          "prompt": "У кого из этих животных самый длинный язык?",
+          "ui_template": "single_choice",
+          "answer_mode": "single_choice",
+          "auto_check": true,
+          "manual_check_allowed": false,
+          "allowed_house_keys": [],
+          "content": {
+            "correct_answer": "муравьед",
+            "explanation": "",
+            "media_type": "none",
+            "media_ref": "",
+            "is_media_question": false,
+            "difficulty": "medium",
+            "source_round_code": "QUESTION_DRYRUN_02",
+            "source_question_code": "v2_edited_q027",
+            "source_slot": 27,
+            "options": [
+              "собака",
+              "жираф",
+              "муравьед",
+              "слон"
+            ]
+          },
+          "reward": {
+            "influence": 1
+          },
+          "fail_effect": {}
+        }
+      ],
+      "import_key": "season1_mvp_live_v2_qbank_v2:stage_four_options"
+    },
+    {
+      "round_code": "stage_map_entry",
+      "title": "Открытие карты",
+      "order_no": 40,
+      "act_number": 40,
+      "round_type": "system_stage",
+      "round_kind": "system_stage",
+      "check_mode": "auto",
+      "questions_total": 1,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Открывается карта и стартуют экспедиции.",
+      "outro_text": null,
+      "questions": []
+    },
+    {
+      "round_code": "stage_diplomacy_1",
+      "title": "Дипломатия 1",
+      "order_no": 50,
+      "act_number": 50,
+      "round_type": "system_stage",
+      "round_kind": "system_stage",
+      "check_mode": "auto",
+      "questions_total": 1,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Первое окно переговоров, сделок и союзов.",
+      "outro_text": null,
+      "questions": []
+    },
+    {
+      "round_code": "stage_free_play",
+      "title": "Свободная игра",
+      "order_no": 60,
+      "act_number": 60,
+      "round_type": "system_stage",
+      "round_kind": "system_stage",
+      "check_mode": "auto",
+      "questions_total": 1,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Карта, сделки и скрытые решения работают одновременно.",
+      "outro_text": null,
+      "questions": []
+    },
+    {
+      "round_code": "stage_duels",
+      "title": "Дуэли домов",
+      "order_no": 70,
+      "act_number": 70,
+      "round_type": "system_stage",
+      "round_kind": "system_stage",
+      "check_mode": "auto",
+      "questions_total": 1,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Дома переходят к открытым вызовам и дуэлям.",
+      "outro_text": null,
+      "questions": []
+    },
+    {
+      "round_code": "stage_court",
+      "title": "Суд домов",
+      "order_no": 80,
+      "act_number": 80,
+      "round_type": "host_round_series",
+      "round_kind": "host_round_series",
+      "check_mode": "auto",
+      "questions_total": 1,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Короткая кульминация и публичная позиция Домов.",
+      "outro_text": null,
+      "questions": [
+        {
+          "question_code": "court_q1",
+          "sequence_no": 1,
+          "role_code": "lord_lady",
+          "title": "Позиция дома",
+          "prompt": "Объявите позицию Дома.",
+          "ui_template": "text",
+          "answer_mode": "text",
+          "auto_check": true,
+          "manual_check_allowed": false,
+          "allowed_house_keys": [],
+          "content": {
+            "time_limit_sec": 30
+          },
+          "reward": {},
+          "fail_effect": {}
+        }
+      ]
+    },
+    {
+      "round_code": "stage_last_whisper",
+      "title": "Последний Шёпот",
+      "order_no": 85,
+      "act_number": 85,
+      "round_type": "system_stage",
+      "round_kind": "system_stage",
+      "check_mode": "auto",
+      "questions_total": 1,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Короткое окно интриг перед финальным объявлением. Дома собирают последние слухи и готовятся к исходу вечера.",
+      "outro_text": null,
+      "questions": []
+    },
+    {
+      "round_code": "stage_final_show",
+      "title": "Финальное show",
+      "order_no": 90,
+      "act_number": 90,
+      "round_type": "final",
+      "round_kind": "final",
+      "check_mode": "auto",
+      "questions_total": 1,
+      "is_host_led": true,
+      "is_optional": false,
+      "bar_window_opens": false,
+      "question_transition_mode": "manual",
+      "round_transition_mode": "manual",
+      "intro_text": "Ведущий подводит итоги вечера и готовит зал к объявлению победителя.",
+      "outro_text": null,
+      "questions": [
+        {
+          "question_code": "final_show_q1",
+          "sequence_no": 1,
+          "role_code": "lord_lady",
+          "title": "Финал вечера",
+          "prompt": "Подтвердите готовность к финальному объявлению.",
+          "ui_template": "text",
+          "answer_mode": "text",
+          "auto_check": true,
+          "manual_check_allowed": false,
+          "allowed_house_keys": [],
+          "content": {
+            "time_limit_sec": 15
+          },
+          "reward": {},
+          "fail_effect": {}
+        }
+      ]
+    }
+  ]
+}

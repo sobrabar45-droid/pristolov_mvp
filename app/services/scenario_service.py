@@ -128,6 +128,21 @@ def _json_text(value, dump_json_fn):
 
 
 def _ensure_backing_template(db: Session, scenario_data: dict):
+    backing_template_code = _normalize_scenario_lookup_value(
+        scenario_data.get("backing_template_code")
+    )
+    if backing_template_code:
+        template = (
+            db.query(GameTemplate)
+            .filter(GameTemplate.template_code == backing_template_code)
+            .first()
+        )
+        if not template:
+            raise ValueError(
+                f'Backing game template "{backing_template_code}" not found'
+            )
+        return template
+
     template = (
         db.query(GameTemplate)
         .filter(GameTemplate.template_code == scenario_data["code"])
@@ -145,6 +160,19 @@ def _ensure_backing_template(db: Session, scenario_data: dict):
     recommended_houses = scenario_data.get("recommended_houses")
     template.recommended_houses = recommended_houses if isinstance(recommended_houses, int) else None
 
+    return template
+
+
+def _resolve_scenario_backing_template(db: Session, scenario: GameScenarioTemplate):
+    template = (
+        db.query(GameTemplate)
+        .filter(GameTemplate.id == scenario.template_id)
+        .first()
+    )
+    if not template or not _normalize_scenario_lookup_value(template.template_code):
+        raise ValueError(
+            f'Backing game template for scenario "{scenario.code}" not found'
+        )
     return template
 
 
@@ -687,7 +715,8 @@ def apply_scenario_to_game_logic(db: Session, *, room_code: str, payload: dict):
 
     game.scenario_id = scenario.id
     game.scenario_code = scenario.code
-    game.template_code = scenario.code
+    backing_template = _resolve_scenario_backing_template(db, scenario)
+    game.template_code = backing_template.template_code
 
     _cleanup_stale_court_runtime(db, game)
     db.flush()
